@@ -63,7 +63,7 @@ class FCFS implements Scheduler {
             Job job = waitingQueue.peek();
             
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
-            if (canExecuteNodes.size() > job.getRequiredNodes()) {
+            if (canExecuteNodes.size() >= job.getRequiredNodes()) {
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 for (int i = 0; i < job.getRequiredNodes(); ++i) {
@@ -75,9 +75,7 @@ class FCFS implements Scheduler {
                 makeTimeslices(currentTime);
                 makeTimeslices(job.getStartTime() + job.getRequiredTime());
                 assignJob(currentTime, job, assignNodesNo);
-            }
-            
-            break;
+            } else break;
         }
         return;
     }
