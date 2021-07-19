@@ -6,16 +6,10 @@
 
 package nodeconsciousscheduler;
 
-import java.util.ArrayList;
-
 /**
  *
  * @author sminami
  */
-public interface Scheduler {
-    void init();
-    ArrayList<Event> scheduleJobsOnSubmission(Event ev);
-
-    ArrayList<Event> scheduleJobsOnEnd(Event ev);
+public class Constants {
+    static int UNUSED = -1;
 }
-

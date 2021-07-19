@@ -2,4 +2,7 @@ NodeConsciousScheduler/build
 NodeConsciousScheduler/build.xml
 NodeConsciousScheduler/nbproject
 NodeConsciousScheduler/manifest.mf
+NodeConsciousScheduler/result
+NodeConsciousScheduler/data-set
 
+/NodeConsciousScheduler/dist/

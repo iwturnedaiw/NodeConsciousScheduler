@@ -6,6 +6,7 @@
 
 package nodeconsciousscheduler;
 
+import java.util.ArrayList;
 import java.util.PriorityQueue;
 
 /**
@@ -37,12 +38,26 @@ public class EventQueue extends PriorityQueue {
         EventHandler evh = null;
         if (evt == EventType.SUBMIT) {
             evh = new Submission();
+//            System.out.println("size: " + this.size());
+//            System.out.println("jobId: " + ev.getJob().getJobId());            
+        } else if (evt == EventType.START) {
+            evh = new Start();
+//            System.out.println("size: " + this.size());
+//            System.out.println("jobId: " + ev.getJob().getJobId());            
+        } else if (evt == EventType.END) {
+            evh = new End();
+//            System.out.println("size: " + this.size());
+//            System.out.println("jobId: " + ev.getJob().getJobId());
         }
         
         assert evh != null;
 
-        Event[] newEvents = null;
+        ArrayList<Event> newEvents = new ArrayList<Event>();
         newEvents = evh.handle(ev);
+        for (Event e : newEvents) {
+            this.add(e);            
+        }
+
     }
 }
 

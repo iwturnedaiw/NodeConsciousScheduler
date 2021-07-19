@@ -8,6 +8,8 @@ package nodeconsciousscheduler;
 
 import java.util.ArrayList;
 
+
+
 /**
  *
  * @author sminami
@@ -24,6 +26,9 @@ public class NodeInfo {
     NodeInfo(int nodeNum, int numCores) {
         this.nodeNum = nodeNum;
         this.numCores = numCores;
+        this.occupiedCores = new ArrayList<Integer>();
+        init();
+        this.numOccupiedCores = 0;
         this.numFreeCores = numCores;
         this.OCStateLevel = 0;
     }
@@ -50,6 +55,40 @@ public class NodeInfo {
 
     public int getOCStateLevel() {
         return OCStateLevel;
+    }
+
+    public void setNodeNum(int nodeNum) {
+        this.nodeNum = nodeNum;
+    }
+
+    public void setNumCores(int numCores) {
+        this.numCores = numCores;
+    }
+
+    public void setOccupiedCores(ArrayList<Integer> occupiedCores) {
+        this.occupiedCores = occupiedCores;
+    }
+
+    public void setNumOccupiedCores(int numOccupiedCores) {
+        this.numOccupiedCores = numOccupiedCores;
+    }
+
+    public void setNumFreeCores(int numFreeCores) {
+        this.numFreeCores = numFreeCores;
+    }
+
+    public void setOCStateLevel(int OCStateLevel) {
+        this.OCStateLevel = OCStateLevel;
+    }
+
+    
+    
+    
+    private void init() {
+        for (int i = 0; i < this.numCores; ++i) {
+            this.occupiedCores.add(Constants.UNUSED);
+        }
+ 
     }
     
     

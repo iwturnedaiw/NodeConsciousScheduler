@@ -16,6 +16,7 @@ public class Job {
     private int jobId;
     private int submitTime;
     private int actualExecuteTime;
+    private int specifiedExecuteTime;
     private int requiredTime;
     private int requiredCores;
     private int requiredNodes;
@@ -37,6 +38,7 @@ public class Job {
         this.startTime = -1;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
+        this.usingNodesList = new ArrayList<UsingNodes>();
     }
 
     Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes) {
@@ -50,6 +52,7 @@ public class Job {
         this.startTime = -1;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
+        this.usingNodesList = new ArrayList<UsingNodes>();
     }
     
     
@@ -156,11 +159,14 @@ public class Job {
     public void setUsingNodesList(ArrayList<UsingNodes> usingNodesList) {
         this.usingNodesList = usingNodesList;
     }
-    
-    
-    
-    
-    
+
+    public int getSpecifiedExecuteTime() {
+        return specifiedExecuteTime;
+    }
+
+    public void setSpecifiedExecuteTime(int specifiedExecuteTime) {
+        this.specifiedExecuteTime = specifiedExecuteTime;
+    }
     
     
 }
