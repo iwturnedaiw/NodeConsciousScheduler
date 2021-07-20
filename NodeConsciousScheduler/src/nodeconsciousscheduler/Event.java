@@ -62,8 +62,6 @@ public class Event implements Comparable<Event> {
         if (this.occurrenceTime > o.occurrenceTime) {
             return 1;
         }
-        return 0;
+        return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());
     }
-    
-
 }
