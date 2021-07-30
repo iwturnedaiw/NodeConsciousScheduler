@@ -38,7 +38,7 @@ public class NodeConsciousScheduler {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        String fname = "gen01.swf";
+        String fname = "short.swf";
         
         // Resoures Setting
 /*
@@ -206,6 +206,9 @@ public class NodeConsciousScheduler {
             if (requiredCores > requiredNodes * NodeConsciousScheduler.numCores) {
                 continue;
             }            
+            
+            // TODO
+            // Decide the accurate num of node for non-specified data
             
             Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes);
             jobList.add(job);
