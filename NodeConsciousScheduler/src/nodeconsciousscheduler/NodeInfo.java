@@ -14,7 +14,7 @@ import java.util.ArrayList;
  *
  * @author sminami
  */
-public class NodeInfo {
+public class NodeInfo implements Cloneable{
     private int nodeNum;
     private int numCores;
     private ArrayList<Integer> occupiedCores;
@@ -81,14 +81,24 @@ public class NodeInfo {
         this.OCStateLevel = OCStateLevel;
     }
 
-    
-    
-    
     private void init() {
         for (int i = 0; i < this.numCores; ++i) {
             this.occupiedCores.add(Constants.UNUSED);
         }
  
+    }
+
+    @Override
+    public NodeInfo clone() {
+        NodeInfo clonedItem = null;
+        try {
+            // Object型で返ってくるのでキャストが必要
+            clonedItem = (NodeInfo)super.clone();
+            clonedItem.occupiedCores = (ArrayList<Integer>) this.getOccupiedCores().clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+        return clonedItem;
     }
     
     

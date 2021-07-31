@@ -79,11 +79,10 @@ public class Simulator {
     private void initScheduler(ScheduleAlgorithm scheAlgo) {
         if (scheAlgo == ScheduleAlgorithm.FCFS) {
             this.sche = new FCFS();
-        }
-        /*
         } else if (scheAlgo == ScheduleAlgorithm.EasyBackfilling) {
             this.sche = new EasyBackfilling();
         }
+        /*
         } else if (scheAlgo == ScheduleAlgorithm.ConservativeBackfiling) {
             this.sche = new ConservativeBackfilling);
         }        

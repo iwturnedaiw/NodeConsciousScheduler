@@ -22,7 +22,8 @@ import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import nodeconsciousscheduler.ScheduleAlgorithm;
-import static nodeconsciousscheduler.ScheduleAlgorithm.FCFS;
+import static nodeconsciousscheduler.ScheduleAlgorithm.*;
+
 
 /**
  *
@@ -39,6 +40,7 @@ public class NodeConsciousScheduler {
      */
     public static void main(String[] args) {
         String fname = "gen02.swf";
+        //String fname = "short.swf";
         
         // Resoures Setting
 /*
@@ -78,7 +80,8 @@ public class NodeConsciousScheduler {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        sim = new Simulator(jobList, allNodesInfo, FCFS);
+        //sim = new Simulator(jobList, allNodesInfo, FCFS);
+        sim = new Simulator(jobList, allNodesInfo, EasyBackfilling);
         sim.run();
 /*        
         PriorityQueue<Event> pq = new EventQueue();

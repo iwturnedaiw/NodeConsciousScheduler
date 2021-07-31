@@ -8,6 +8,7 @@ package nodeconsciousscheduler;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import static nodeconsciousscheduler.Constants.TS_ENDTIME;
 
 /**
  *
@@ -23,7 +24,7 @@ class TimeSlice implements Cloneable {
     
     TimeSlice() {
         this.startTime = 0;
-        this.endTime = 1 << 30;
+        this.endTime = TS_ENDTIME;
         this.duration = this.endTime - this.startTime;
         this.numNode = NodeConsciousScheduler.numNodes;
         this.ppn = NodeConsciousScheduler.numCores;
@@ -65,7 +66,7 @@ class TimeSlice implements Cloneable {
         TimeSlice second = this.clone();
         second.startTime = currentTime;
         second.duration = second.endTime - currentTime;
-        second.availableCores = (ArrayList<Integer>) this.getAvailableCores().clone();
+//        second.availableCores = (ArrayList<Integer>) this.getAvailableCores().clone();
         
         LinkedList<TimeSlice> result = new LinkedList<TimeSlice>();
         result.add(first);
@@ -80,6 +81,7 @@ class TimeSlice implements Cloneable {
         try {
             // Object型で返ってくるのでキャストが必要
             clonedItem = (TimeSlice)super.clone();
+            clonedItem.availableCores = (ArrayList<Integer>) this.getAvailableCores().clone();
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();
         }

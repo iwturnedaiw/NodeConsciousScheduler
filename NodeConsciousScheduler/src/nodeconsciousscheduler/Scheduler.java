@@ -57,7 +57,11 @@ public abstract class Scheduler {
         return breakIndex;
     }
     
-    protected void makeTimeslices(int currentTime) {        
+    protected void makeTimeslices(int currentTime) {
+        makeTimeslices(currentTime, this.timeSlices);
+    }
+    
+    protected void makeTimeslices(int currentTime, LinkedList<TimeSlice> timeSlices) {        
         if (existSliceStartAt(currentTime))
             return;
 
@@ -140,8 +144,7 @@ public abstract class Scheduler {
         return newEvents;
     }
 
-    protected void assignJob(int startTime, Job job, ArrayList<Integer> assignNodesNo) {
-
+    protected void assignJob(int startTime, LinkedList<TimeSlice> timeSlices, ArrayList<NodeInfo> allNodesInfo, Job job, ArrayList<Integer> assignNodesNo, boolean tmpFlag) {
         int addedPpn = job.getRequiredCores()/job.getRequiredNodes();
         int expectedEndTime = startTime + job.getRequiredTime();
 
@@ -173,8 +176,9 @@ public abstract class Scheduler {
         int jobId = job.getJobId();
         for (int i = 0; i < assignNodesNo.size(); ++i) {
             int nodeNo = assignNodesNo.get(i);
+            assert i == nodeNo;
            
-            NodeInfo node = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeNo);
+            NodeInfo node = allNodesInfo.get(nodeNo);
             int numCores = node.getNumCores();
             
             int coreCnt = addedPpn;
@@ -195,6 +199,7 @@ public abstract class Scheduler {
         }
         
         /* Job Setting */
+        if (tmpFlag) return;
         ArrayList<UsingNodes> nodes = job.getUsingNodesList();
 
         for (int i = 0; i < assignNodesNo.size(); ++i) {
@@ -213,6 +218,10 @@ public abstract class Scheduler {
             UsingNodes node = new UsingNodes(nodeNo, addedPpn, coreNum);
             nodes.add(node);
         }
+    }
+
+    protected void assignJob(int startTime, Job job, ArrayList<Integer> assignNodesNo) {
+        assignJob(startTime, this.timeSlices, NodeConsciousScheduler.sim.getAllNodesInfo(), job, assignNodesNo, false);       
     }
     
 }
