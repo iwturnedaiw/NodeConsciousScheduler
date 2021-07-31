@@ -12,4 +12,5 @@ package nodeconsciousscheduler;
  */
 public class Constants {
     static int UNUSED = -1;
+    static int NOT_BREAK = -1;
 }
