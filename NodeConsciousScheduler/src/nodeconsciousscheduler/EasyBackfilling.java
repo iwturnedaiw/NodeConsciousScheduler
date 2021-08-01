@@ -6,6 +6,7 @@
 
 package nodeconsciousscheduler;
 
+import static java.lang.Math.min;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -104,7 +105,7 @@ class EasyBackfilling extends Scheduler {
             ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
             while (tailWaitingQueue.size() > 0) {
                 Job backfillJob = tailWaitingQueue.poll();
-                /* Found the bug next line */
+
                 canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob);
 
                 if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
@@ -229,10 +230,15 @@ class EasyBackfilling extends Scheduler {
         int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
         if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
         
+        int startTime = currentTime;
+        int expectedEndTime = startTime + job.getRequiredTime();
         int alongTimeSlices = 0;
         for (int i = 0; i < timeSlices.size(); ++i) {
             TimeSlice ts = timeSlices.get(i);
-            if (ts.getStartTime() <= currentTime && currentTime <= ts.getEndTime()) {
+
+            if ( (ts.getStartTime() <= startTime && startTime <= ts.getEndTime()) || 
+                 (ts.getStartTime() <= expectedEndTime && expectedEndTime <= ts.getEndTime()) ||
+                 (startTime <= ts.getStartTime() && ts.getEndTime() <= expectedEndTime) ) {
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     int freeCores = ts.getAvailableCores().get(j);
@@ -251,13 +257,15 @@ class EasyBackfilling extends Scheduler {
             }
         }
 
+        if (alongTimeSlices == 0) return nodes;
+
         for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
             VacantNode node = vacantNodes.get(i);
             int freeCores = node.getFreeCores();
             node.setFreeCores(freeCores/alongTimeSlices);
         }
-        
-        /* If cnt == alongTimeSlices, the job is executable on the nodes along the timeSlices */
+
+        /* If cnt == alongTimeSlices, the job is executable on the nodes along the timeSlices */        
         for (int i = 0; i < vacantNodeCount.size(); ++i) {
             int cnt = vacantNodeCount.get(i);
             if (cnt == alongTimeSlices) {
@@ -309,7 +317,7 @@ class EasyBackfilling extends Scheduler {
                     cores.set(nodeNo, core);
                 }
             }
-//            ts.printTsInfo();
+            ts.printTsInfo();
         }
         
     }    
