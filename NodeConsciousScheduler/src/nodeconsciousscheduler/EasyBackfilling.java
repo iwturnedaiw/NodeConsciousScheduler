@@ -105,7 +105,7 @@ class EasyBackfilling extends Scheduler {
             ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
             while (tailWaitingQueue.size() > 0) {
                 Job backfillJob = tailWaitingQueue.poll();
-
+                
                 canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob);
 
                 if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
@@ -152,63 +152,7 @@ class EasyBackfilling extends Scheduler {
     }
     
     private ArrayList<VacantNode> canExecutableNodesAt(int currentTime, Job job) {
-        /* Return variable
-           This have the node no. with # of free core.
-        */
-        ArrayList<VacantNode> nodes = new ArrayList<VacantNode>();
-        
-        /* Working Variable */
-        ArrayList<VacantNode> vacantNodes = new ArrayList<VacantNode>();
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, 0));
-        
-        /* This is used for counting executable nodes */
-        ArrayList<Integer> vacantNodeCount = new ArrayList<Integer>();
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodeCount.add(0);
-
-        /* Calculate ppn */
-        /* TODO: The case requiredCores ist not dividable  */
-        int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
-        if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
-        
-        int alongTimeSlices = 0;
-        for (int i = 0; i < timeSlices.size(); ++i) {
-            TimeSlice ts = timeSlices.get(i);
-            if (ts.getStartTime() <= currentTime && currentTime < ts.getEndTime()) {
-                ++alongTimeSlices;
-                for (int j = 0; j < ts.getNumNode(); ++j) {
-                    int freeCores = ts.getAvailableCores().get(j);
-                    VacantNode node = vacantNodes.get(j);
-                    
-                    assert node.getNodeNo() == j;
-
-                    int cores = node.getFreeCores();
-                    node.setFreeCores(freeCores + cores);
-
-                    if (freeCores >= requiredCoresPerNode ) {
-                        int cnt = vacantNodeCount.get(j);
-                        vacantNodeCount.set(j, ++cnt);
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
-            VacantNode node = vacantNodes.get(i);
-            int freeCores = node.getFreeCores();
-            node.setFreeCores(freeCores/alongTimeSlices);
-        }
-        
-        /* If cnt == alongTimeSlices, the job is executable on the nodes along the timeSlices */
-        for (int i = 0; i < vacantNodeCount.size(); ++i) {
-            int cnt = vacantNodeCount.get(i);
-            if (cnt == alongTimeSlices) {
-                VacantNode node = vacantNodes.get(i);
-                assert node.getNodeNo() == i;
-                nodes.add(node);
-            }
-        }
-        
-        return nodes;
+        return canExecutableNodesAt(currentTime, this.timeSlices, job);
     }
    
     private ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job) {
@@ -236,8 +180,8 @@ class EasyBackfilling extends Scheduler {
         for (int i = 0; i < timeSlices.size(); ++i) {
             TimeSlice ts = timeSlices.get(i);
 
-            if ( (ts.getStartTime() <= startTime && startTime <= ts.getEndTime()) || 
-                 (ts.getStartTime() <= expectedEndTime && expectedEndTime <= ts.getEndTime()) ||
+            if ( (ts.getStartTime() <= startTime && startTime < ts.getEndTime()) || 
+                 (ts.getStartTime() < expectedEndTime && expectedEndTime <= ts.getEndTime()) ||
                  (startTime <= ts.getStartTime() && ts.getEndTime() <= expectedEndTime) ) {
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
@@ -317,7 +261,7 @@ class EasyBackfilling extends Scheduler {
                     cores.set(nodeNo, core);
                 }
             }
-            ts.printTsInfo();
+//            ts.printTsInfo();
         }
         
     }    
