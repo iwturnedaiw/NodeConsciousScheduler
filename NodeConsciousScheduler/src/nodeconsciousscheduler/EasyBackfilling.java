@@ -38,6 +38,9 @@ class EasyBackfilling extends Scheduler {
             
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
+                // TODO: Erase below line
+                System.out.println("size: " + canExecuteNodes.size() + ", FCFS job: " + job.getJobId());
+
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 for (int i = 0; i < job.getRequiredNodes(); ++i) {
@@ -58,96 +61,95 @@ class EasyBackfilling extends Scheduler {
                 int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));
+            } else break;
+        }
+        
+        if (waitingQueue.size() <= 1) return result;
+        
+        /* Backfilling */
+        Queue<Job> tailWaitingQueue = copyWaitingQueue();
+        Job firstJob = waitingQueue.peek();
+
+        int startTimeFirstJob = CANNOT_START;
+        ArrayList<VacantNode> canExecuteTmpNodes = new ArrayList<VacantNode>();
+        /* Find tempollary executable nodes */
+        for (int i = 0; i < timeSlices.size(); ++i) {
+            TimeSlice ts = timeSlices.get(i);
+            ts.printTsInfo();
+            int tmpStartTime = ts.getStartTime();
+            if (tmpStartTime < currentTime) {
+                continue;
             }
 
-            if (waitingQueue.size() <= 1) {
+            canExecuteTmpNodes = canExecutableTmpNodes(tmpStartTime, firstJob);
+
+            if (canExecuteTmpNodes.size() >= firstJob.getRequiredNodes()) {
+                startTimeFirstJob = tmpStartTime;
                 break;
             }
-            
-            Queue<Job> tailWaitingQueue = copyWaitingQueue();
-            Job firstJob = waitingQueue.peek();
-
-            int startTimeFirstJob = CANNOT_START;
-            ArrayList<VacantNode> canExecuteTmpNodes = new ArrayList<VacantNode>();
-            /* Find tempollary executable nodes */
-            for (int i = 0; i < timeSlices.size(); ++i) {
-                TimeSlice ts = timeSlices.get(i);
-                ts.printTsInfo();
-                int tmpStartTime = ts.getStartTime();
-                if (tmpStartTime <= currentTime) {
-                    continue;
-                }
-
-                canExecuteTmpNodes = canExecutableTmpNodes(tmpStartTime, firstJob);
-
-                if (canExecuteTmpNodes.size() >= firstJob.getRequiredNodes()) {
-                    startTimeFirstJob = tmpStartTime;
-                    break;
-                }
-            }
-
-            // TODO: Erase below line
-            System.out.println("size: " + canExecuteTmpNodes.size() + ", firstJob: " + firstJob.getJobId());
-
-            assert canExecuteTmpNodes.size() >= firstJob.getRequiredNodes();
-            assert startTimeFirstJob != CANNOT_START;
-
-            /* We must handle the copy of original list */
-            /* TODO?: Define the appropriate clonable setting */
-            LinkedList<TimeSlice> tmpTimeSlices = cloneTimeSlices(timeSlices);
-            ArrayList<NodeInfo> tmpAllNodesInfo = cloneAllNodesInfo(NodeConsciousScheduler.sim.getAllNodesInfo());
-
-            makeTimeslices(startTimeFirstJob, tmpTimeSlices);
-            int endTimeFirstJob = startTimeFirstJob + firstJob.getRequiredTime();
-            makeTimeslices(endTimeFirstJob, tmpTimeSlices);
-            assignFirstJobTemporally(tmpTimeSlices, tmpAllNodesInfo, startTimeFirstJob, firstJob, canExecuteTmpNodes);
-
-            ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
-            while (tailWaitingQueue.size() > 0) {
-                Job backfillJob = tailWaitingQueue.poll();
-                
-                canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob);
-
-                if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
-                    System.out.println("Succeed Backfill Job: " + backfillJob.getJobId() + ", at " + currentTime);
-
-                    Collections.sort(canExecuteNodesEasyBackfiling);
-                    ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
-                    for (int i = 0; i < backfillJob.getRequiredNodes(); ++i) {
-                        assignNodesNo.add(canExecuteNodesEasyBackfiling.get(i).getNodeNo());
-                    }
-
-                    Iterator itr = waitingQueue.iterator();
-                    while (itr.hasNext()) {
-                        Job deleteJob = (Job) itr.next();
-                        if (deleteJob.getJobId() == backfillJob.getJobId()) {
-                            itr.remove();
-                            break;
-                        }
-                    }
-
-                    int startTime = currentTime;
-                    backfillJob.setStartTime(startTime);
-
-                    makeTimeslices(startTime);
-                    makeTimeslices(startTime, tmpTimeSlices);
-
-                    int expectedEndTime = startTime + backfillJob.getRequiredTime();
-                    makeTimeslices(expectedEndTime);
-                    makeTimeslices(expectedEndTime, tmpTimeSlices);
-                    backfillJob.setSpecifiedExecuteTime(expectedEndTime);
-
-                    assignJob(startTime, backfillJob, assignNodesNo);
-                    assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
-
-                    int trueEndTime = startTime + backfillJob.getActualExecuteTime();
-                    result.add(new Event(EventType.START, startTime, backfillJob));
-                    result.add(new Event(EventType.END, trueEndTime, backfillJob));
-
-                }
-            }
-            break;
         }
+
+        // TODO: Erase below line
+        System.out.println("size: " + canExecuteTmpNodes.size() + ", firstJob: " + firstJob.getJobId());
+
+        assert canExecuteTmpNodes.size() >= firstJob.getRequiredNodes();
+        assert startTimeFirstJob != CANNOT_START;
+
+        /* We must handle the copy of original list */
+        /* TODO?: Define the appropriate clonable setting */
+        LinkedList<TimeSlice> tmpTimeSlices = cloneTimeSlices(timeSlices);
+        ArrayList<NodeInfo> tmpAllNodesInfo = cloneAllNodesInfo(NodeConsciousScheduler.sim.getAllNodesInfo());
+
+        makeTimeslices(startTimeFirstJob, tmpTimeSlices);
+        int endTimeFirstJob = startTimeFirstJob + firstJob.getRequiredTime();
+        makeTimeslices(endTimeFirstJob, tmpTimeSlices);
+        assignFirstJobTemporally(tmpTimeSlices, tmpAllNodesInfo, startTimeFirstJob, firstJob, canExecuteTmpNodes);
+
+        ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
+        while (tailWaitingQueue.size() > 0) {
+            Job backfillJob = tailWaitingQueue.poll();
+
+            canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob);
+
+            if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
+                System.out.println("Succeed Backfill Job: " + backfillJob.getJobId() + ", at " + currentTime);
+
+                Collections.sort(canExecuteNodesEasyBackfiling);
+                ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
+                for (int i = 0; i < backfillJob.getRequiredNodes(); ++i) {
+                    assignNodesNo.add(canExecuteNodesEasyBackfiling.get(i).getNodeNo());
+                }
+
+                Iterator itr = waitingQueue.iterator();
+                while (itr.hasNext()) {
+                    Job deleteJob = (Job) itr.next();
+                    if (deleteJob.getJobId() == backfillJob.getJobId()) {
+                        itr.remove();
+                        break;
+                    }
+                }
+
+                int startTime = currentTime;
+                backfillJob.setStartTime(startTime);
+
+                makeTimeslices(startTime);
+                makeTimeslices(startTime, tmpTimeSlices);
+
+                int expectedEndTime = startTime + backfillJob.getRequiredTime();
+                makeTimeslices(expectedEndTime);
+                makeTimeslices(expectedEndTime, tmpTimeSlices);
+                backfillJob.setSpecifiedExecuteTime(expectedEndTime);
+
+                assignJob(startTime, backfillJob, assignNodesNo);
+                assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
+
+                int trueEndTime = startTime + backfillJob.getActualExecuteTime();
+                result.add(new Event(EventType.START, startTime, backfillJob));
+                result.add(new Event(EventType.END, trueEndTime, backfillJob));
+
+            }
+        }
+        
         return result;
     }
     
@@ -183,6 +185,7 @@ class EasyBackfilling extends Scheduler {
             if ( (ts.getStartTime() <= startTime && startTime < ts.getEndTime()) || 
                  (ts.getStartTime() < expectedEndTime && expectedEndTime <= ts.getEndTime()) ||
                  (startTime <= ts.getStartTime() && ts.getEndTime() <= expectedEndTime) ) {
+                ts.printTsInfo();
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     int freeCores = ts.getAvailableCores().get(j);
