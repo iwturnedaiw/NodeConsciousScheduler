@@ -176,7 +176,6 @@ public abstract class Scheduler {
         int jobId = job.getJobId();
         for (int i = 0; i < assignNodesNo.size(); ++i) {
             int nodeNo = assignNodesNo.get(i);
-            assert i == nodeNo;
            
             NodeInfo node = allNodesInfo.get(nodeNo);
             int numCores = node.getNumCores();
