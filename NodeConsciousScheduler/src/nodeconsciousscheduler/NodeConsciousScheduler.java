@@ -39,7 +39,7 @@ public class NodeConsciousScheduler {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        String fname = "gen02.swf";
+        String fname = "gen01.swf";
         //String fname = "short.swf";
         
         // Resoures Setting
@@ -80,8 +80,9 @@ public class NodeConsciousScheduler {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
         
+        ScheduleAlgorithm sche = EasyBackfilling;
         //sim = new Simulator(jobList, allNodesInfo, FCFS);
-        sim = new Simulator(jobList, allNodesInfo, EasyBackfilling);
+        sim = new Simulator(jobList, allNodesInfo, sche);
         sim.run();
 /*        
         PriorityQueue<Event> pq = new EventQueue();

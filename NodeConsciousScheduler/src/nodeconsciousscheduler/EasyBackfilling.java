@@ -301,7 +301,7 @@ class EasyBackfilling extends Scheduler {
         int size = allNodesInfo.size();
         for (int i = 0; i < size; ++i) {
             NodeInfo nodeInfo = allNodesInfo.get(i);
-            NodeInfo copiedNodeInfo = (NodeInfo) nodeInfo.clone();
+            NodeInfo copiedNodeInfo = cloneNodeInfo(nodeInfo);
             tmpAllNodesInfo.add(copiedNodeInfo);
         }
         assert tmpAllNodesInfo.size() == allNodesInfo.size();
@@ -311,6 +311,27 @@ class EasyBackfilling extends Scheduler {
 
     private void assignJobForTmp(int startTime, LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, Job backfillJob, ArrayList<Integer> assignNodesNo) {
         assignJob(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo, true);
+    }
+
+    private NodeInfo cloneNodeInfo(NodeInfo nodeInfo) {
+        NodeInfo copiedNodeInfo = nodeInfo.clone();
+
+        /* Set the occupiedCores*/
+        ArrayList<ArrayList<Integer>> orgOccupiedCores = nodeInfo.getOccupiedCores();
+        ArrayList<ArrayList<Integer>> occupiedCores = (ArrayList<ArrayList<Integer>>) orgOccupiedCores.clone();
+        occupiedCores.clear();
+        copiedNodeInfo.setOccupiedCores(occupiedCores);
+        
+        /* Set the element of occupiedCores */
+        int numCore = orgOccupiedCores.size();        
+        assert occupiedCores.size() == 0;
+        for (int j = 0; j < numCore; ++j) {
+            ArrayList<Integer> eachCore = (ArrayList<Integer>) orgOccupiedCores.get(j).clone();
+            occupiedCores.add(eachCore);
+        }
+        assert occupiedCores.size() == numCore;
+        
+        return copiedNodeInfo;
     }
 
 

@@ -183,11 +183,13 @@ public abstract class Scheduler {
             int coreCnt = addedPpn;
             int numOccupiedCores = node.getNumOccupiedCores() + addedPpn;
             int numFreeCores = node.getNumFreeCores() - addedPpn;
+            ArrayList<ArrayList<Integer>> occupiedCores = node.getOccupiedCores();
             for (int j = 0; j < numCores; ++j) {
-                if (node.getOccupiedCores().get(j) == Constants.UNUSED) {
-                    node.getOccupiedCores().set(j, jobId);                    
-                    --coreCnt;
-                }            
+                ArrayList<Integer> eachCore = occupiedCores.get(j);
+                if (eachCore.size() == 0) {
+                    eachCore.add(jobId);                    
+                    --coreCnt;                    
+                }
                 if (coreCnt == 0) break;
             }
             assert coreCnt == 0;
@@ -206,11 +208,14 @@ public abstract class Scheduler {
             ArrayList<Integer> coreNum = new ArrayList<Integer>();
             
             NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeNo);
-            ArrayList<Integer> occupiedCores = nodeInfo.getOccupiedCores();
+            ArrayList<ArrayList<Integer>> occupiedCores = nodeInfo.getOccupiedCores();
             for (int j = 0; j < occupiedCores.size(); ++j) {
-                int usingJobId = occupiedCores.get(j);
-                if (usingJobId == jobId) {
-                    coreNum.add(j);
+                ArrayList<Integer> eachCore = occupiedCores.get(j);
+                for (int k = 0; k < eachCore.size(); ++k) {
+                    int usingJobId = eachCore.get(k);
+                    if (usingJobId == jobId) {
+                        coreNum.add(j);
+                    }
                 }
             }
             

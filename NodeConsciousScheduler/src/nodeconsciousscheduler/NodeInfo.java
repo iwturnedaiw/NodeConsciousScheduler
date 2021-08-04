@@ -17,7 +17,7 @@ import java.util.ArrayList;
 public class NodeInfo implements Cloneable{
     private int nodeNum;
     private int numCores;
-    private ArrayList<Integer> occupiedCores;
+    private ArrayList<ArrayList<Integer>> occupiedCores;
     private int numOccupiedCores;
     private int numFreeCores;
     private int OCStateLevel;
@@ -26,7 +26,7 @@ public class NodeInfo implements Cloneable{
     NodeInfo(int nodeNum, int numCores) {
         this.nodeNum = nodeNum;
         this.numCores = numCores;
-        this.occupiedCores = new ArrayList<Integer>();
+        this.occupiedCores = new ArrayList<ArrayList<Integer>>();
         init();
         this.numOccupiedCores = 0;
         this.numFreeCores = numCores;
@@ -41,7 +41,7 @@ public class NodeInfo implements Cloneable{
         return numCores;
     }
 
-    public ArrayList<Integer> getOccupiedCores() {
+    public ArrayList<ArrayList<Integer>> getOccupiedCores() {
         return occupiedCores;
     }
 
@@ -65,7 +65,7 @@ public class NodeInfo implements Cloneable{
         this.numCores = numCores;
     }
 
-    public void setOccupiedCores(ArrayList<Integer> occupiedCores) {
+    public void setOccupiedCores(ArrayList<ArrayList<Integer>> occupiedCores) {
         this.occupiedCores = occupiedCores;
     }
 
@@ -83,7 +83,9 @@ public class NodeInfo implements Cloneable{
 
     private void init() {
         for (int i = 0; i < this.numCores; ++i) {
-            this.occupiedCores.add(Constants.UNUSED);
+            ArrayList<Integer> eachCore = new ArrayList<Integer>();
+            //jobIdList.add(Constants.UNUSED);
+            this.occupiedCores.add(eachCore);            
         }
  
     }
@@ -94,7 +96,11 @@ public class NodeInfo implements Cloneable{
         try {
             // Object型で返ってくるのでキャストが必要
             clonedItem = (NodeInfo)super.clone();
-            clonedItem.occupiedCores = (ArrayList<Integer>) this.getOccupiedCores().clone();
+            ArrayList<ArrayList<Integer>> copiedOccupiedCores = new ArrayList<ArrayList<Integer>>();
+            for (int i = 0; i < this.numCores; ++i) {
+                copiedOccupiedCores.add(this.getOccupiedCores().get(i));
+            }
+            clonedItem.occupiedCores = copiedOccupiedCores;            
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();
         }

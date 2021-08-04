@@ -100,10 +100,13 @@ class End implements EventHandler {
             nodeInfo.setNumOccupiedCores(numOccupiedCores);
             
             /* Each core */
-            ArrayList<Integer> occupiedCores = nodeInfo.getOccupiedCores();
+            ArrayList<ArrayList<Integer>> occupiedCores = nodeInfo.getOccupiedCores();
             for (int j = 0; j < nodeInfo.getNumCores(); ++j) {
-                if (occupiedCores.get(j) == jobId) {
-                    occupiedCores.set(j, Constants.UNUSED);
+                ArrayList<Integer> eachCore = occupiedCores.get(j);
+                for (int k = 0; k < eachCore.size(); ++k) {
+                    if (eachCore.get(k) == jobId) {
+                        eachCore.remove(k);
+                    }
                 }
             }
             // TODO:
