@@ -1,0 +1,473 @@
+Opening: data-set/gen01.swf.machines
+Opening job file at: data-set/gen01.swf
+Event type: SUBMIT
+size: 1, FCFS job: 1
+Event type: START
+Event type: SUBMIT
+size: 1, FCFS job: 2
+Event type: START
+Event type: SUBMIT
+size: 1, FCFS job: 3
+Event type: START
+Event type: SUBMIT
+size: 1, FCFS job: 4
+Event type: START
+Event type: SUBMIT
+size: 1, FCFS job: 5
+Event type: START
+Event type: SUBMIT
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Succeed Backfill Job: 12, at 0
+Event type: START
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: SUBMIT
+size: 1, firstJob: 6
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 36, at 1293
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 11, at 2936
+Succeed Backfill Job: 69, at 2936
+Event type: START
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 13, at 6155
+Succeed Backfill Job: 16, at 6155
+Event type: START
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 71, at 6346
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 56, at 7220
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 63, at 7494
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 21, at 7757
+Succeed Backfill Job: 66, at 7757
+Event type: START
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 23, at 8205
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 15, at 8267
+Succeed Backfill Job: 27, at 8267
+Event type: START
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 79, at 8909
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 76, at 9256
+Event type: START
+Event type: END
+size: 1, firstJob: 6
+Event type: END
+size: 1, firstJob: 6
+Event type: END
+size: 1, firstJob: 6
+Succeed Backfill Job: 38, at 10140
+Event type: START
+Event type: END
+size: 1, FCFS job: 6
+size: 1, firstJob: 7
+Event type: START
+Event type: END
+size: 1, firstJob: 7
+Succeed Backfill Job: 57, at 10409
+Event type: START
+Event type: END
+size: 1, firstJob: 7
+Succeed Backfill Job: 60, at 12658
+Event type: START
+Event type: END
+size: 1, firstJob: 7
+Succeed Backfill Job: 70, at 14081
+Event type: START
+Event type: END
+size: 1, firstJob: 7
+Event type: END
+size: 1, FCFS job: 7
+size: 1, firstJob: 8
+Event type: START
+Event type: END
+size: 1, FCFS job: 8
+size: 1, firstJob: 9
+Event type: START
+Event type: END
+size: 1, firstJob: 9
+Succeed Backfill Job: 65, at 17674
+Event type: START
+Event type: END
+size: 1, firstJob: 9
+Event type: END
+size: 1, firstJob: 9
+Succeed Backfill Job: 33, at 19195
+Event type: START
+Event type: END
+size: 1, firstJob: 9
+Succeed Backfill Job: 43, at 21285
+Event type: START
+Event type: END
+size: 1, firstJob: 9
+Event type: END
+size: 1, FCFS job: 9
+size: 1, firstJob: 10
+Event type: START
+Event type: END
+size: 1, FCFS job: 10
+size: 1, firstJob: 14
+Event type: START
+Event type: END
+size: 1, FCFS job: 14
+size: 1, firstJob: 17
+Event type: START
+Event type: END
+size: 1, FCFS job: 17
+size: 1, firstJob: 18
+Event type: START
+Event type: END
+size: 1, firstJob: 18
+Succeed Backfill Job: 20, at 29048
+Event type: START
+Event type: END
+size: 1, firstJob: 18
+Succeed Backfill Job: 22, at 34110
+Event type: START
+Event type: END
+size: 1, firstJob: 18
+Succeed Backfill Job: 29, at 35642
+Event type: START
+Event type: END
+size: 1, FCFS job: 18
+size: 1, firstJob: 19
+Event type: START
+Event type: END
+size: 1, FCFS job: 19
+size: 1, firstJob: 24
+Event type: START
+Event type: END
+size: 1, FCFS job: 24
+size: 1, firstJob: 25
+Event type: START
+Event type: END
+size: 1, firstJob: 25
+Succeed Backfill Job: 34, at 41281
+Event type: START
+Event type: END
+size: 1, firstJob: 25
+Succeed Backfill Job: 47, at 41673
+Event type: START
+Event type: END
+size: 1, firstJob: 25
+Succeed Backfill Job: 59, at 43206
+Event type: START
+Event type: END
+size: 1, firstJob: 25
+Event type: END
+size: 1, FCFS job: 25
+size: 1, firstJob: 26
+Event type: START
+Event type: END
+size: 1, FCFS job: 26
+size: 1, firstJob: 28
+Event type: START
+Event type: END
+size: 1, FCFS job: 28
+size: 1, firstJob: 30
+Event type: START
+Event type: END
+size: 1, FCFS job: 30
+size: 1, firstJob: 31
+Event type: START
+Event type: END
+size: 1, FCFS job: 31
+size: 1, FCFS job: 32
+size: 1, firstJob: 35
+Event type: START
+Event type: START
+Event type: END
+size: 1, FCFS job: 35
+size: 1, firstJob: 37
+Succeed Backfill Job: 42, at 59652
+Event type: START
+Event type: START
+Event type: END
+size: 1, FCFS job: 37
+size: 1, firstJob: 39
+Event type: START
+Event type: END
+size: 1, firstJob: 39
+Event type: END
+size: 1, FCFS job: 39
+size: 1, firstJob: 40
+Event type: START
+Event type: END
+size: 1, FCFS job: 40
+size: 1, firstJob: 41
+Event type: START
+Event type: END
+size: 1, FCFS job: 41
+size: 1, firstJob: 44
+Succeed Backfill Job: 46, at 64569
+Event type: START
+Event type: START
+Event type: END
+size: 1, firstJob: 44
+Succeed Backfill Job: 51, at 66464
+Event type: START
+Event type: END
+size: 1, firstJob: 44
+Event type: END
+size: 1, FCFS job: 44
+size: 1, firstJob: 45
+Event type: START
+Event type: END
+size: 1, FCFS job: 45
+size: 1, firstJob: 48
+Event type: START
+Event type: END
+size: 1, FCFS job: 48
+size: 1, firstJob: 49
+Event type: START
+Event type: END
+size: 1, FCFS job: 49
+size: 1, firstJob: 50
+Event type: START
+Event type: END
+size: 1, firstJob: 50
+Event type: END
+size: 1, FCFS job: 50
+size: 1, firstJob: 52
+Event type: START
+Event type: END
+size: 1, FCFS job: 52
+size: 1, firstJob: 53
+Event type: START
+Event type: END
+size: 1, FCFS job: 53
+size: 1, firstJob: 54
+Succeed Backfill Job: 61, at 83760
+Event type: START
+Event type: START
+Event type: END
+size: 1, FCFS job: 54
+size: 1, firstJob: 55
+Event type: START
+Event type: END
+size: 1, firstJob: 55
+Succeed Backfill Job: 62, at 89272
+Event type: START
+Event type: END
+size: 1, firstJob: 55
+Succeed Backfill Job: 68, at 89459
+Event type: START
+Event type: END
+size: 1, FCFS job: 55
+size: 1, firstJob: 58
+Event type: START
+Event type: END
+size: 1, firstJob: 58
+Succeed Backfill Job: 72, at 95317
+Event type: START
+Event type: END
+size: 1, FCFS job: 58
+size: 1, firstJob: 64
+Event type: START
+Event type: END
+size: 1, FCFS job: 64
+size: 1, firstJob: 67
+Event type: START
+Event type: END
+size: 1, FCFS job: 67
+size: 1, firstJob: 73
+Event type: START
+Event type: END
+size: 1, FCFS job: 73
+size: 1, firstJob: 74
+Event type: START
+Event type: END
+size: 1, FCFS job: 74
+size: 1, firstJob: 75
+Event type: START
+Event type: END
+size: 1, firstJob: 75
+Event type: END
+size: 1, FCFS job: 75
+size: 1, firstJob: 77
+Event type: START
+Event type: END
+size: 1, FCFS job: 77
+size: 1, firstJob: 78
+Event type: START
+Event type: END
+size: 1, FCFS job: 78
+Event type: START
+Event type: END
+size: 1, FCFS job: 80
+Event type: START
+Event type: END
+Event type: END
+	n1c32	OK
