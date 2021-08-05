@@ -75,7 +75,7 @@ class EasyBackfilling extends Scheduler {
         /* Find tempollary executable nodes */
         for (int i = 0; i < timeSlices.size(); ++i) {
             TimeSlice ts = timeSlices.get(i);
-            ts.printTsInfo();
+            //ts.printTsInfo();
             int tmpStartTime = ts.getStartTime();
             if (tmpStartTime < currentTime) {
                 continue;
@@ -185,7 +185,7 @@ class EasyBackfilling extends Scheduler {
             if ( (ts.getStartTime() <= startTime && startTime < ts.getEndTime()) || 
                  (ts.getStartTime() < expectedEndTime && expectedEndTime <= ts.getEndTime()) ||
                  (startTime <= ts.getStartTime() && ts.getEndTime() <= expectedEndTime) ) {
-                ts.printTsInfo();
+                //ts.printTsInfo();
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     int freeCores = ts.getAvailableCores().get(j);

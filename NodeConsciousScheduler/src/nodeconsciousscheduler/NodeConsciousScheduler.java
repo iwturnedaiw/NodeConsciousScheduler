@@ -39,7 +39,7 @@ public class NodeConsciousScheduler {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        String fname = "gen01.swf";
+        String fname = "gen02.swf";
         //String fname = "short.swf";
         
         // Resoures Setting
