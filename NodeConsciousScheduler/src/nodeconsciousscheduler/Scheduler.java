@@ -227,6 +227,90 @@ public abstract class Scheduler {
     protected void assignJob(int startTime, Job job, ArrayList<Integer> assignNodesNo) {
         assignJob(startTime, this.timeSlices, NodeConsciousScheduler.sim.getAllNodesInfo(), job, assignNodesNo, false);       
     }
+
+    protected void assignJobOC(int startTime, LinkedList<TimeSlice> timeSlices, ArrayList<NodeInfo> allNodesInfo, Job job, ArrayList<Integer> assignNodesNo, boolean tmpFlag) {
+        int addedPpn = job.getRequiredCores()/job.getRequiredNodes();
+        int expectedEndTime = startTime + job.getRequiredTime();
+
+        /* TODO: The case requiredCores ist not dividable  */
+        if (job.getRequiredCores()%job.getRequiredNodes() != 0) {
+            ++addedPpn;
+            System.out.println("Not dividable, Job ID = " + job.getJobId());
+        }
+
+        
+        /* Timesleces' setting */
+        for (int i = 0; i < timeSlices.size(); ++i) {
+            TimeSlice ts = timeSlices.get(i);
+//            ts.printTsInfo();
+            //if (startTime <= ts.getEndTime() && ts.getStartTime() <= expectedEndTime) {
+            if (startTime <= ts.getEndTime() && ts.getStartTime() < expectedEndTime) {
+                ArrayList<Integer> cores = ts.getAvailableCores();
+                for (int j = 0; j < assignNodesNo.size(); ++j) {
+                    int nodeNo = assignNodesNo.get(j);
+                    int core = cores.get(nodeNo);
+                    core -= addedPpn;
+                    cores.set(nodeNo, core);
+                }
+            }
+//            ts.printTsInfo();
+        }
+        
+        /* NodeInfo Setting */
+        int jobId = job.getJobId();
+        for (int i = 0; i < assignNodesNo.size(); ++i) {
+            int nodeNo = assignNodesNo.get(i);
+           
+            NodeInfo node = allNodesInfo.get(nodeNo);
+            int numCores = node.getNumCores();
+            
+            int coreCnt = addedPpn;
+            int numOccupiedCores = node.getNumOccupiedCores() + addedPpn;
+            int numFreeCores = node.getNumFreeCores() - addedPpn;
+
+            /* ここがダメ。入れ子配列の要素数順にsortしたい。単なる要素じゃなくクラス化したほうがよい */
+            ArrayList<ArrayList<Integer>> occupiedCores = node.getOccupiedCores();
+            
+            for (int j = 0; j < numCores; ++j) {
+                ArrayList<Integer> eachCore = occupiedCores.get(j);
+                // 下のifも不要
+                if (eachCore.size() == 0) {
+                    eachCore.add(jobId);                    
+                    --coreCnt;                    
+                }
+                if (coreCnt == 0) break;
+            }
+            assert coreCnt == 0;
+
+            node.setNumOccupiedCores(numOccupiedCores);
+            node.setNumFreeCores(numFreeCores);
+            
+        }
+        
+        /* Job Setting */
+        if (tmpFlag) return;
+        ArrayList<UsingNodes> nodes = job.getUsingNodesList();
+
+        for (int i = 0; i < assignNodesNo.size(); ++i) {
+            int nodeNo = assignNodesNo.get(i);
+            ArrayList<Integer> coreNum = new ArrayList<Integer>();
+            
+            NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeNo);
+            ArrayList<ArrayList<Integer>> occupiedCores = nodeInfo.getOccupiedCores();
+            for (int j = 0; j < occupiedCores.size(); ++j) {
+                ArrayList<Integer> eachCore = occupiedCores.get(j);
+                for (int k = 0; k < eachCore.size(); ++k) {
+                    int usingJobId = eachCore.get(k);
+                    if (usingJobId == jobId) {
+                        coreNum.add(j);
+                    }
+                }
+            }
+            
+            UsingNodes node = new UsingNodes(nodeNo, addedPpn, coreNum);
+            nodes.add(node);
+        }
+    }
     
 }
 

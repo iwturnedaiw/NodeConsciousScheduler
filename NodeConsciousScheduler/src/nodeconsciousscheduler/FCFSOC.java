@@ -7,58 +7,14 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import static nodeconsciousscheduler.Constants.NOT_BREAK;
 
 /**
  *
  * @author sminami
  */
-class FCFS extends Scheduler {
-    FCFS() {
-        init();
-    }
-
+public class FCFSOC extends FCFS {
     @Override
-    protected ArrayList<Event> scheduleJobsStartAt(int currentTime) {
-        ArrayList<Event> result = new ArrayList<Event>();
-        while (!waitingQueue.isEmpty()) {
-            Job job = waitingQueue.peek();
-            
-            ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
-            if (canExecuteNodes.size() >= job.getRequiredNodes()) {
-                Collections.sort(canExecuteNodes);
-                ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
-                for (int i = 0; i < job.getRequiredNodes(); ++i) {
-                    assignNodesNo.add(canExecuteNodes.get(i).getNodeNo());
-                }
-
-                waitingQueue.poll();
-                int startTime = currentTime;
-                job.setStartTime(startTime);
-                makeTimeslices(startTime);
-                
-                int expectedEndTime = startTime + job.getRequiredTime();
-                makeTimeslices(expectedEndTime);
-                job.setSpecifiedExecuteTime(expectedEndTime);
-
-                assignJob(startTime, job, assignNodesNo);
-
-                int trueEndTime = startTime + job.getActualExecuteTime();                
-                result.add(new Event(EventType.START, startTime, job));
-                result.add(new Event(EventType.END, trueEndTime, job));
-            } else break;
-        }
-        return result;
-    }
-
     protected ArrayList<VacantNode> canExecutableNodesImmediately(int currentTime, Job job) {
         /* Return variable
            This have the node no. with # of free core.
@@ -92,7 +48,9 @@ class FCFS extends Scheduler {
                     int cores = node.getFreeCores();
                     node.setFreeCores(freeCores + cores);
 
-                    if (freeCores >= requiredCoresPerNode ) {
+                    int numCore = ts.getPpn();
+//                    if (freeCores >= requiredCoresPerNode ) {
+                    if (freeCores - requiredCoresPerNode >= -numCore) {
                         int cnt = vacantNodeCount.get(j);
                         vacantNodeCount.set(j, ++cnt);
                     }

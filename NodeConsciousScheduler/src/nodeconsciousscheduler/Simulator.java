@@ -81,6 +81,8 @@ public class Simulator {
             this.sche = new FCFS();
         } else if (scheAlgo == ScheduleAlgorithm.EasyBackfilling) {
             this.sche = new EasyBackfilling();
+        } else if (scheAlgo == ScheduleAlgorithm.FCFSOC) {
+            this.sche = new FCFSOC();
         }
         /*
         } else if (scheAlgo == ScheduleAlgorithm.ConservativeBackfiling) {
