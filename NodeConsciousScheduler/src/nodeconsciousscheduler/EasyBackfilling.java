@@ -317,8 +317,8 @@ class EasyBackfilling extends Scheduler {
         NodeInfo copiedNodeInfo = nodeInfo.clone();
 
         /* Set the occupiedCores*/
-        ArrayList<ArrayList<Integer>> orgOccupiedCores = nodeInfo.getOccupiedCores();
-        ArrayList<ArrayList<Integer>> occupiedCores = (ArrayList<ArrayList<Integer>>) orgOccupiedCores.clone();
+        ArrayList<CoreInfo> orgOccupiedCores = nodeInfo.getOccupiedCores();
+        ArrayList<CoreInfo> occupiedCores = (ArrayList<CoreInfo>) orgOccupiedCores.clone();
         occupiedCores.clear();
         copiedNodeInfo.setOccupiedCores(occupiedCores);
         
@@ -326,7 +326,7 @@ class EasyBackfilling extends Scheduler {
         int numCore = orgOccupiedCores.size();        
         assert occupiedCores.size() == 0;
         for (int j = 0; j < numCore; ++j) {
-            ArrayList<Integer> eachCore = (ArrayList<Integer>) orgOccupiedCores.get(j).clone();
+            CoreInfo eachCore = (CoreInfo) orgOccupiedCores.get(j).clone();
             occupiedCores.add(eachCore);
         }
         assert occupiedCores.size() == numCore;

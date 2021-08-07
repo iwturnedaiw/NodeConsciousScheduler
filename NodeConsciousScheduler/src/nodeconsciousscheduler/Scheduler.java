@@ -7,6 +7,7 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
 import static nodeconsciousscheduler.Constants.NOT_BREAK;
@@ -183,11 +184,12 @@ public abstract class Scheduler {
             int coreCnt = addedPpn;
             int numOccupiedCores = node.getNumOccupiedCores() + addedPpn;
             int numFreeCores = node.getNumFreeCores() - addedPpn;
-            ArrayList<ArrayList<Integer>> occupiedCores = node.getOccupiedCores();
+            ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
             for (int j = 0; j < numCores; ++j) {
-                ArrayList<Integer> eachCore = occupiedCores.get(j);
-                if (eachCore.size() == 0) {
-                    eachCore.add(jobId);                    
+                CoreInfo eachCore = occupiedCores.get(j);
+                ArrayList<Integer> jobList = eachCore.getJobList();
+                if (jobList.size() == 0) {
+                    jobList.add(jobId);                    
                     --coreCnt;                    
                 }
                 if (coreCnt == 0) break;
@@ -208,11 +210,12 @@ public abstract class Scheduler {
             ArrayList<Integer> coreNum = new ArrayList<Integer>();
             
             NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeNo);
-            ArrayList<ArrayList<Integer>> occupiedCores = nodeInfo.getOccupiedCores();
+            ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
             for (int j = 0; j < occupiedCores.size(); ++j) {
-                ArrayList<Integer> eachCore = occupiedCores.get(j);
-                for (int k = 0; k < eachCore.size(); ++k) {
-                    int usingJobId = eachCore.get(k);
+                CoreInfo eachCore = occupiedCores.get(j);
+                ArrayList<Integer> jobList = eachCore.getJobList();
+                for (int k = 0; k < jobList.size(); ++k) {
+                    int usingJobId = jobList.get(k);
                     if (usingJobId == jobId) {
                         coreNum.add(j);
                     }
@@ -269,13 +272,14 @@ public abstract class Scheduler {
             int numFreeCores = node.getNumFreeCores() - addedPpn;
 
             /* ここがダメ。入れ子配列の要素数順にsortしたい。単なる要素じゃなくクラス化したほうがよい */
-            ArrayList<ArrayList<Integer>> occupiedCores = node.getOccupiedCores();
+            ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
             
             for (int j = 0; j < numCores; ++j) {
-                ArrayList<Integer> eachCore = occupiedCores.get(j);
+                CoreInfo eachCore = occupiedCores.get(j);
+                ArrayList<Integer> jobList = eachCore.getJobList();
                 // 下のifも不要
-                if (eachCore.size() == 0) {
-                    eachCore.add(jobId);                    
+                if (jobList.size() == 0) {
+                    jobList.add(jobId);                    
                     --coreCnt;                    
                 }
                 if (coreCnt == 0) break;
@@ -295,12 +299,13 @@ public abstract class Scheduler {
             int nodeNo = assignNodesNo.get(i);
             ArrayList<Integer> coreNum = new ArrayList<Integer>();
             
-            NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeNo);
-            ArrayList<ArrayList<Integer>> occupiedCores = nodeInfo.getOccupiedCores();
+            NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeNo);           
+            ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
             for (int j = 0; j < occupiedCores.size(); ++j) {
-                ArrayList<Integer> eachCore = occupiedCores.get(j);
-                for (int k = 0; k < eachCore.size(); ++k) {
-                    int usingJobId = eachCore.get(k);
+                CoreInfo eachCore = occupiedCores.get(j); 
+                ArrayList jobList = eachCore.getJobList();
+                for (int k = 0; k < jobList.size(); ++k) {
+                    int usingJobId = (int) jobList.get(k);
                     if (usingJobId == jobId) {
                         coreNum.add(j);
                     }
