@@ -34,12 +34,18 @@ public class NodeConsciousScheduler {
     static Simulator sim;
     static int numNodes;
     static int numCores;
+    static String fname = "gen01.swf";
+    static ScheduleAlgorithm sche = EasyBackfilling;
     
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        String fname = "gen02.swf";
+        if (args.length == 2){
+            fname = args[0];
+            sche = ScheduleAlgorithm.valueOf(args[1]);
+        }
+        //fname = "gen01.swf";
         //String fname = "short.swf";
         
         // Resoures Setting
@@ -80,7 +86,7 @@ public class NodeConsciousScheduler {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
         
-        ScheduleAlgorithm sche = EasyBackfilling;
+        //ScheduleAlgorithm sche = EasyBackfilling;
         //sim = new Simulator(jobList, allNodesInfo, FCFS);
         sim = new Simulator(jobList, allNodesInfo, sche);
         sim.run();
