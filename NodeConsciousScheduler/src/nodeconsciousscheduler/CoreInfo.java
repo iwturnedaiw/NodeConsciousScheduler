@@ -12,7 +12,7 @@ import java.util.ArrayList;
  *
  * @author sminami
  */
-public class CoreInfo implements Cloneable {
+public class CoreInfo implements Cloneable, Comparable<CoreInfo> {
     private int coreId;
     private ArrayList<Integer> jobList;
 
@@ -39,6 +39,21 @@ public class CoreInfo implements Cloneable {
         }
         return clonedItem;
     }
+     
+    @Override
+    public int compareTo(CoreInfo o) {
+        if (this.jobList.size() > o.jobList.size()) {
+            return 1;
+        }
+        if (this.jobList.size() < o.jobList.size()) {
+            return -1;
+        }
+        if (this.coreId > o.coreId) {
+            return 1;            
+        }
+        return -1;        
+    }
+    
 
     public int getCoreId() {
         return coreId;

@@ -8,6 +8,7 @@ package nodeconsciousscheduler;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 import static nodeconsciousscheduler.Constants.NOT_BREAK;
@@ -185,13 +186,20 @@ public abstract class Scheduler {
             int numOccupiedCores = node.getNumOccupiedCores() + addedPpn;
             int numFreeCores = node.getNumFreeCores() - addedPpn;
             ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
+            Collections.sort(occupiedCores);
             for (int j = 0; j < numCores; ++j) {
                 CoreInfo eachCore = occupiedCores.get(j);
                 ArrayList<Integer> jobList = eachCore.getJobList();
+                /*
                 if (jobList.size() == 0) {
                     jobList.add(jobId);                    
                     --coreCnt;                    
                 }
+                */
+
+                jobList.add(jobId);                    
+                --coreCnt;                    
+                
                 if (coreCnt == 0) break;
             }
             assert coreCnt == 0;
@@ -214,12 +222,14 @@ public abstract class Scheduler {
             for (int j = 0; j < occupiedCores.size(); ++j) {
                 CoreInfo eachCore = occupiedCores.get(j);
                 ArrayList<Integer> jobList = eachCore.getJobList();
+                int coreId = eachCore.getCoreId();
                 for (int k = 0; k < jobList.size(); ++k) {
                     int usingJobId = jobList.get(k);
                     if (usingJobId == jobId) {
-                        coreNum.add(j);
+                        coreNum.add(coreId);
                     }
                 }
+                Collections.sort(coreNum);
             }
             
             UsingNodes node = new UsingNodes(nodeNo, addedPpn, coreNum);
