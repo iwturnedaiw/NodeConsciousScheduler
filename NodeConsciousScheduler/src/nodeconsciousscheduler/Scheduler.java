@@ -229,7 +229,7 @@ public abstract class Scheduler {
                         coreNum.add(coreId);
                     }
                 }
-                Collections.sort(coreNum);
+                // Collections.sort(coreNum);
             }
             
             UsingNodes node = new UsingNodes(nodeNo, addedPpn, coreNum);
