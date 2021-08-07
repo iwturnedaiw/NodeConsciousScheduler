@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -177,6 +178,7 @@ public class Simulator {
                 + slowdown + "\t" + numCores + "\t" + numNodes + "\t");
         
         ArrayList<UsingNodes> usingNodesList = job.getUsingNodesList();
+        Collections.sort(usingNodesList);
         for (int i = 0; i < numNodes; ++i) {
             UsingNodes usingNode = usingNodesList.get(i);
             int nodeNo = usingNode.getNodeNum();

@@ -12,7 +12,7 @@ import java.util.ArrayList;
  *
  * @author sminami
  */
-public class UsingNodes {
+public class UsingNodes implements Comparable<UsingNodes>{
     int nodeNum;
     int numUsingCores;
     ArrayList<Integer> usingCoreNum;
@@ -29,6 +29,17 @@ public class UsingNodes {
         this.usingCoreNum = (ArrayList<Integer>) coreNum.clone();
     }
 
+    @Override
+    public int compareTo(UsingNodes o) {
+        if (this.nodeNum > o.nodeNum) {
+            return 1;
+        }
+        if (this.nodeNum < o.nodeNum) {
+            return -1;
+        }
+        return 0;
+    }
+    
     public int getNodeNum() {
         return nodeNum;
     }
