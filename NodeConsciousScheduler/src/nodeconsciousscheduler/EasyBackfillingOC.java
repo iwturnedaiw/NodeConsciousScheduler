@@ -6,6 +6,7 @@
 
 package nodeconsciousscheduler;
 
+import static java.lang.Math.min;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -24,17 +25,18 @@ public class EasyBackfillingOC extends EasyBackfilling {
         
         /* Working Variable */
         ArrayList<VacantNode> vacantNodes = new ArrayList<VacantNode>();
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, 0));
-        
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+
         /* This is used for counting executable nodes */
         ArrayList<Integer> vacantNodeCount = new ArrayList<Integer>();
         for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodeCount.add(0);
-
+        
         /* Calculate ppn */
         /* TODO: The case requiredCores ist not dividable  */
         int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
         if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
-        
+
+        int jobId = job.getJobId();
         int startTime = currentTime;
         int expectedEndTime = startTime + job.getRequiredTime();
         int alongTimeSlices = 0;
@@ -52,8 +54,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     
                     assert node.getNodeNo() == j;
 
-                    int cores = node.getFreeCores();
-                    node.setFreeCores(freeCores + cores);
+                    freeCores = min(freeCores, node.getFreeCores());
+                    node.setFreeCores(freeCores);
 
                     int numCore = ts.getPpn();
 //                    if (freeCores >= requiredCoresPerNode ) {
@@ -67,11 +69,13 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
         if (alongTimeSlices == 0) return nodes;
 
+        /*
         for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
             VacantNode node = vacantNodes.get(i);
             int freeCores = node.getFreeCores();
             node.setFreeCores(freeCores/alongTimeSlices);
         }
+        */
 
         /* If cnt == alongTimeSlices, the job is executable on the nodes along the timeSlices */        
         for (int i = 0; i < vacantNodeCount.size(); ++i) {
