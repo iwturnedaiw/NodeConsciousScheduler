@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import csv
 import re
+import sys
 
 def file_open(file_name):
     
@@ -12,11 +13,11 @@ def file_open(file_name):
 def parse(input, num_core):
     # cores = re.search(r'\d+', input)
     cores = re.findall('\((.*)\)', input)
-    print(cores)
+    #print(cores)
     row = cores[0].split(',')
     #print(row)
     for r in range(len(row)):
-      r_int = int(r)
+      r_int = int(row[r])
       r_int %= num_core
       row[r] = str(r_int)
     #print(row)
@@ -34,11 +35,17 @@ def compare(master, input, num_core):
             #print(r_master[c])
             #print(i_master[c])
             if r_master[c] != r_input[c]:
+              print("Diff at row:", r, ", col:", c)
+              print("<", r_master)
+              print(">", r_input)
               return False
           elif c >= 9 and r != 0 and r_master[c] != '':
             r_master_parsed = parse(r_master[c], num_core)
             r_input_parsed = parse(r_input[c], num_core)
             if r_master_parsed != r_input_parsed:
+              print("Diff at row:", r, ", col:", c)
+              print("<", r_master)
+              print(">", r_input)
               return False
     return True
 
@@ -48,9 +55,19 @@ def main(master_file, input_file, num_core):
     f_input = file_open(input_file)
 
     ret = compare(f_master, f_input, num_core)
-    print(ret)
+    return ret
 
 
 if __name__ == "__main__" :
-    main("master/FCFS/short/n4c64/test.out", "master/FCFSOC/short/n4c32/test.out", 32)
+    argv = sys.argv
+    argc = len(argv)
+    if argc != 4:
+      print("Must set the arguments")
+      exit(1)
+    else:
+      master = argv[1]
+      input = argv[2]
+      num_core = int(argv[3])
+    #main(master, input, num_core)
+    main("master/FCFS/short1/n4c64/test.out", "master/FCFSOC/short1/n4c32/test.out", 32)
 
