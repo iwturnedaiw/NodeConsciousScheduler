@@ -157,7 +157,7 @@ class EasyBackfilling extends Scheduler {
         return canExecutableNodesAt(currentTime, this.timeSlices, job);
     }
    
-    private ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job) {
+    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job) {
         /* Return variable
            This have the node no. with # of free core.
         */
