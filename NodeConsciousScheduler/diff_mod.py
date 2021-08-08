@@ -11,8 +11,18 @@ def file_open(file_name):
     return read_data;
 
 def parse(input, num_core):
+    # cores = re.search(r'\d+', input)
     node_num = re.search('\d+', input)
-    return int(node_num[0])
+    cores = re.findall('\((.*)\)', input)
+    #print(cores)
+    row = cores[0].split(',')
+    #print(row)
+    for r in range(len(row)):
+      r_int = int(row[r])
+      r_int %= num_core
+      row[r] = str(r_int)
+    #print(row)
+    return row, int(node_num[0])
 
 def compare(master, input, num_core):
     ret = True
@@ -32,9 +42,14 @@ def compare(master, input, num_core):
               print(">", r_input)
               ret = False
           elif c >= 9 and r != 0 and r_master[c] != '':
-            node_num_master  = parse(r_master[c], num_core)
-            node_num_input = parse(r_input[c], num_core)
+            r_master_parsed, node_num_master  = parse(r_master[c], num_core)
+            r_input_parsed, node_num_input = parse(r_input[c], num_core)
             if node_num_master != node_num_input:
+              print("Diff at row:", r, ", col:", c)
+              print("<", r_master)
+              print(">", r_input)
+              ret = False
+            if r_master_parsed != r_input_parsed:
               print("Diff at row:", r, ", col:", c)
               print("<", r_master)
               print(">", r_input)
