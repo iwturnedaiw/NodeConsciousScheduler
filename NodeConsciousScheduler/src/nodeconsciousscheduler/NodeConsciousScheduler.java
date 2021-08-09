@@ -34,6 +34,7 @@ public class NodeConsciousScheduler {
     static Simulator sim;
     static int numNodes;
     static int numCores;
+    static int M = 2;
     static String fname = "gen01.swf";
     static ScheduleAlgorithm sche = EasyBackfilling;
     
@@ -41,7 +42,11 @@ public class NodeConsciousScheduler {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        if (args.length == 2){
+        if (args.length == 3){
+            fname = args[0];
+            sche = ScheduleAlgorithm.valueOf(args[1]);
+            M = Integer.parseInt(args[2]);
+        } else if (args.length == 2) {
             fname = args[0];
             sche = ScheduleAlgorithm.valueOf(args[1]);
         }

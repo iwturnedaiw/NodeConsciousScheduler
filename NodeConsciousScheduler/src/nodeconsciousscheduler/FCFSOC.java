@@ -51,7 +51,7 @@ public class FCFSOC extends FCFS {
 
                     int numCore = ts.getPpn();
 //                    if (freeCores >= requiredCoresPerNode ) {
-                    if (freeCores - requiredCoresPerNode >= -numCore) {
+                    if (freeCores - requiredCoresPerNode >= -(NodeConsciousScheduler.M-1)*numCore) {
                         int cnt = vacantNodeCount.get(j);
                         vacantNodeCount.set(j, ++cnt);
                     }
