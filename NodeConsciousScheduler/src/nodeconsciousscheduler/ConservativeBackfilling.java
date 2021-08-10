@@ -10,9 +10,9 @@ package nodeconsciousscheduler;
  *
  * @author sminami
  */
-public class Constants {
-    static int UNUSED = -1;
-    static int UNUPDATED = -1;
-    static int TS_ENDTIME = 1 << 30;
-    static int CANNOT_START = -1;
+class ConservativeBackfilling {
+
+    public ConservativeBackfilling() {
+    }
+    
 }

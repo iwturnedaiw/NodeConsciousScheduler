@@ -7,6 +7,7 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.PriorityQueue;
 
 /**
@@ -48,6 +49,8 @@ public class EventQueue extends PriorityQueue {
             evh = new End();
 //            System.out.println("size: " + this.size());
 //            System.out.println("jobId: " + ev.getJob().getJobId());
+        } else if (evt == EventType.DELETE) {
+            evh = new Delete();
         }
         
         assert evh != null;
@@ -58,6 +61,26 @@ public class EventQueue extends PriorityQueue {
             this.add(e);            
         }
 
+    }
+
+    void deleteEvent(Event ev) {
+        Iterator itr = this.iterator();
+        
+        Job job = ev.getJob();
+        int jobId = job.getJobId();
+        int deleteCnt = 0;
+        while(itr.hasNext()) {
+            Event candidateEvent = (Event) itr.next();
+            Job candidateJob = candidateEvent.getJob();
+            int candidateJobId = candidateJob.getJobId();
+            if (jobId == candidateJobId) {
+                itr.remove();
+                ++deleteCnt;
+                break;
+            }
+        }
+        assert deleteCnt == 1;
+        return;
     }
 }
 

@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import static nodeconsciousscheduler.Constants.UNUPDATED;
 
 /**
  *
@@ -45,6 +46,7 @@ public class FCFSOC extends FCFS {
                     makeTimeslices(expectedEndTime);
                     job.setSpecifiedExecuteTime(expectedEndTime);
 
+                    job.setOCStateLevel(OCStateLevelForJob);
                     assignJob(startTime, job, assignNodesNo);
 
                     int trueEndTime = startTime + job.getActualExecuteTime();
@@ -59,6 +61,9 @@ public class FCFSOC extends FCFS {
                     /* For victim jobs */                    
                     ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
 
+                    /* Clear TimeSlece after currentTime */
+                    clearTimeSliceAfter(currentTime);
+                    
                     /* TODO: reduce cost from O(N^2) to O(N) */
                     /*       Now, O(N^2) */
                     for (int victimJobId : victimJobs) {
@@ -67,33 +72,39 @@ public class FCFSOC extends FCFS {
                             Job candidateJob = executingJobList.get(i);
                             int candidateId = candidateJob.getJobId();
                             if (victimJobId == candidateId) {
-                                // この時点での時間の確定
-                                measureCurrentExecutingTime(currentTime, candidateJob);
-                                // 新たな時間を求めて、イベントを投げる
-                                calculateNewActualEndTime(candidateJob);
-                                // 時分割に叩き込む
-                                modifyTimeSlices(candidateJob);
-                                // usingNodeを修正する (いや、不要だ)
-                                // あとは？
+                                // Measure the executing time at this time
+                                measureCurrentExecutingTime(currentTime, candidateJob, OCStateLevelForJob);
+                                candidateJob.setOCStateLevel(OCStateLevelForJob);
+                                // Calculate the new actual end time and throw new event
+                                int trueEndTime = calculateNewActualEndTime(currentTime, candidateJob);
+                                result.add(new Event(EventType.END, trueEndTime, candidateJob));        
+                                result.add(new Event(EventType.DELETE, currentTime, candidateJob));
                             }
+                            // Refresh TimeSlices.
+                            // Add the timeslices for all executing jobs
+                            int expectedEndTime = calculateNewExpectedEndTime(currentTime, candidateJob);
+                            makeTimeslices(currentTime);
+                            makeTimeslices(expectedEndTime);
+                            assignJobForOnlyTimeSlices(currentTime, candidateJob, expectedEndTime);
+
+                            // Modify the usingNode? No, it's unneeded.
+                            // Anything else?     
                         }
                         assert i != executingJobList.size() + 1;
-
                     }
 
                     /* For opponent job */
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForJob;
-                    int expectedEndTime = startTime + job.getRequiredTime();
+                    int expectedEndTime = calculateNewExpectedEndTime(startTime, job);
                     makeTimeslices(expectedEndTime);
                     job.setSpecifiedExecuteTime(expectedEndTime);
 
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForJob;
-                    int trueEndTime = startTime + job.getActualExecuteTime();
+                    int trueEndTime = calculateNewActualEndTime(startTime, job);;
                     result.add(new Event(EventType.START, startTime, job));
-                    result.add(new Event(EventType.END, trueEndTime, job));
-                    
+                    result.add(new Event(EventType.END, trueEndTime, job));                    
                 }
             } else break;
         }
@@ -234,15 +245,130 @@ public class FCFSOC extends FCFS {
         return victimJobs;
     }
 
-    private void measureCurrentExecutingTime(int currentTime, Job candidateJob) {
+    private void measureCurrentExecutingTime(int currentTime, Job victimJob, int OCStateLevel) {
+        int currentOCStateLevel = victimJob.getOCStateLevel();
+        
+        /* measure current progress */
+        int previousSwitchedTime = victimJob.getPreviousSwitchedTime();
+        // TODO: should be double, but now int.
+        int cpuTimeForNow = victimJob.getCpuTimeForNow();
+        int realDeltaTime = currentTime - previousSwitchedTime;
+        cpuTimeForNow += realDeltaTime/currentOCStateLevel;
+        victimJob.setCpuTimeForNow(cpuTimeForNow);
+        
+        if (OCStateLevel == 1) victimJob.setRunningTimeDed(realDeltaTime);
+        else victimJob.setRunningTimeOC(realDeltaTime);
+        
         return;
     }
 
-    private void calculateNewActualEndTime(Job candidateJob) {
-        return;
+    private int calculateNewActualEndTime(Job victimJob) {
+        int startTime = victimJob.getStartTime();
+        return calculateNewActualEndTime(startTime, victimJob);
     }
 
+    private int calculateNewActualEndTime(int startTime, Job victimJob) {        
+        /* calculate new actual End Time */
+        int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
+        int cpuTimeForNow = victimJob.getCpuTimeForNow();
+        int actualExecuteTime = victimJob.getActualExecuteTime();
+        int restActualExecuteTime = (actualExecuteTime - cpuTimeForNow)*currentOCStateLevel;
+        int trueEndTime = startTime + restActualExecuteTime;
+
+        return trueEndTime;        
+    }
+    
     private void modifyTimeSlices(Job candidateJob) {
         return;
+    }
+
+    private void clearTimeSliceAfter(int currentTime) {
+        FCFSOC.this.clearTimeSliceAfter(currentTime, this.timeSlices);
+    }
+
+    private void clearTimeSliceAfter(int currentTime, LinkedList<TimeSlice> timeSlices) {
+
+        int clearIndex = UNUPDATED;
+        for (int i = 0; i < timeSlices.size(); ++i) {
+            TimeSlice ts = timeSlices.get(i);
+            int startTime = ts.getStartTime();
+            if (currentTime == startTime) {
+                clearIndex = i;
+            }
+        }
+        
+        assert clearIndex != UNUPDATED;
+
+        for (int i = timeSlices.size() - 1; i >= clearIndex; --i) {
+            timeSlices.remove(i);
+        }
+        
+        int i = timeSlices.size() - 1;
+        
+        if (i >= 0) {
+            TimeSlice lastTs = timeSlices.get(i);
+            int lastTsEndTime = lastTs.getEndTime();
+            timeSlices.add(new TimeSlice(lastTsEndTime));
+        } else {
+            timeSlices.add(new TimeSlice(currentTime));
+        }
+        
+
+        
+        return;
+    }
+
+    /* This method return the exepeceted end time. */
+    private int calculateNewExpectedEndTime(int currentTime, Job victimJob) {
+        int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
+        int cpuTimeForNow = victimJob.getCpuTimeForNow();
+        int requiredTime = victimJob.getRequiredTime();
+        int restRequiredTime = (requiredTime - cpuTimeForNow) * currentOCStateLevel;
+        int expectedEndTime = currentTime + restRequiredTime;
+
+        return expectedEndTime;
+    }
+
+    protected void assignJobForOnlyTimeSlices(int startTime, Job job, int expectedEndTime) {
+        ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
+        ArrayList<UsingNodes> usingNodeList = job.getUsingNodesList();
+        
+        for (int i = 0; i < usingNodeList.size(); ++i) {
+            UsingNodes node = usingNodeList.get(i);
+            int nodeId = node.getNodeNum();
+            assignNodesNo.add(nodeId);
+        }
+        assert assignNodesNo.size() != 0;
+        assert assignNodesNo.size() == usingNodeList.size();
+
+        assignJobForOnlyTimeSlices(startTime, this.timeSlices, NodeConsciousScheduler.sim.getAllNodesInfo(), job, assignNodesNo, expectedEndTime);
+        
+    }
+    
+    protected void assignJobForOnlyTimeSlices(int startTime, LinkedList<TimeSlice> timeSlices, ArrayList<NodeInfo> allNodesInfo, Job job, ArrayList<Integer> assignNodesNo, int expectedEndTime) {
+        int addedPpn = job.getRequiredCores()/job.getRequiredNodes();
+
+        /* TODO: The case requiredCores ist not dividable  */
+        if (job.getRequiredCores()%job.getRequiredNodes() != 0) {
+            ++addedPpn;
+            System.out.println("Not dividable, Job ID = " + job.getJobId());
+        }
+
+        /* Timesleces' setting */
+        for (int i = 0; i < timeSlices.size(); ++i) {
+            TimeSlice ts = timeSlices.get(i);
+//            ts.printTsInfo();
+            //if (startTime <= ts.getEndTime() && ts.getStartTime() <= expectedEndTime) {
+            if (startTime <= ts.getEndTime() && ts.getStartTime() < expectedEndTime) {
+                ArrayList<Integer> cores = ts.getAvailableCores();
+                for (int j = 0; j < assignNodesNo.size(); ++j) {
+                    int nodeNo = assignNodesNo.get(j);
+                    int core = cores.get(nodeNo);
+                    core -= addedPpn;
+                    cores.set(nodeNo, core);
+                }
+            }
+//            ts.printTsInfo();
+        }
     }
 }

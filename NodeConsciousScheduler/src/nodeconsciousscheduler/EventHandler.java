@@ -116,3 +116,17 @@ class End implements EventHandler {
 
     }
 }
+
+class Delete implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType());
+//        newEvents = 
+        
+        
+        
+        NodeConsciousScheduler.sim.getEvq().deleteEvent(ev);
+        
+        return new ArrayList<Event>();
+    }
+}
+

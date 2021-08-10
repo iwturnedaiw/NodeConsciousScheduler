@@ -22,7 +22,10 @@ public class Job {
     private int requiredNodes;
     private int runningTimeDed;
     private int runningTimeOC;
+    private int cpuTimeForNow;
+    private int OCStateLevel;
     private int startTime;
+    private int previousSwitchedTime;
     private int finishedTime;
     private int waitTime;
     private int numNodes;
@@ -38,6 +41,7 @@ public class Job {
         this.startTime = -1;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
+        this.cpuTimeForNow = 0;
         this.usingNodesList = new ArrayList<UsingNodes>();
     }
 
@@ -52,6 +56,7 @@ public class Job {
         this.startTime = -1;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
+        this.cpuTimeForNow = 0;
         this.usingNodesList = new ArrayList<UsingNodes>();
     }
     
@@ -84,6 +89,10 @@ public class Job {
         return startTime;
     }
 
+    public int getPreviousSwitchedTime() {
+        return previousSwitchedTime;
+    }
+    
     public int getFinishedTime() {
         return finishedTime;
     }
@@ -108,6 +117,15 @@ public class Job {
         return requiredNodes;
     }
 
+    public int getCpuTimeForNow() {
+        return cpuTimeForNow;
+    }
+    
+    public int getOCStateLevel() {
+        return OCStateLevel;
+    }
+
+    
     public void setJobId(int jobId) {
         this.jobId = jobId;
     }
@@ -144,6 +162,10 @@ public class Job {
         this.startTime = startTime;
     }
 
+    public void setPreviousSwitchedTime(int previousSwitchedTime) {
+        this.previousSwitchedTime = previousSwitchedTime;
+    }
+    
     public void setFinishedTime(int finishedTime) {
         this.finishedTime = finishedTime;
     }
@@ -167,6 +189,12 @@ public class Job {
     public void setSpecifiedExecuteTime(int specifiedExecuteTime) {
         this.specifiedExecuteTime = specifiedExecuteTime;
     }
+
+    public void setCpuTimeForNow(int cpuTimeForNow) {
+        this.cpuTimeForNow = cpuTimeForNow;
+    }
     
-    
+    public void setOCStateLevel(int OCStateLevel) {
+        this.OCStateLevel = OCStateLevel;
+    }    
 }

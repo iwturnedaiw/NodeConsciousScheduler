@@ -34,6 +34,18 @@ class TimeSlice implements Cloneable {
         }
     }
 
+    TimeSlice(int startTime) {
+        this.startTime = startTime;
+        this.endTime = TS_ENDTIME;
+        this.duration = this.endTime - this.startTime;
+        this.numNode = NodeConsciousScheduler.numNodes;
+        this.ppn = NodeConsciousScheduler.numCores;
+        availableCores = new ArrayList<Integer>();
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
+            availableCores.add(NodeConsciousScheduler.numCores);
+        }
+    }
+    
     public int getStartTime() {
         return startTime;
     }

@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import static nodeconsciousscheduler.Constants.CANNOT_START;
-import static nodeconsciousscheduler.Constants.NOT_BREAK;
+import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.TS_ENDTIME;
 
 /**

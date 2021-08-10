@@ -11,7 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
-import static nodeconsciousscheduler.Constants.NOT_BREAK;
+import static nodeconsciousscheduler.Constants.UNUPDATED;
 
 /**
  *
@@ -67,10 +67,10 @@ public abstract class Scheduler {
         if (existSliceStartAt(currentTime))
             return;
 
-        int breakIndex = NOT_BREAK;
+        int breakIndex = UNUPDATED;
         breakIndex = sliceIndexToSplit(currentTime);
 
-        if (breakIndex != NOT_BREAK) {
+        if (breakIndex != UNUPDATED) {
             TimeSlice ts = timeSlices.get(breakIndex);
             LinkedList<TimeSlice> brokenSlices = ts.split(currentTime);
             timeSlices.remove(breakIndex);
