@@ -7,6 +7,8 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -30,6 +32,10 @@ public class Job {
     private int waitTime;
     private int numNodes;
     private ArrayList<UsingNodes> usingNodesList;
+    private Set<Integer> coexistingJobs;
+    
+
+    Job() {}
     
     Job(int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes) {
         this.submitTime = submitTime;
@@ -43,6 +49,7 @@ public class Job {
         this.waitTime = -1;
         this.cpuTimeForNow = 0;
         this.usingNodesList = new ArrayList<UsingNodes>();
+        this.coexistingJobs = new HashSet<Integer>();
     }
 
     Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes) {
@@ -58,6 +65,7 @@ public class Job {
         this.waitTime = -1;
         this.cpuTimeForNow = 0;
         this.usingNodesList = new ArrayList<UsingNodes>();
+        this.coexistingJobs = new HashSet<Integer>();
     }
     
     
@@ -125,6 +133,9 @@ public class Job {
         return OCStateLevel;
     }
 
+    public Set<Integer> getCoexistingJobs() {
+        return coexistingJobs;
+    }
     
     public void setJobId(int jobId) {
         this.jobId = jobId;
@@ -197,4 +208,9 @@ public class Job {
     public void setOCStateLevel(int OCStateLevel) {
         this.OCStateLevel = OCStateLevel;
     }    
+
+    public void setCoexistingJobs(Set<Integer> coexistingJobs) {
+        this.coexistingJobs = coexistingJobs;
+    }
+    
 }

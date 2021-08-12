@@ -60,6 +60,11 @@ class FCFS extends Scheduler {
         return result;
     }
 
+    @Override
+    protected ArrayList<Event> scheduleJobsOCState(Event ev) {
+        return null;
+    }
+    
     protected ArrayList<VacantNode> canExecutableNodesImmediately(int currentTime, Job job) {
         /* Return variable
            This have the node no. with # of free core.

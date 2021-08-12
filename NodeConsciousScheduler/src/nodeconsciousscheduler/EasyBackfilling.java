@@ -152,6 +152,11 @@ class EasyBackfilling extends Scheduler {
         
         return result;
     }
+ 
+    @Override
+    protected ArrayList<Event> scheduleJobsOCState(Event ev) {
+        return null;
+    }
     
     private ArrayList<VacantNode> canExecutableNodesAt(int currentTime, Job job) {
         return canExecutableNodesAt(currentTime, this.timeSlices, job);

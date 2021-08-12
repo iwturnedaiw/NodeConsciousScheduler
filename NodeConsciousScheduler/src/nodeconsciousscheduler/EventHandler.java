@@ -62,12 +62,19 @@ class End implements EventHandler {
         // Add the job completed List
 
         Job job = ev.getJob();
-        int runningTime = job.getActualExecuteTime();
-        job.setRunningTimeDed(runningTime);
+        int currentTime = ev.getOccurrenceTime();
+        int previousSwitchedTime = job.getPreviousSwitchedTime();
+        int mostRecentRunningTime = currentTime - previousSwitchedTime;
+        int OCStateLevel = job.getOCStateLevel();
+        if (OCStateLevel == 1) job.setRunningTimeDed(mostRecentRunningTime);
+        else job.setRunningTimeOC(mostRecentRunningTime);
         
+        int runningTimeDed = job.getRunningTimeDed();
+        int runningTimeOC = job.getRunningTimeOC();
+        int runningTime = runningTimeDed + runningTimeOC;        
+
         int finishedTime = runningTime + job.getStartTime();
         job.setFinishedTime(finishedTime);
-
         
         NodeConsciousScheduler.sim.outputResult(job);
         NodeConsciousScheduler.sim.getExecutingJobList().remove(job);
@@ -117,16 +124,28 @@ class End implements EventHandler {
     }
 }
 
-class Delete implements EventHandler {
+class DeleteFromBeginning implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
         System.out.println("Event type: " + ev.getEventType());
 //        newEvents = 
         
         
         
-        NodeConsciousScheduler.sim.getEvq().deleteEvent(ev);
+        NodeConsciousScheduler.sim.getEvq().deleteEventFromBeginning(ev);
         
         return new ArrayList<Event>();
     }
 }
 
+class DeleteFromEnd implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType());
+//        newEvents = 
+        
+        
+        
+        NodeConsciousScheduler.sim.getEvq().deleteEventFromEnd(ev);
+        
+        return new ArrayList<Event>();
+    }
+}

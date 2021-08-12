@@ -7,6 +7,8 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 
 
@@ -19,6 +21,7 @@ public class NodeInfo implements Cloneable{
     private int numCores;
     //private ArrayList<ArrayList<Integer>> occupiedCores;
     private ArrayList<CoreInfo> occupiedCores;
+    private Set<Integer> executingJobIds;
     private int numOccupiedCores;
     private int numFreeCores;
     private int OCStateLevel;
@@ -28,6 +31,7 @@ public class NodeInfo implements Cloneable{
         this.nodeNum = nodeNum;
         this.numCores = numCores;
         this.occupiedCores = new ArrayList<CoreInfo>(numCores);
+        this.executingJobIds = new HashSet<Integer>();
         init();
         this.numOccupiedCores = 0;
         this.numFreeCores = numCores;
@@ -58,6 +62,10 @@ public class NodeInfo implements Cloneable{
         return OCStateLevel;
     }
 
+    public Set<Integer> getExecutingJobIds() {
+        return executingJobIds;
+    }
+    
     public void setNodeNum(int nodeNum) {
         this.nodeNum = nodeNum;
     }
@@ -82,6 +90,10 @@ public class NodeInfo implements Cloneable{
         this.OCStateLevel = OCStateLevel;
     }
 
+    public void setExecutingJobIds(Set<Integer> executingJobIds) {
+        this.executingJobIds = executingJobIds;
+    }
+    
     private void init() {
         for (int i = 0; i < this.numCores; ++i) {
             CoreInfo eachCore = new CoreInfo(i);

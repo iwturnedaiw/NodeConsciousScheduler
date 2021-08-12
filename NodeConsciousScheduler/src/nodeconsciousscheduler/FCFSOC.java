@@ -40,7 +40,7 @@ public class FCFSOC extends FCFS {
                 int startTime = currentTime;
                 job.setStartTime(startTime);
                 makeTimeslices(startTime);
-
+                
                 if (OCStateLevelForJob == 1) {
                     int expectedEndTime = startTime + job.getRequiredTime();
                     makeTimeslices(expectedEndTime);
@@ -55,50 +55,62 @@ public class FCFSOC extends FCFS {
                 } else {
                     /* Search victimt jobs */
                     Set<Integer> victimJobs = new HashSet<Integer>();
-                    victimJobs = FCFSOC.this.searchVictimJobs(startTime, job, assignNodesNo);
+                    victimJobs = searchVictimJobs(startTime, job, assignNodesNo);
                     System.out.println("OC allocating, opponent jobId: " + job.getJobId() + ", victim jobId: " + victimJobs);
+                    
+                    /* Set victim jobList for the opponent job */
+                    job.setCoexistingJobs(victimJobs);
                     
                     /* For victim jobs */                    
                     ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
 
                     /* Clear TimeSlece after currentTime */
                     clearTimeSliceAfter(currentTime);
-                    
-                    /* TODO: reduce cost from O(N^2) to O(N) */
-                    /*       Now, O(N^2) */
-                    for (int victimJobId : victimJobs) {
-                        int i;
-                        for (i = 0; i < executingJobList.size(); ++i) {
-                            Job candidateJob = executingJobList.get(i);
-                            int candidateId = candidateJob.getJobId();
-                            if (victimJobId == candidateId) {
-                                // Measure the executing time at this time
-                                measureCurrentExecutingTime(currentTime, candidateJob, OCStateLevelForJob);
-                                candidateJob.setOCStateLevel(OCStateLevelForJob);
+
+                    /* Opponent job id */
+                    int opponentJobId = job.getJobId();
+
+                    Set<Integer> copiedVictimJobs = cloneVictimJobs(victimJobs);
+                    for (int i = 0; i < executingJobList.size(); ++i) {
+                        Job executingJob = executingJobList.get(i);
+                        int executingId = executingJob.getJobId();
+                        
+                        // Measure the executing time at this time
+                        measureCurrentExecutingTime(currentTime, executingJob);
+
+                        for (int victimJobId : copiedVictimJobs) {
+                            if (victimJobId == executingId) {
+                                executingJob.setOCStateLevel(OCStateLevelForJob);
                                 // Calculate the new actual end time and throw new event
-                                int trueEndTime = calculateNewActualEndTime(currentTime, candidateJob);
-                                result.add(new Event(EventType.END, trueEndTime, candidateJob));        
-                                result.add(new Event(EventType.DELETE, currentTime, candidateJob));
+                                int trueEndTime = calculateNewActualEndTime(currentTime, executingJob);
+                                executingJob.setPreviousSwitchedTime(currentTime);
+                                result.add(new Event(EventType.END, trueEndTime, executingJob));        
+                                result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, executingJob));
+                                executingJob.getCoexistingJobs().add(opponentJobId);
+                                copiedVictimJobs.remove(victimJobId);
                             }
-                            // Refresh TimeSlices.
-                            // Add the timeslices for all executing jobs
-                            int expectedEndTime = calculateNewExpectedEndTime(currentTime, candidateJob);
-                            makeTimeslices(currentTime);
-                            makeTimeslices(expectedEndTime);
-                            assignJobForOnlyTimeSlices(currentTime, candidateJob, expectedEndTime);
-
-                            // Modify the usingNode? No, it's unneeded.
-                            // Anything else?     
                         }
-                        assert i != executingJobList.size() + 1;
+                        // Refresh TimeSlices.
+                        // Add the timeslices for all executing jobs
+                        int expectedEndTime = calculateNewExpectedEndTime(currentTime, executingJob);
+                        executingJob.setSpecifiedExecuteTime(expectedEndTime);
+                        makeTimeslices(currentTime);
+                        makeTimeslices(expectedEndTime);
+                        assignJobForOnlyTimeSlices(currentTime, executingJob, expectedEndTime);
+                        // Modify the usingNode? No, it's unneeded.
+                        // Anything else?     
                     }
-
                     /* For opponent job */
+                    job.setOCStateLevel(OCStateLevelForJob);
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForJob;
                     int expectedEndTime = calculateNewExpectedEndTime(startTime, job);
                     makeTimeslices(expectedEndTime);
                     job.setSpecifiedExecuteTime(expectedEndTime);
 
+                    /* Set previous time. */
+                    /* This is opponent, so it is not "switched" now. But, this value is needed. */
+                    job.setPreviousSwitchedTime(startTime);
+                    
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForJob;
@@ -108,6 +120,74 @@ public class FCFSOC extends FCFS {
                 }
             } else break;
         }
+        return result;
+    }
+
+    @Override
+    protected ArrayList<Event> scheduleJobsOCState(Event ev) {
+        ArrayList<Event> result = new ArrayList<Event>();
+        
+        /* Setting */
+        int currentTime = ev.getOccurrenceTime();
+        Job endingJob = ev.getJob();
+        int endingJobId = endingJob.getJobId();
+        Set<Integer> coexistingJobs = endingJob.getCoexistingJobs();
+
+        /* Change appropriate OCStateLevel for coexisting jobs */
+        for (int coexistingJobId : coexistingJobs) {
+            Job coexistingJob = getCoexistingJobByJobId(coexistingJobId);
+            /* Calculate new OCStateLevel for coexisting jobs */
+            ArrayList<UsingNodes> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
+
+            int multiplicityAlongNodes = -1;
+            for (int i = 0; i < coexistingJobUsingNodeList.size(); ++i) {
+                int multiplicityAlongCores = -1;
+
+                UsingNodes usingNode = coexistingJobUsingNodeList.get(i);
+                int usingNodeId = usingNode.getNodeNum();
+                ArrayList<Integer> usingCoreId = usingNode.getUsingCoreNum();
+
+                CoreOCState coreOCState = new CoreOCState();
+                for (int j = 0; j < usingCoreId.size(); ++i) {
+                    int coreId = usingCoreId.get(j);
+                    coreOCState = existEndingJobOnTheCoreAndReturnMultiplicity(usingNodeId, coreId, endingJobId);
+                    boolean OCReleaseFlag = true;
+                    OCReleaseFlag = coreOCState.isEndingJobFlag();
+                    int multiplicity = coreOCState.getMultiplicity();
+                    assert multiplicity > 1;
+                    if (OCReleaseFlag) {
+                        removeEndingJobFromJobList(usingNodeId, coreId, endingJobId);
+                        --multiplicity;
+                    }
+                    multiplicityAlongCores = max(multiplicityAlongCores, multiplicity);
+                }
+                multiplicityAlongNodes = max(multiplicityAlongNodes, multiplicityAlongCores);
+            }
+            int OCStateLevel = multiplicityAlongNodes;
+            
+            measureCurrentExecutingTime(currentTime, coexistingJob);
+
+            // Calculate the new actual end time and throw new event
+            coexistingJob.setOCStateLevel(OCStateLevel);
+            int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
+            coexistingJob.setPreviousSwitchedTime(currentTime);
+            result.add(new Event(EventType.END, trueEndTime, coexistingJob));
+            result.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob));
+        }
+        
+        /* Clear TimeSlece after currentTime */
+        clearTimeSliceAfter(currentTime);
+        ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
+        for (int i = 0; i < executingJobList.size(); ++i) {
+            // ts処理
+            Job executingJob = executingJobList.get(i);
+            int expectedEndTime = calculateNewExpectedEndTime(currentTime, executingJob);
+            executingJob.setSpecifiedExecuteTime(expectedEndTime);
+            makeTimeslices(currentTime);
+            makeTimeslices(expectedEndTime);
+            assignJobForOnlyTimeSlices(currentTime, executingJob, expectedEndTime);
+        }
+        
         return result;
     }
     
@@ -370,5 +450,92 @@ public class FCFSOC extends FCFS {
             }
 //            ts.printTsInfo();
         }
+    }
+
+    private void measureCurrentExecutingTime(int currentTime, Job executingJob) {
+        int OCStateLevel = executingJob.getOCStateLevel();
+        measureCurrentExecutingTime(currentTime, executingJob, OCStateLevel);
+    }
+
+    private Set<Integer> cloneVictimJobs(Set<Integer> victimJobs) {
+        Set<Integer> copiedVictimJobs = new HashSet<Integer>();
+        for (int victimJobId: victimJobs) {
+            copiedVictimJobs.add(victimJobId);
+        }
+        return copiedVictimJobs;
+    }
+
+    private Job getCoexistingJobByJobId(int coexistingJobId) {
+
+        ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
+        int i;
+        Job job = new Job();
+        for (i = 0; i < executingJobList.size(); ++i) {
+            job = executingJobList.get(i);
+            int executingJobId = job.getJobId();
+            if(executingJobId == coexistingJobId) break;
+        }
+        return job;
+    }
+
+    private Set<Integer> getAllJobIdsOnTheNode(int nodeId) {
+        ArrayList<NodeInfo> allNodeInfoList = NodeConsciousScheduler.sim.getAllNodesInfo();
+        
+        int i;
+        for (i = 0; i < allNodeInfoList.size(); ++i) {
+            NodeInfo nodeInfo = allNodeInfoList.get(i);
+            int nodeIdInList = nodeInfo.getNodeNum();
+            if (nodeId == nodeIdInList) break;
+        }
+        assert i < allNodeInfoList.size();
+        return allNodeInfoList.get(i).getExecutingJobIds();
+
+    }
+
+    private CoreOCState existEndingJobOnTheCoreAndReturnMultiplicity(int nodeId, int coreId, int endingJobId) {
+        // コアをなめる
+        // そのコアは、OCStateLevel個のジョブがいるか？　かつ、
+        // endingJobIdがいるか？
+        // この場合のみtrueを返す
+        ArrayList<NodeInfo> allNodeInfoList = NodeConsciousScheduler.sim.getAllNodesInfo();
+        NodeInfo nodeInfo =allNodeInfoList.get(nodeId);
+        int nodeIdFromList = nodeInfo.getNodeNum();
+        assert nodeId == nodeIdFromList;
+        
+        ArrayList<CoreInfo> jobIdListEachCore = nodeInfo.getOccupiedCores();
+        
+        CoreInfo coreInfo = jobIdListEachCore.get(coreId);
+        int coreIdFromList = coreInfo.getCoreId();
+        assert coreId == coreIdFromList;
+        ArrayList<Integer> jobListOnTheCore = coreInfo.getJobList();
+
+        boolean isExistEndingJob = false;        
+        for (int i = 0; i < jobListOnTheCore.size(); ++i) {
+            if (i == endingJobId) isExistEndingJob = true;
+        }
+        
+        int multiplicity = jobListOnTheCore.size();
+        
+        return new CoreOCState(isExistEndingJob, multiplicity);
+    }
+
+    private void removeEndingJobFromJobList(int nodeId, int coreId, int endingJobId) {
+        ArrayList<NodeInfo> allNodeInfoList = NodeConsciousScheduler.sim.getAllNodesInfo();
+        NodeInfo nodeInfo =allNodeInfoList.get(nodeId);
+        int nodeIdFromList = nodeInfo.getNodeNum();
+        assert nodeId == nodeIdFromList;
+        
+        ArrayList<CoreInfo> jobIdListEachCore = nodeInfo.getOccupiedCores();
+        
+        CoreInfo coreInfo = jobIdListEachCore.get(coreId);
+        int coreIdFromList = coreInfo.getCoreId();
+        assert coreId == coreIdFromList;
+        ArrayList<Integer> jobListOnTheCore = coreInfo.getJobList();
+
+        for (int i = 0; i < jobListOnTheCore.size(); ++i) {
+            int executingJobId = jobListOnTheCore.get(i);
+            if (executingJobId == endingJobId) jobListOnTheCore.remove(i);
+        }
+
     }
 }

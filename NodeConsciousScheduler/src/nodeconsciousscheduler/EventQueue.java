@@ -8,6 +8,7 @@ package nodeconsciousscheduler;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.PriorityQueue;
 
 /**
@@ -49,8 +50,10 @@ public class EventQueue extends PriorityQueue {
             evh = new End();
 //            System.out.println("size: " + this.size());
 //            System.out.println("jobId: " + ev.getJob().getJobId());
-        } else if (evt == EventType.DELETE) {
-            evh = new Delete();
+        } else if (evt == EventType.DELETE_FROM_BEGINNING) {
+            evh = new DeleteFromBeginning();
+        } else if (evt == EventType.DELETE_FROM_END) {
+            evh = new DeleteFromEnd();
         }
         
         assert evh != null;
@@ -63,7 +66,7 @@ public class EventQueue extends PriorityQueue {
 
     }
 
-    void deleteEvent(Event ev) {
+    void deleteEventFromBeginning(Event ev) {
         Iterator itr = this.iterator();
         
         Job job = ev.getJob();
@@ -74,6 +77,8 @@ public class EventQueue extends PriorityQueue {
             Job candidateJob = candidateEvent.getJob();
             int candidateJobId = candidateJob.getJobId();
             if (jobId == candidateJobId) {
+                // TODO: if originalEndTime == currentTime, delete the newcomer event
+                // int originalEndTime = candidateEvent.getOccurrenceTime();                               
                 itr.remove();
                 ++deleteCnt;
                 break;
@@ -81,6 +86,37 @@ public class EventQueue extends PriorityQueue {
         }
         assert deleteCnt == 1;
         return;
+    }
+
+    void deleteEventFromEnd(Event ev) {
+        Iterator itr = this.iterator();
+        
+        Job job = ev.getJob();
+        int jobId = job.getJobId();
+        int deleteCnt = 0;
+        int foundCnt = 0;
+        while(itr.hasNext()) {
+            Event candidateEvent = (Event) itr.next();
+            Job candidateJob = candidateEvent.getJob();
+            int candidateJobId = candidateJob.getJobId();
+            if (jobId == candidateJobId) {
+                if (foundCnt == 0) {
+                    ++foundCnt;
+                    continue;
+                }
+                
+                // TODO: if originalEndTime == currentTime, delete the newcomer event
+                // int originalEndTime = candidateEvent.getOccurrenceTime();                               
+                itr.remove();
+                ++deleteCnt;
+                ++foundCnt;
+                break;
+            }
+        }
+        assert deleteCnt == 1;
+        assert foundCnt == 2;
+        return;
+        
     }
 }
 

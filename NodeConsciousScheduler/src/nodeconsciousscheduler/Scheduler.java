@@ -6,6 +6,7 @@
 
 package nodeconsciousscheduler;
 
+import static java.lang.Math.max;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,6 +25,7 @@ public abstract class Scheduler {
 
     
     abstract protected ArrayList<Event> scheduleJobsStartAt(int currentTime);
+    abstract protected ArrayList<Event> scheduleJobsOCState(Event ev);
     
     protected void enqueue(Event ev) {
         waitingQueue.add(ev.getJob());
@@ -124,10 +126,22 @@ public abstract class Scheduler {
         reduceTimeslices(currentTime, ev);
         completeOldSlices(currentTime);
         
-        ArrayList<Event> newEvents = new ArrayList<Event>();
-        newEvents = scheduleJobsStartAt(currentTime);
+        ArrayList<Event> newEventsOCState = new ArrayList<Event>();
+        newEventsOCState = scheduleJobsOCState(ev);
         
-        return newEvents;
+        ArrayList<Event> newEventsStart = new ArrayList<Event>();
+        newEventsStart = scheduleJobsStartAt(currentTime);
+
+        ArrayList<Event> newEvents = new ArrayList<Event>();
+
+        for (int i = 0; i < newEventsOCState.size(); ++i) {
+            newEvents.add(newEventsOCState.get(i));
+        }
+        for (int i = 0; i < newEventsStart.size(); ++i) {
+            newEvents.add(newEventsStart.get(i));
+        }
+        
+        return newEventsStart;
     }
     
     protected ArrayList<Event> scheduleJobsOnSubmission(Event ev) {
@@ -148,7 +162,7 @@ public abstract class Scheduler {
 
     protected void assignJob(int startTime, LinkedList<TimeSlice> timeSlices, ArrayList<NodeInfo> allNodesInfo, Job job, ArrayList<Integer> assignNodesNo, boolean tmpFlag) {
         int addedPpn = job.getRequiredCores()/job.getRequiredNodes();
-        int expectedEndTime = startTime + job.getRequiredTime();
+        int expectedEndTime = startTime + (job.getRequiredTime()-job.getCpuTimeForNow())*job.getOCStateLevel();
 
         /* TODO: The case requiredCores ist not dividable  */
         if (job.getRequiredCores()%job.getRequiredNodes() != 0) {
@@ -206,6 +220,7 @@ public abstract class Scheduler {
 
             node.setNumOccupiedCores(numOccupiedCores);
             node.setNumFreeCores(numFreeCores);
+            node.getExecutingJobIds().add(jobId);
             
         }
         
@@ -326,6 +341,6 @@ public abstract class Scheduler {
             nodes.add(node);
         }
     }
-    
+
 }
 
