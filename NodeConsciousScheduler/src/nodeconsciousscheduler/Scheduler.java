@@ -141,7 +141,7 @@ public abstract class Scheduler {
             newEvents.add(newEventsStart.get(i));
         }
         
-        return newEventsStart;
+        return newEvents;
     }
     
     protected ArrayList<Event> scheduleJobsOnSubmission(Event ev) {

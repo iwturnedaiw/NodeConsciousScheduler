@@ -19,7 +19,7 @@ public interface EventHandler {
 
 class Submission implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
 //        newEvents = 
         
         ArrayList<Event> evs = new ArrayList<Event>();
@@ -32,7 +32,7 @@ class Submission implements EventHandler {
 
 class Start implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
         
         ArrayList<Event> evs = new ArrayList<Event>();
         
@@ -51,7 +51,7 @@ class Start implements EventHandler {
 
 class End implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
 //        newEvents = 
         
         ArrayList<Event> evs = new ArrayList<Event>();
@@ -79,9 +79,10 @@ class End implements EventHandler {
         NodeConsciousScheduler.sim.outputResult(job);
         NodeConsciousScheduler.sim.getExecutingJobList().remove(job);
         NodeConsciousScheduler.sim.getCompletedJobList().add(job);
-        freeResources(job);
-        
+
         evs = NodeConsciousScheduler.sim.getSche().scheduleJobsOnEnd(ev);
+
+        freeResources(job);
         
         return evs;
     }
@@ -126,7 +127,7 @@ class End implements EventHandler {
 
 class DeleteFromBeginning implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
 //        newEvents = 
         
         
@@ -139,7 +140,7 @@ class DeleteFromBeginning implements EventHandler {
 
 class DeleteFromEnd implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
 //        newEvents = 
         
         

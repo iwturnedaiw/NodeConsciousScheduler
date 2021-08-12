@@ -90,33 +90,32 @@ public class EventQueue extends PriorityQueue {
 
     void deleteEventFromEnd(Event ev) {
         Iterator itr = this.iterator();
-        
         Job job = ev.getJob();
         int jobId = job.getJobId();
         int deleteCnt = 0;
-        int foundCnt = 0;
         while(itr.hasNext()) {
             Event candidateEvent = (Event) itr.next();
             Job candidateJob = candidateEvent.getJob();
             int candidateJobId = candidateJob.getJobId();
             if (jobId == candidateJobId) {
-                if (foundCnt == 0) {
-                    ++foundCnt;
-                    continue;
-                }
-                
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
                 // int originalEndTime = candidateEvent.getOccurrenceTime();                               
                 itr.remove();
                 ++deleteCnt;
-                ++foundCnt;
                 break;
             }
         }
         assert deleteCnt == 1;
-        assert foundCnt == 2;
         return;
-        
+    }
+
+    private void debug() {
+        System.out.println("Debug:");
+        while(this.size() > 0) {
+            Event ev = (Event) this.poll();
+            System.out.println("\tEvent Type: " + ev.getOccurrenceTime() + ", at " + ev.getOccurrenceTime());
+        }
+        System.exit(1);
     }
 }
 

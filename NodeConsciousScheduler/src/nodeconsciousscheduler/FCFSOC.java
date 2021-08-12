@@ -148,21 +148,24 @@ public class FCFSOC extends FCFS {
                 ArrayList<Integer> usingCoreId = usingNode.getUsingCoreNum();
 
                 CoreOCState coreOCState = new CoreOCState();
-                for (int j = 0; j < usingCoreId.size(); ++i) {
+                for (int j = 0; j < usingCoreId.size(); ++j) {
                     int coreId = usingCoreId.get(j);
                     coreOCState = existEndingJobOnTheCoreAndReturnMultiplicity(usingNodeId, coreId, endingJobId);
                     boolean OCReleaseFlag = true;
                     OCReleaseFlag = coreOCState.isEndingJobFlag();
                     int multiplicity = coreOCState.getMultiplicity();
-                    assert multiplicity > 1;
+                    assert multiplicity >= 1;
                     if (OCReleaseFlag) {
                         removeEndingJobFromJobList(usingNodeId, coreId, endingJobId);
+                        coexistingJob.getCoexistingJobs().remove(endingJobId);
                         --multiplicity;
                     }
                     multiplicityAlongCores = max(multiplicityAlongCores, multiplicity);
                 }
+                assert multiplicityAlongCores > 0;
                 multiplicityAlongNodes = max(multiplicityAlongNodes, multiplicityAlongCores);
             }
+            assert multiplicityAlongNodes > 0;
             int OCStateLevel = multiplicityAlongNodes;
             
             measureCurrentExecutingTime(currentTime, coexistingJob);
@@ -504,14 +507,26 @@ public class FCFSOC extends FCFS {
         
         ArrayList<CoreInfo> jobIdListEachCore = nodeInfo.getOccupiedCores();
         
-        CoreInfo coreInfo = jobIdListEachCore.get(coreId);
+        CoreInfo coreInfo = new CoreInfo();
+        int endCnt = -1;
+        for (int i = 0; i < jobIdListEachCore.size(); ++i) {
+            endCnt = i;
+            int tmpCoreId = jobIdListEachCore.get(i).getCoreId();
+            if (coreId == tmpCoreId) coreInfo = jobIdListEachCore.get(i);
+        }
+        assert endCnt != jobIdListEachCore.size();
+        
         int coreIdFromList = coreInfo.getCoreId();
         assert coreId == coreIdFromList;
         ArrayList<Integer> jobListOnTheCore = coreInfo.getJobList();
 
         boolean isExistEndingJob = false;        
         for (int i = 0; i < jobListOnTheCore.size(); ++i) {
-            if (i == endingJobId) isExistEndingJob = true;
+            int executingJobId = jobListOnTheCore.get(i);
+            if (executingJobId == endingJobId) {
+                isExistEndingJob = true;
+                break;
+            }
         }
         
         int multiplicity = jobListOnTheCore.size();
@@ -527,9 +542,14 @@ public class FCFSOC extends FCFS {
         
         ArrayList<CoreInfo> jobIdListEachCore = nodeInfo.getOccupiedCores();
         
-        CoreInfo coreInfo = jobIdListEachCore.get(coreId);
-        int coreIdFromList = coreInfo.getCoreId();
-        assert coreId == coreIdFromList;
+        CoreInfo coreInfo = new CoreInfo();
+        int endCnt = -1;
+        for (int i = 0; i < jobIdListEachCore.size(); ++i) {
+            endCnt = i;
+            int tmpCoreId = jobIdListEachCore.get(i).getCoreId();
+            if (coreId == tmpCoreId) coreInfo = jobIdListEachCore.get(i);
+        }
+        assert endCnt != jobIdListEachCore.size();
         ArrayList<Integer> jobListOnTheCore = coreInfo.getJobList();
 
         for (int i = 0; i < jobListOnTheCore.size(); ++i) {
