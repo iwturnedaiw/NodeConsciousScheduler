@@ -58,6 +58,7 @@ class EasyBackfilling extends Scheduler {
 
                 assignJob(startTime, job, assignNodesNo);
 
+                job.setPreviousSwitchedTime(startTime);
                 int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));
@@ -143,6 +144,7 @@ class EasyBackfilling extends Scheduler {
                 assignJob(startTime, backfillJob, assignNodesNo);
                 assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
 
+                backfillJob.setPreviousSwitchedTime(startTime);
                 int trueEndTime = startTime + backfillJob.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, backfillJob));
                 result.add(new Event(EventType.END, trueEndTime, backfillJob));
@@ -155,7 +157,7 @@ class EasyBackfilling extends Scheduler {
  
     @Override
     protected ArrayList<Event> scheduleJobsOCState(Event ev) {
-        return null;
+        return new ArrayList<Event>();
     }
     
     private ArrayList<VacantNode> canExecutableNodesAt(int currentTime, Job job) {
