@@ -51,7 +51,8 @@ class FCFS extends Scheduler {
                 job.setSpecifiedExecuteTime(expectedEndTime);
 
                 assignJob(startTime, job, assignNodesNo);
-
+                
+                job.setPreviousSwitchedTime(startTime);
                 int trueEndTime = startTime + job.getActualExecuteTime();                
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));
@@ -62,7 +63,7 @@ class FCFS extends Scheduler {
 
     @Override
     protected ArrayList<Event> scheduleJobsOCState(Event ev) {
-        return null;
+        return new ArrayList<Event>();
     }
     
     protected ArrayList<VacantNode> canExecutableNodesImmediately(int currentTime, Job job) {

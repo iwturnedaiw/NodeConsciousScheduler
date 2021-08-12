@@ -50,6 +50,7 @@ public class Job {
         this.cpuTimeForNow = 0;
         this.usingNodesList = new ArrayList<UsingNodes>();
         this.coexistingJobs = new HashSet<Integer>();
+        this.OCStateLevel = 1;
     }
 
     Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes) {
@@ -66,6 +67,7 @@ public class Job {
         this.cpuTimeForNow = 0;
         this.usingNodesList = new ArrayList<UsingNodes>();
         this.coexistingJobs = new HashSet<Integer>();
+        this.OCStateLevel = 1;
     }
     
     
