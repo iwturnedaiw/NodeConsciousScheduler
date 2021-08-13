@@ -41,6 +41,8 @@ class Start implements EventHandler {
 //        evs = NodeConsciousScheduler.sim.getSche().schedule(ev);
         
         Job job = ev.getJob();
+        job.setStartTime(ev.getOccurrenceTime());
+        job.setPreviousMeasuredTime(ev.getOccurrenceTime());
         job.setWaitTime(job.getStartTime() - job.getSubmitTime());
         
         NodeConsciousScheduler.sim.getExecutingJobList().add(job);
@@ -63,15 +65,22 @@ class End implements EventHandler {
 
         Job job = ev.getJob();
         int currentTime = ev.getOccurrenceTime();
-        int previousSwitchedTime = job.getPreviousSwitchedTime();
-        int mostRecentRunningTime = currentTime - previousSwitchedTime;
+        int previousMeasuredTime = job.getPreviousMeasuredTime();
+        int mostRecentRunningTime = currentTime - previousMeasuredTime;
+        int cpuTimeForNow = job.getCpuTimeForNow();
         int OCStateLevel = job.getOCStateLevel();
-        if (OCStateLevel == 1) job.setRunningTimeDed(mostRecentRunningTime);
-        else job.setRunningTimeOC(mostRecentRunningTime);
+        if (OCStateLevel == 1) {
+            int runningTimeDed = job.getRunningTimeDed();
+            job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
+        }
+        else {
+            int runningTimeOC = job.getRunningTimeOC();
+            job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
+        }
         
         int runningTimeDed = job.getRunningTimeDed();
         int runningTimeOC = job.getRunningTimeOC();
-        int runningTime = runningTimeDed + runningTimeOC;        
+        int runningTime = runningTimeDed + runningTimeOC;
 
         int finishedTime = runningTime + job.getStartTime();
         job.setFinishedTime(finishedTime);

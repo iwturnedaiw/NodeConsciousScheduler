@@ -54,6 +54,7 @@ public class FCFSOC extends FCFS {
                     result.add(new Event(EventType.END, trueEndTime, job));
                 } else {
                     /* Search victimt jobs */
+                    /* TODO: return job object list? */
                     Set<Integer> victimJobs = new HashSet<Integer>();
                     victimJobs = searchVictimJobs(startTime, job, assignNodesNo);
                     System.out.println("OC allocating, opponent jobId: " + job.getJobId() + ", victim jobId: " + victimJobs);
@@ -74,6 +75,7 @@ public class FCFSOC extends FCFS {
                     for (int i = 0; i < executingJobList.size(); ++i) {
                         Job executingJob = executingJobList.get(i);
                         int executingId = executingJob.getJobId();
+                        if (executingId == opponentJobId) continue;
                         
                         // Measure the executing time at this time
                         measureCurrentExecutingTime(currentTime, executingJob);
@@ -83,7 +85,7 @@ public class FCFSOC extends FCFS {
                                 executingJob.setOCStateLevel(OCStateLevelForJob);
                                 // Calculate the new actual end time and throw new event
                                 int trueEndTime = calculateNewActualEndTime(currentTime, executingJob);
-                                executingJob.setPreviousSwitchedTime(currentTime);
+                                executingJob.setPreviousMeasuredTime(currentTime);
                                 result.add(new Event(EventType.END, trueEndTime, executingJob));        
                                 result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, executingJob));
                                 executingJob.getCoexistingJobs().add(opponentJobId);
@@ -94,6 +96,7 @@ public class FCFSOC extends FCFS {
                         // Add the timeslices for all executing jobs
                         int expectedEndTime = calculateNewExpectedEndTime(currentTime, executingJob);
                         executingJob.setSpecifiedExecuteTime(expectedEndTime);
+                        executingJob.setPreviousMeasuredTime(currentTime);
                         makeTimeslices(currentTime);
                         makeTimeslices(expectedEndTime);
                         assignJobForOnlyTimeSlices(currentTime, executingJob, expectedEndTime);
@@ -109,7 +112,7 @@ public class FCFSOC extends FCFS {
 
                     /* Set previous time. */
                     /* This is opponent, so it is not "switched" now. But, this value is needed. */
-                    job.setPreviousSwitchedTime(startTime);
+                    job.setPreviousMeasuredTime(startTime);
                     
                     assignJob(startTime, job, assignNodesNo);
 
@@ -173,17 +176,24 @@ public class FCFSOC extends FCFS {
             // Calculate the new actual end time and throw new event
             coexistingJob.setOCStateLevel(OCStateLevel);
             int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
-            coexistingJob.setPreviousSwitchedTime(currentTime);
+            coexistingJob.setPreviousMeasuredTime(currentTime);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
             result.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob));
         }
         
         /* Clear TimeSlece after currentTime */
+        /* TODO: this part is redundant because all executing job needs to be measured */
+        /* In theory, I need to measure the victim jobs only, I think. */
         clearTimeSliceAfter(currentTime);
         ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
         for (int i = 0; i < executingJobList.size(); ++i) {
             // ts処理
             Job executingJob = executingJobList.get(i);
+            int previousMeasuredTime = executingJob.getPreviousMeasuredTime();
+            if (previousMeasuredTime != currentTime) {
+                measureCurrentExecutingTime(currentTime, executingJob);
+                executingJob.setPreviousMeasuredTime(currentTime);
+            }
             int expectedEndTime = calculateNewExpectedEndTime(currentTime, executingJob);
             executingJob.setSpecifiedExecuteTime(expectedEndTime);
             makeTimeslices(currentTime);
@@ -331,16 +341,27 @@ public class FCFSOC extends FCFS {
     private void measureCurrentExecutingTime(int currentTime, Job victimJob, int OCStateLevel) {
         int currentOCStateLevel = victimJob.getOCStateLevel();
         
+        int jobId = victimJob.getJobId();
+        System.out.println("JobId: " + jobId);
         /* measure current progress */
-        int previousSwitchedTime = victimJob.getPreviousSwitchedTime();
+        int previousMeasuredTime = victimJob.getPreviousMeasuredTime();
+        assert previousMeasuredTime != currentTime;
         // TODO: should be double, but now int.
         int cpuTimeForNow = victimJob.getCpuTimeForNow();
-        int realDeltaTime = currentTime - previousSwitchedTime;
+        int realDeltaTime = currentTime - previousMeasuredTime;
         cpuTimeForNow += realDeltaTime/currentOCStateLevel;
         victimJob.setCpuTimeForNow(cpuTimeForNow);
         
-        if (OCStateLevel == 1) victimJob.setRunningTimeDed(realDeltaTime);
-        else victimJob.setRunningTimeOC(realDeltaTime);
+        if (OCStateLevel == 1) {
+            int runningTimeDed = victimJob.getRunningTimeDed();
+            runningTimeDed += realDeltaTime;
+            victimJob.setRunningTimeDed(runningTimeDed);
+        }
+        else {
+            int runningTimeOC = victimJob.getRunningTimeOC();
+            runningTimeOC += realDeltaTime;
+            victimJob.setRunningTimeOC(runningTimeOC);
+        }
         
         return;
     }
