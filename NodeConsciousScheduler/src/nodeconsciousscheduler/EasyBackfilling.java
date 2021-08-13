@@ -58,7 +58,7 @@ class EasyBackfilling extends Scheduler {
 
                 assignJob(startTime, job, assignNodesNo);
 
-                job.setPreviousSwitchedTime(startTime);
+                job.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));
@@ -144,7 +144,7 @@ class EasyBackfilling extends Scheduler {
                 assignJob(startTime, backfillJob, assignNodesNo);
                 assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
 
-                backfillJob.setPreviousSwitchedTime(startTime);
+                backfillJob.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + backfillJob.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, backfillJob));
                 result.add(new Event(EventType.END, trueEndTime, backfillJob));

@@ -52,7 +52,7 @@ class FCFS extends Scheduler {
 
                 assignJob(startTime, job, assignNodesNo);
                 
-                job.setPreviousSwitchedTime(startTime);
+                job.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + job.getActualExecuteTime();                
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));

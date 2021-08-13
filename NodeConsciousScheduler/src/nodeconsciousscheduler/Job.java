@@ -27,7 +27,7 @@ public class Job {
     private int cpuTimeForNow;
     private int OCStateLevel;
     private int startTime;
-    private int previousSwitchedTime;
+    private int previousMeasuredTime;
     private int finishedTime;
     private int waitTime;
     private int numNodes;
@@ -99,8 +99,8 @@ public class Job {
         return startTime;
     }
 
-    public int getPreviousSwitchedTime() {
-        return previousSwitchedTime;
+    public int getPreviousMeasuredTime() {
+        return previousMeasuredTime;
     }
     
     public int getFinishedTime() {
@@ -175,8 +175,8 @@ public class Job {
         this.startTime = startTime;
     }
 
-    public void setPreviousSwitchedTime(int previousSwitchedTime) {
-        this.previousSwitchedTime = previousSwitchedTime;
+    public void setPreviousMeasuredTime(int previousSwitchedTime) {
+        this.previousMeasuredTime = previousSwitchedTime;
     }
     
     public void setFinishedTime(int finishedTime) {
