@@ -12,6 +12,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 
 /**
@@ -125,9 +127,21 @@ public abstract class Scheduler {
         makeTimeslices(currentTime);
         reduceTimeslices(currentTime, ev);
         completeOldSlices(currentTime);
+
+        try {
+            EventQueue.debugExecuting(currentTime, ev);
+        } catch (Exception ex) {
+            Logger.getLogger(Scheduler.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
         ArrayList<Event> newEventsOCState = new ArrayList<Event>();
         newEventsOCState = scheduleJobsOCState(ev);
+
+        try {
+            EventQueue.debugExecuting(currentTime, ev);
+        } catch (Exception ex) {
+            Logger.getLogger(Scheduler.class.getName()).log(Level.SEVERE, null, ex);
+        }
         
         ArrayList<Event> newEventsStart = new ArrayList<Event>();
         newEventsStart = scheduleJobsStartAt(currentTime);

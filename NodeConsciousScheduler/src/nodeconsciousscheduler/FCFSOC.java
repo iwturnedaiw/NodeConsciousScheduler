@@ -13,6 +13,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 
 /**
@@ -25,9 +27,12 @@ public class FCFSOC extends FCFS {
         ArrayList<Event> result = new ArrayList<Event>();
         while (!waitingQueue.isEmpty()) {
             Job job = waitingQueue.peek();
+            int jobId = job.getJobId();
             
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
+            assert checkTimeSlicesAndAllNodeInfo();
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
+                canExecuteNodes = canExecutableNodesImmediately(currentTime, job);                
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForJob = 1;
@@ -80,17 +85,18 @@ public class FCFSOC extends FCFS {
                         // Measure the executing time at this time
                         measureCurrentExecutingTime(currentTime, executingJob);
 
-                        for (int victimJobId : copiedVictimJobs) {
-                            if (victimJobId == executingId) {
-                                executingJob.setOCStateLevel(OCStateLevelForJob);
-                                // Calculate the new actual end time and throw new event
-                                int trueEndTime = calculateNewActualEndTime(currentTime, executingJob);
-                                executingJob.setPreviousMeasuredTime(currentTime);
-                                result.add(new Event(EventType.END, trueEndTime, executingJob));        
-                                result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, executingJob));
-                                executingJob.getCoexistingJobs().add(opponentJobId);
-                                copiedVictimJobs.remove(victimJobId);
-                            }
+                        //System.out.println("debug) executing Job: " + executingId);
+                        if (copiedVictimJobs.contains(executingId)) {
+                            //System.out.println("debug) victimJob: " + executingId + ", victimJobs: " + copiedVictimJobs);
+                            executingJob.setOCStateLevel(OCStateLevelForJob);
+                            // Calculate the new actual end time and throw new event
+                            int trueEndTime = calculateNewActualEndTime(currentTime, executingJob);
+                            executingJob.setPreviousMeasuredTime(currentTime);
+                            result.add(new Event(EventType.END, trueEndTime, executingJob));
+                            result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, executingJob));
+                            executingJob.getCoexistingJobs().add(opponentJobId);
+                            copiedVictimJobs.remove(executingId);
+                            
                         }
                         // Refresh TimeSlices.
                         // Add the timeslices for all executing jobs
@@ -142,6 +148,34 @@ public class FCFSOC extends FCFS {
             /* Calculate new OCStateLevel for coexisting jobs */
             ArrayList<UsingNodes> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
 
+            Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
+            assert coexistingJobCoexistingJob.contains(endingJobId);
+            
+            if (coexistingJobUsingNodeList == null) {
+                System.out.println("debug) OCCURRED HERE, ending job Id: " + endingJobId + ", currentTime: " + currentTime);
+                System.out.println("debug) usingNodeList: ");
+                ArrayList<UsingNodes> endingJobUsingNodeList = endingJob.getUsingNodesList();
+                for (int i = 0; i < endingJobUsingNodeList.size(); ++i) {
+                    UsingNodes node = endingJobUsingNodeList.get(i);
+                    System.out.print("\tNode" + node.getNodeNum() + ": ");
+                    ArrayList<Integer> cores = node.getUsingCoreNum();
+                    for (int j = 0; j < cores.size(); ++j) {
+                        System.out.print(cores.get(j));
+                        if (j != cores.size() -1 ) System.out.print(", ");                        
+                    }
+                    System.out.println("");
+                }
+                System.out.println("");
+                System.out.println("debug) coexisting jobs: " + coexistingJobs);                                
+                System.out.println("debug) coexisting job Id: " + coexistingJobId);
+                try {
+                    Thread.sleep(2000);
+                    throw new Exception();
+                } catch (Exception ex) {
+                    Logger.getLogger(FCFSOC.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                System.exit(1);
+            }
             int multiplicityAlongNodes = -1;
             for (int i = 0; i < coexistingJobUsingNodeList.size(); ++i) {
                 int multiplicityAlongCores = -1;
@@ -158,6 +192,7 @@ public class FCFSOC extends FCFS {
                     OCReleaseFlag = coreOCState.isEndingJobFlag();
                     int multiplicity = coreOCState.getMultiplicity();
                     assert multiplicity >= 1;
+                    assert multiplicity <= NodeConsciousScheduler.M;
                     if (OCReleaseFlag) {
                         removeEndingJobFromJobList(usingNodeId, coreId, endingJobId);
                         coexistingJob.getCoexistingJobs().remove(endingJobId);
@@ -233,6 +268,11 @@ public class FCFSOC extends FCFS {
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     int freeCores = ts.getAvailableCores().get(j);
+                    int numCore = ts.getPpn();
+                    
+                    assert freeCores >= -(M-1)*numCore;
+                    assert freeCores <= numCore;
+                    
                     VacantNode node = vacantNodes.get(j);
                     
                     assert node.getNodeNo() == j;
@@ -240,7 +280,8 @@ public class FCFSOC extends FCFS {
                     freeCores = min(freeCores, node.getFreeCores());
                     node.setFreeCores(freeCores);
 
-                    int numCore = ts.getPpn();
+                    assert freeCores >= -(M-1)*numCore;
+                    assert freeCores <= numCore;                    
 //                    if (freeCores >= requiredCoresPerNode ) {
                     if (freeCores - requiredCoresPerNode >= -(M-1)*numCore) {
                         int cnt = vacantNodeCount.get(j);
@@ -342,10 +383,10 @@ public class FCFSOC extends FCFS {
         int currentOCStateLevel = victimJob.getOCStateLevel();
         
         int jobId = victimJob.getJobId();
-        System.out.println("JobId: " + jobId);
+        // System.out.println("JobId: " + jobId);
         /* measure current progress */
         int previousMeasuredTime = victimJob.getPreviousMeasuredTime();
-        assert previousMeasuredTime != currentTime;
+        if (previousMeasuredTime == currentTime) return;
         // TODO: should be double, but now int.
         int cpuTimeForNow = victimJob.getCpuTimeForNow();
         int realDeltaTime = currentTime - previousMeasuredTime;
@@ -399,9 +440,10 @@ public class FCFSOC extends FCFS {
             if (currentTime == startTime) {
                 clearIndex = i;
             }
+            assert currentTime <= startTime;
         }
         
-        assert clearIndex != UNUPDATED;
+        if (clearIndex == UNUPDATED) return;
 
         for (int i = timeSlices.size() - 1; i >= clearIndex; --i) {
             timeSlices.remove(i);
@@ -578,5 +620,34 @@ public class FCFSOC extends FCFS {
             if (executingJobId == endingJobId) jobListOnTheCore.remove(i);
         }
 
+    }
+
+    private boolean checkTimeSlicesAndAllNodeInfo() {
+        /* For TimeSlices */
+        ArrayList<Integer> freeCoreInTimeSlices = new ArrayList<Integer>();
+        TimeSlice ts = timeSlices.get(0);
+        for (int i = 0; i < ts.getNumNode(); ++i) {
+            int freeCore = ts.getAvailableCores().get(i);
+            freeCoreInTimeSlices.add(freeCore);
+        }
+
+        /* For AllNodeInfoList */
+        ArrayList<Integer> freeCoreInAllNodeInfo = new ArrayList<Integer>();
+        ArrayList<NodeInfo> allNodeInfoList = NodeConsciousScheduler.sim.getAllNodesInfo();
+
+        for (int i = 0; i < allNodeInfoList.size(); ++i) {
+            NodeInfo nodeInfo = allNodeInfoList.get(i);
+            int freeCore = nodeInfo.getNumFreeCores();
+            freeCoreInAllNodeInfo.add(freeCore);
+        }
+        
+        assert freeCoreInTimeSlices.size() == freeCoreInAllNodeInfo.size();
+
+        boolean ret = true;
+        for (int i = 0; i < freeCoreInAllNodeInfo.size(); ++i) {
+            if (freeCoreInTimeSlices.get(i) != freeCoreInAllNodeInfo.get(i)) ret = false;
+        }
+        
+        return ret;
     }
 }

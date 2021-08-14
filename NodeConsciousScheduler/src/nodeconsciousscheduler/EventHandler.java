@@ -7,6 +7,8 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -53,7 +55,7 @@ class Start implements EventHandler {
 
 class End implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
 //        newEvents = 
         
         ArrayList<Event> evs = new ArrayList<Event>();
@@ -64,6 +66,7 @@ class End implements EventHandler {
         // Add the job completed List
 
         Job job = ev.getJob();
+        int jobId = job.getJobId();
         int currentTime = ev.getOccurrenceTime();
         int previousMeasuredTime = job.getPreviousMeasuredTime();
         int mostRecentRunningTime = currentTime - previousMeasuredTime;
@@ -89,9 +92,16 @@ class End implements EventHandler {
         NodeConsciousScheduler.sim.getExecutingJobList().remove(job);
         NodeConsciousScheduler.sim.getCompletedJobList().add(job);
 
+        try {
+            EventQueue.debugExecuting(currentTime, ev);
+        } catch (Exception ex) {
+            Logger.getLogger(End.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        freeResources(job);
+        
         evs = NodeConsciousScheduler.sim.getSche().scheduleJobsOnEnd(ev);
 
-        freeResources(job);
         
         return evs;
     }
@@ -112,6 +122,8 @@ class End implements EventHandler {
             
             /* Number of free/occupied Cores*/
             numFreeCores += numUsingCores;
+            assert numFreeCores <= nodeInfo.getNumCores();
+            assert numFreeCores >= -(NodeConsciousScheduler.M-1)*nodeInfo.getNumCores();
             nodeInfo.setNumFreeCores(numFreeCores);
             numOccupiedCores -= numUsingCores;
             nodeInfo.setNumOccupiedCores(numOccupiedCores);

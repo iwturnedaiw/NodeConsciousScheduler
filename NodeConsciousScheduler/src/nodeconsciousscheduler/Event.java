@@ -62,6 +62,29 @@ public class Event implements Comparable<Event> {
         if (this.occurrenceTime > o.occurrenceTime) {
             return 1;
         }
+        if (this.eventType == o.eventType) {
+            return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());            
+        }
+        if (this.eventType == EventType.END) {
+            return -1;
+        }
+        if (o.eventType == EventType.END) {
+            return 1;
+        }
+        if (this.eventType == EventType.DELETE_FROM_END) {
+            return -1;
+        }
+        if (o.eventType == EventType.DELETE_FROM_END) {
+            return 1;
+        }
+        if (this.eventType == EventType.DELETE_FROM_BEGINNING) {
+            return -1;
+        }
+        if (o.eventType == EventType.DELETE_FROM_BEGINNING) {
+            return 1;
+        }
+        
+        
         return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());
     }
 }

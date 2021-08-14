@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.PriorityQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -57,7 +59,7 @@ public class EventQueue extends PriorityQueue {
         }
         
         assert evh != null;
-
+        
         ArrayList<Event> newEvents = new ArrayList<Event>();
         newEvents = evh.handle(ev);
         for (Event e : newEvents) {
@@ -113,9 +115,22 @@ public class EventQueue extends PriorityQueue {
         System.out.println("Debug:");
         while(this.size() > 0) {
             Event ev = (Event) this.poll();
-            System.out.println("\tEvent Type: " + ev.getOccurrenceTime() + ", at " + ev.getOccurrenceTime());
+            System.out.println("\tEvent Type: " + ev.getEventType()+ ", JobId: " + ev.getJob().getJobId() + " at " + ev.getOccurrenceTime());
         }
         System.exit(1);
+    }
+
+    static void debugExecuting(int currentTime, Event ev) throws Exception {
+        ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
+        for (int i = 0; i < executingJobList.size(); ++i) {
+            Job job = executingJobList.get(i);
+            ArrayList<UsingNodes> usingNodes = job.getUsingNodesList();
+            if (usingNodes == null) {
+                System.out.println("debug) FOUND null pointer HERE: " + job.getJobId() + " at " + currentTime); 
+                System.out.println("\tEventType: " + ev.getEventType() + ", jobId: " + ev.getJob().getJobId()); 
+                throw new Exception();
+            }
+        }
     }
 }
 
