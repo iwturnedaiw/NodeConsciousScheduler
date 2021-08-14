@@ -90,8 +90,4 @@ public class EasyBackfillingOC extends EasyBackfilling {
         return nodes;
     }
  
-    @Override
-    protected ArrayList<Event> scheduleJobsOCState(Event ev) {
-        return null;
-    }
 }

@@ -60,11 +60,7 @@ class End implements EventHandler {
         
         ArrayList<Event> evs = new ArrayList<Event>();
         
-        // Erase the job from executing job list
-        // Resource refill
-        // Again call scheduling
-        // Add the job completed List
-
+        /* Fix the finish time */
         Job job = ev.getJob();
         int jobId = job.getJobId();
         int currentTime = ev.getOccurrenceTime();
@@ -80,26 +76,24 @@ class End implements EventHandler {
             int runningTimeOC = job.getRunningTimeOC();
             job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
         }
-        
         int runningTimeDed = job.getRunningTimeDed();
         int runningTimeOC = job.getRunningTimeOC();
         int runningTime = runningTimeDed + runningTimeOC;
-
         int finishedTime = runningTime + job.getStartTime();
         job.setFinishedTime(finishedTime);
         
+        // Output the result
         NodeConsciousScheduler.sim.outputResult(job);
+
+        // Erase the job from executing job list
         NodeConsciousScheduler.sim.getExecutingJobList().remove(job);
+        // Add the job completed List
         NodeConsciousScheduler.sim.getCompletedJobList().add(job);
 
-        try {
-            EventQueue.debugExecuting(currentTime, ev);
-        } catch (Exception ex) {
-            Logger.getLogger(End.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
+        // Resource refill        
         freeResources(job);
-        
+
+        // Again call scheduling
         evs = NodeConsciousScheduler.sim.getSche().scheduleJobsOnEnd(ev);
 
         
@@ -117,6 +111,7 @@ class End implements EventHandler {
             NodeInfo nodeInfo = AllNodeInfo.get(nodeNo);
             int numFreeCores = nodeInfo.getNumFreeCores();
             int numOccupiedCores = nodeInfo.getNumOccupiedCores();
+            assert nodeInfo.getExecutingJobIds().contains(jobId);
 
             int numUsingCores = usingNode.getNumUsingCores();
             
@@ -139,6 +134,8 @@ class End implements EventHandler {
                     }
                 }
             }
+            
+            nodeInfo.getExecutingJobIds().remove(jobId);            
             // TODO:
             // Want to free usingNode
         }

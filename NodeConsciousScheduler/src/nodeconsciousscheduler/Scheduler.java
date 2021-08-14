@@ -27,7 +27,7 @@ public abstract class Scheduler {
 
     
     abstract protected ArrayList<Event> scheduleJobsStartAt(int currentTime);
-    abstract protected ArrayList<Event> scheduleJobsOCState(Event ev);
+    abstract protected ArrayList<Event> checkCoexistingJobsOCStateAndModifyENDEventAndTimeSlices(Event ev);
     
     protected void enqueue(Event ev) {
         waitingQueue.add(ev.getJob());
@@ -133,9 +133,12 @@ public abstract class Scheduler {
         } catch (Exception ex) {
             Logger.getLogger(Scheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
+
+        /* We must consider the points below: */
+        /*  1. Check the coexisting jobs' OCStateLevel */
         
         ArrayList<Event> newEventsOCState = new ArrayList<Event>();
-        newEventsOCState = scheduleJobsOCState(ev);
+        newEventsOCState = checkCoexistingJobsOCStateAndModifyENDEventAndTimeSlices(ev);
 
         try {
             EventQueue.debugExecuting(currentTime, ev);

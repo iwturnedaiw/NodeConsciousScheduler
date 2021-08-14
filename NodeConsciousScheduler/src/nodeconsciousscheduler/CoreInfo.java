@@ -7,6 +7,7 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import static nodeconsciousscheduler.Constants.UNUSED;
 
 /**
  *
@@ -16,7 +17,9 @@ public class CoreInfo implements Cloneable, Comparable<CoreInfo> {
     private int coreId;
     private ArrayList<Integer> jobList;
 
-    CoreInfo() {}
+    CoreInfo() {
+        this.coreId = UNUSED;
+    }
     CoreInfo(int coreId) {
         this.coreId = coreId;
         this.jobList = new ArrayList<Integer>();

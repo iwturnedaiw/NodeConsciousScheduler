@@ -62,7 +62,7 @@ class FCFS extends Scheduler {
     }
 
     @Override
-    protected ArrayList<Event> scheduleJobsOCState(Event ev) {
+    protected ArrayList<Event> checkCoexistingJobsOCStateAndModifyENDEventAndTimeSlices(Event ev) {
         return new ArrayList<Event>();
     }
     
