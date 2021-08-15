@@ -6,6 +6,8 @@
 
 package nodeconsciousscheduler;
 
+import static nodeconsciousscheduler.Constants.UNUSED;
+
 
 
 /**
@@ -16,6 +18,7 @@ public class Event implements Comparable<Event> {
     private EventType eventType;
     private int occurrenceTime;
     private Job job;
+    private int updatedTime = UNUSED;
     
     
     Event(EventType eventType, int occurrenceTime, Job job) {
@@ -25,6 +28,13 @@ public class Event implements Comparable<Event> {
         
     }
 
+    Event(EventType eventType, int occurrenceTime, Job job, int updatedTime) {
+        this.eventType = eventType;
+        this.occurrenceTime = occurrenceTime;
+        this.job = job;
+        this.updatedTime = updatedTime;        
+    }
+    
     Event(int occurrenceTime, Job job) {
         this.occurrenceTime = occurrenceTime;
         this.job = job;
@@ -54,6 +64,14 @@ public class Event implements Comparable<Event> {
         return job;
     }
 
+    public int getUpdatedTime() {
+        return updatedTime;
+    }
+
+    public void setUpdatedTime(int updatedTime) {
+        this.updatedTime = updatedTime;
+    }
+    
     @Override
     public int compareTo(Event o) {
         if (this.occurrenceTime < o.occurrenceTime) {
@@ -62,6 +80,7 @@ public class Event implements Comparable<Event> {
         if (this.occurrenceTime > o.occurrenceTime) {
             return 1;
         }
+        //if (this.eventType != EventType.END && this.eventType == o.eventType) {
         if (this.eventType == o.eventType) {
             return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());            
         }

@@ -251,11 +251,12 @@ public class FCFSOC extends FCFS {
             int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
 
             /*  1-3. Rethrow the END event set the time */
-            printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
-            result.add(new Event(EventType.END, trueEndTime, coexistingJob));
-            printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
-            result.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob)); // This event delete the END event already exists in the event queue. 
-
+            if (currentOCStateLevel != OCStateLevel) {
+                printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
+                result.add(new Event(EventType.END, trueEndTime, coexistingJob));
+                printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
+                result.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob, trueEndTime)); // This event delete the END event already exists in the event queue. 
+            }
 
             /*  3. Modify the timeSlices */
 
@@ -773,7 +774,7 @@ public class FCFSOC extends FCFS {
     }
 
     private void printThrowENDEvent(int currentTime, int trueEndTime, Job job, EventType evt) {
-        System.out.println("\tdebug) Throw " + evt + " event: jobId = " + job.getJobId() + ", newTrueEndTime: " + trueEndTime + " at " + currentTime);
+        System.out.println("\tdebug) Throw " + evt + " event: jobId " + job.getJobId() + ", newTrueEndTime: " + trueEndTime + " at " + currentTime);
     }
 
     private void printDebugForCoexistingJob(Event ev, int coexistingJobId) {
@@ -840,11 +841,13 @@ public class FCFSOC extends FCFS {
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
 
         /*  1-3. Rethrow the END event set the time */
-        printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
-        result.add(new Event(EventType.END, trueEndTime, victimJob));
-        printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
-        result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
-
+        if (currentOCStateLevel != OCStateLevel) {
+            printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
+            result.add(new Event(EventType.END, trueEndTime, victimJob));
+            printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
+            result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob, trueEndTime)); // This event delete the END event already exists in the event queue. 
+        }
+        
         return result;
     }
 

@@ -73,13 +73,15 @@ public class EventQueue extends PriorityQueue {
         
         Job job = ev.getJob();
         int jobId = job.getJobId();
+        int updatedTime = ev.getUpdatedTime();        
         int deleteCnt = 0;
         while(itr.hasNext()) {
             Event candidateEvent = (Event) itr.next();
             EventType evt = candidateEvent.getEventType();            
+            int occuranceTime = candidateEvent.getOccurrenceTime();            
             Job candidateJob = candidateEvent.getJob();
             int candidateJobId = candidateJob.getJobId();
-            if (evt == EventType.END && jobId == candidateJobId) {
+            if (evt == EventType.END && jobId == candidateJobId && occuranceTime != updatedTime) {
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
                 // int originalEndTime = candidateEvent.getOccurrenceTime();                               
                 itr.remove();
@@ -95,15 +97,17 @@ public class EventQueue extends PriorityQueue {
         Iterator itr = this.iterator();
         Job job = ev.getJob();
         int jobId = job.getJobId();
+        int updatedTime = ev.getUpdatedTime();
         int deleteCnt = 0;
         while(itr.hasNext()) {
             Event candidateEvent = (Event) itr.next();
             EventType evt = candidateEvent.getEventType();
+            int occuranceTime = candidateEvent.getOccurrenceTime();
             Job candidateJob = candidateEvent.getJob();
             int candidateJobId = candidateJob.getJobId();
-            if (evt == EventType.END && jobId == candidateJobId) {
+            if (evt == EventType.END && jobId == candidateJobId && occuranceTime != updatedTime) {                
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
-                // int originalEndTime = candidateEvent.getOccurrenceTime();                               
+                // int originalEndTime = candidateEvent.getOccurrenceTime();                                               
                 itr.remove();
                 ++deleteCnt;
                 break;
