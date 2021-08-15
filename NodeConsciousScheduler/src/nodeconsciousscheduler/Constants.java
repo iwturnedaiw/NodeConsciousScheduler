@@ -15,4 +15,5 @@ public class Constants {
     static int UNUPDATED = -1;
     static int TS_ENDTIME = 1 << 30;
     static int CANNOT_START = -1;
+    static int UNSTARTED = -1;
 }

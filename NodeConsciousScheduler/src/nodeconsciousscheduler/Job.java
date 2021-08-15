@@ -9,6 +9,7 @@ package nodeconsciousscheduler;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import static nodeconsciousscheduler.Constants.UNSTARTED;
 
 /**
  *
@@ -44,7 +45,7 @@ public class Job {
         this.requiredCores = requiredCores;
         this.requiredNodes = requiredNodes;
         
-        this.startTime = -1;
+        this.startTime = UNSTARTED;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
         this.cpuTimeForNow = 0;

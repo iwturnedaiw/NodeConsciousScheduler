@@ -76,9 +76,10 @@ public class EventQueue extends PriorityQueue {
         int deleteCnt = 0;
         while(itr.hasNext()) {
             Event candidateEvent = (Event) itr.next();
+            EventType evt = candidateEvent.getEventType();            
             Job candidateJob = candidateEvent.getJob();
             int candidateJobId = candidateJob.getJobId();
-            if (jobId == candidateJobId) {
+            if (evt == EventType.END && jobId == candidateJobId) {
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
                 // int originalEndTime = candidateEvent.getOccurrenceTime();                               
                 itr.remove();
@@ -97,9 +98,10 @@ public class EventQueue extends PriorityQueue {
         int deleteCnt = 0;
         while(itr.hasNext()) {
             Event candidateEvent = (Event) itr.next();
+            EventType evt = candidateEvent.getEventType();
             Job candidateJob = candidateEvent.getJob();
             int candidateJobId = candidateJob.getJobId();
-            if (jobId == candidateJobId) {
+            if (evt == EventType.END && jobId == candidateJobId) {
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
                 // int originalEndTime = candidateEvent.getOccurrenceTime();                               
                 itr.remove();

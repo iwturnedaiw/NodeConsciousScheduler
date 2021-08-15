@@ -15,6 +15,7 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.Constants.UNSTARTED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.UNUSED;
 
@@ -26,6 +27,7 @@ public class FCFSOC extends FCFS {
     @Override
     protected ArrayList<Event> scheduleJobsStartAt(int currentTime) {
         ArrayList<Event> result = new ArrayList<Event>();
+        temporallyScheduledJobList.clear();
         while (!waitingQueue.isEmpty()) {
             Job job = waitingQueue.peek();
             int jobId = job.getJobId();
@@ -33,6 +35,7 @@ public class FCFSOC extends FCFS {
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
             assert checkTimeSlicesAndAllNodeInfo();
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
+                temporallyScheduledJobList.add(job);
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForJob = 1;
@@ -56,7 +59,7 @@ public class FCFSOC extends FCFS {
 
                     int trueEndTime = startTime + job.getActualExecuteTime();
                     result.add(new Event(EventType.START, startTime, job));
-                    printThrowENDEvent(currentTime, trueEndTime, job);
+                    printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, job));
                 } else {
                     /* If OCStateLevel is greater than 1, */
@@ -162,7 +165,7 @@ public class FCFSOC extends FCFS {
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForJob;
                     int trueEndTime = calculateNewActualEndTime(startTime, job);;
                     result.add(new Event(EventType.START, startTime, job));
-                    printThrowENDEvent(currentTime, trueEndTime, job);
+                    printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, job));                    
                 }
             } else break;
@@ -193,6 +196,7 @@ public class FCFSOC extends FCFS {
             ArrayList<UsingNodes> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
 
             Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
+            System.out.println("\tdebug) ending Job Id: " + endingJobId);
             assert coexistingJobCoexistingJob.contains(endingJobId);
            
             printDebugForCoexistingJob(ev, coexistingJobId);
@@ -247,9 +251,10 @@ public class FCFSOC extends FCFS {
             int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
 
             /*  1-3. Rethrow the END event set the time */
-            printThrowENDEvent(currentTime, trueEndTime, coexistingJob);
+            printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
-            result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, coexistingJob)); // This event delete the END event already exists in the event queue. 
+            printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
+            result.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob)); // This event delete the END event already exists in the event queue. 
 
 
             /*  3. Modify the timeSlices */
@@ -414,6 +419,9 @@ public class FCFSOC extends FCFS {
         return victimJobs;
     }
 
+    
+    
+    
     private void measureCurrentExecutingTime(int currentTime, Job victimJob, int OCStateLevel) {
         int currentOCStateLevel = victimJob.getOCStateLevel();
         
@@ -577,7 +585,13 @@ public class FCFSOC extends FCFS {
             int executingJobId = job.getJobId();
             if(executingJobId == coexistingJobId) break;
         }
-        assert job.getStartTime() >= 0;
+        if (job.getJobId() == coexistingJobId) return job;
+        for (i = 0; i < temporallyScheduledJobList.size(); ++i) {
+            job = temporallyScheduledJobList.get(i);
+            int temporallyJobId = job.getJobId();
+            if(temporallyJobId == coexistingJobId) break;            
+        }
+        assert job.getJobId() == coexistingJobId;
         return job;
     }
 
@@ -758,8 +772,8 @@ public class FCFSOC extends FCFS {
         }
     }
 
-    private void printThrowENDEvent(int currentTime, int trueEndTime, Job job) {
-        System.out.println("\tdebug) Throw END event: jobId = " + job.getJobId() + ", newTrueEndTime: " + trueEndTime + " at " + currentTime);
+    private void printThrowENDEvent(int currentTime, int trueEndTime, Job job, EventType evt) {
+        System.out.println("\tdebug) Throw " + evt + " event: jobId = " + job.getJobId() + ", newTrueEndTime: " + trueEndTime + " at " + currentTime);
     }
 
     private void printDebugForCoexistingJob(Event ev, int coexistingJobId) {
@@ -811,7 +825,7 @@ public class FCFSOC extends FCFS {
         /* 1. Modify the victim job's end time in event queue */
         Job victimJob = getJobByJobId(victimJobId); // O(N)
         int victimStartTime = victimJob.getStartTime();
-        assert victimStartTime >= 0 && victimStartTime <= currentTime;
+        assert (victimStartTime >= 0 && victimStartTime <= currentTime) || victimStartTime == UNSTARTED;
 
         /*  1-1. Measure the executing time at current time for each victim jobs. */
         measureCurrentExecutingTime(currentTime, victimJob);
@@ -826,8 +840,9 @@ public class FCFSOC extends FCFS {
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
 
         /*  1-3. Rethrow the END event set the time */
-        printThrowENDEvent(currentTime, trueEndTime, victimJob);
+        printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
         result.add(new Event(EventType.END, trueEndTime, victimJob));
+        printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
         result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
 
         return result;

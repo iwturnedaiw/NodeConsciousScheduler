@@ -24,7 +24,7 @@ public abstract class Scheduler {
     protected Queue<Job> waitingQueue;
     protected LinkedList<TimeSlice> timeSlices;
     protected LinkedList<TimeSlice> completedTimeSlices;
-
+    ArrayList<Job> temporallyScheduledJobList;
     
     abstract protected ArrayList<Event> scheduleJobsStartAt(int currentTime);
     abstract protected ArrayList<Event> checkCoexistingJobsOCStateAndModifyENDEventAndTimeSlices(Event ev);
@@ -38,6 +38,7 @@ public abstract class Scheduler {
         this.timeSlices = new LinkedList<TimeSlice>();
         this.timeSlices.add(new TimeSlice());
         this.completedTimeSlices = new LinkedList<TimeSlice>();    
+        this.temporallyScheduledJobList = new ArrayList<Job>();
     }
     
     protected boolean existSliceStartAt(int currentTime) {
