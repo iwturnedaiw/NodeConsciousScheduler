@@ -231,7 +231,7 @@ public abstract class Scheduler {
 
                 jobList.add(jobId);                    
                 --coreCnt;                    
-                
+                assert jobList.size() <= NodeConsciousScheduler.M;
                 if (coreCnt == 0) break;
             }
             assert coreCnt == 0;

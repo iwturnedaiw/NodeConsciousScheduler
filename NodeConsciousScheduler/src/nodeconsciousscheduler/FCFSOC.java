@@ -83,7 +83,7 @@ public class FCFSOC extends FCFS {
                     Set<Integer> victimJobs = new HashSet<Integer>();
                     victimJobs = searchVictimJobs(startTime, job, assignNodesNo);
                     int opponentJobId = job.getJobId();
-                    System.out.println("OC allocating, opponent jobId: " + opponentJobId + ", victim jobId: " + victimJobs);
+                    System.out.println("OC allocating, opponent jobId: " + opponentJobId + ", OCStateLevel: " + OCStateLevelForJob + ", victim jobId: " + victimJobs);
                     /* Set victim jobList for the opponent job */
                     job.setCoexistingJobs(victimJobs);
                     
@@ -697,7 +697,11 @@ public class FCFSOC extends FCFS {
 
         boolean ret = true;
         for (int i = 0; i < freeCoreInAllNodeInfo.size(); ++i) {
-            if (freeCoreInTimeSlices.get(i) != freeCoreInAllNodeInfo.get(i)) ret = false;
+            int freeCoreInTimeSlice = freeCoreInTimeSlices.get(i);
+            int freeCoreInNodeInfo = freeCoreInAllNodeInfo.get(i);
+            if (freeCoreInTimeSlice != freeCoreInNodeInfo) {
+                ret = false;
+            }
         }
         
         return ret;
