@@ -855,18 +855,7 @@ public class FCFSOC extends FCFS {
         return result;
     }
 
-    private CoreInfo getOccupiedCoreInfoByCoreId(ArrayList<CoreInfo> occupiedCores, int usingCoreId) {
-        CoreInfo ret = new CoreInfo();
-        for (int i = 0; i < occupiedCores.size(); ++i) {
-            CoreInfo coreInfo = occupiedCores.get(i);
-            if (coreInfo.getCoreId() == usingCoreId) {
-                ret = coreInfo;
-                break;
-            }
-        }
-        assert ret.getCoreId() != UNUSED;
-        return ret;
-    }
+
 
     private void printDifferenceExpectedEndTime(int oldExpectedEndTime, int newExpectedEndTime) {
         System.out.println("\tdebug) oldExpectedEndTime: " + oldExpectedEndTime + ", newExpectedEndTime: " + newExpectedEndTime);

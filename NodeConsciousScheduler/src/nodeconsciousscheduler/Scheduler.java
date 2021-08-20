@@ -15,6 +15,7 @@ import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
+import static nodeconsciousscheduler.Constants.UNUSED;
 
 /**
  *
@@ -141,20 +142,18 @@ public abstract class Scheduler {
         ArrayList<Event> newEventsOCState = new ArrayList<Event>();
         newEventsOCState = checkCoexistingJobsOCStateAndModifyENDEventAndTimeSlices(ev);
 
-        try {
-            EventQueue.debugExecuting(currentTime, ev);
-        } catch (Exception ex) {
-            Logger.getLogger(Scheduler.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-        ArrayList<Event> newEventsStart = new ArrayList<Event>();
-        newEventsStart = scheduleJobsStartAt(currentTime);
-
         ArrayList<Event> newEvents = new ArrayList<Event>();
 
         for (int i = 0; i < newEventsOCState.size(); ++i) {
             newEvents.add(newEventsOCState.get(i));
         }
+
+        loadBalancing(ev);
+        
+        ArrayList<Event> newEventsStart = new ArrayList<Event>();
+        newEventsStart = scheduleJobsStartAt(currentTime);
+
+
         for (int i = 0; i < newEventsStart.size(); ++i) {
             newEvents.add(newEventsStart.get(i));
         }
@@ -360,5 +359,184 @@ public abstract class Scheduler {
         }
     }
 
+    private void loadBalancing(Event ev) {
+        Job endingJob = ev.getJob();
+        ArrayList<UsingNodes> usingNodeList = endingJob.getUsingNodesList();
+        ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
+        /* Check the all executing jobs */
+        for (int i = 0; i < executingJobList.size(); ++i) {
+            Job job = executingJobList.get(i);
+            if(!checkUseSameNode(usingNodeList, job)) continue;
+            System.out.println("\tdebug)jobId:" +job.getJobId());
+            int OCStateLevel = job.getOCStateLevel();
+            if (OCStateLevel == 1) {
+                continue;
+            }
+            /* Calculate candidate cores the job migrates */
+            ArrayList<MigrateTargetNode> migrateTargetNodes = calculateMigrateTargetCoresPerNode(job);
+            /* Do migrate */
+            doMigrate(job, migrateTargetNodes);
+        }
+    }
+
+    private ArrayList<MigrateTargetNode> calculateMigrateTargetCoresPerNode(Job job) {
+        ArrayList<UsingNodes> usingNodes = job.getUsingNodesList();
+        ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
+        int OCStateLevel = job.getOCStateLevel();
+        int jobId = job.getJobId();
+        ArrayList migrateTargetNodes = new ArrayList<MigrateTargetNode>();
+        
+        for (int i = 0; i < usingNodes.size(); ++i) {
+            UsingNodes usingNode = usingNodes.get(i);
+            int nodeId = usingNode.getNodeNum();
+            ArrayList<Integer> usingCores = usingNode.getUsingCoreNum();
+            NodeInfo nodeInfo = allNodeInfo.get(nodeId);
+            assert nodeId == nodeInfo.getNodeNum();
+            ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
+
+            MigrateTargetNode targetNode = new MigrateTargetNode(nodeId);
+            for (int j = 0; j < occupiedCores.size(); ++j) {
+                CoreInfo coreInfo = occupiedCores.get(j);
+                int coreId = coreInfo.getCoreId();
+                ArrayList<Integer> jobList = coreInfo.getJobList();
+                assert (jobList.contains(jobId) && usingCores.contains(coreId)) || (!jobList.contains(jobId) && !usingCores.contains(coreId));
+                if (!jobList.contains(jobId) && jobList.size() < OCStateLevel-1) {
+                    /* ADD CoreInfo to candidate of migrate target */
+                    targetNode.getMigrateTargetCores().add(coreInfo);
+                }                
+            }
+            migrateTargetNodes.add(targetNode);            
+        }
+        return migrateTargetNodes;
+    }
+
+    private void doMigrate(Job job, ArrayList<MigrateTargetNode> migrateTargetNodes) {
+        ArrayList<UsingNodes> usingNodes = job.getUsingNodesList();
+        ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
+
+        /* For usingNode */
+        for (int i = 0; i < migrateTargetNodes.size(); ++i) {            
+            MigrateTargetNode migrateTargetNode = migrateTargetNodes.get(i);
+            if (migrateTargetNode.getMigrateTargetCores().size() == 0) continue;
+            int nodeId = migrateTargetNode.getNodeId();
+                        
+            UsingNodes usingNode = usingNodes.get(i);
+            assert usingNode.getNodeNum() == nodeId;
+            ArrayList<Integer> usingCores = usingNode.getUsingCoreNum();
+            
+            ArrayList<CoreInfo> migrateTargetCores = migrateTargetNode.getMigrateTargetCores();
+            for (int usingCore: usingCores) {
+                assert !migrateTargetCores.contains(usingCore);
+            }
+            
+            ArrayList<CoreInfo> usingCoresWithMultiplicity = getMultiplicityOnUsingCores(nodeId, usingCores);
+            Collections.reverse(usingCoresWithMultiplicity);
+            printUsingCoreInfo(job, nodeId, usingCoresWithMultiplicity, false);
+            
+            int migrationCnt = 0;
+            
+            /* Do migration */
+            
+            for (CoreInfo ci: usingCoresWithMultiplicity) {
+                if (ci.getJobList().size() > 1) {
+                    migrate(job, ci, usingCores, migrateTargetCores, migrationCnt);
+                    ++migrationCnt;
+                }
+                if (migrationCnt >= migrateTargetCores.size()) break;
+            }
+                       
+            usingCoresWithMultiplicity = getMultiplicityOnUsingCores(nodeId, usingCores);
+            printUsingCoreInfo(job, nodeId, usingCoresWithMultiplicity, true);            
+        }
+    }
+
+    private ArrayList<CoreInfo> getMultiplicityOnUsingCores(int nodeId, ArrayList<Integer> usingCores) {
+        ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
+        NodeInfo node = allNodeInfo.get(nodeId);
+        assert nodeId == node.getNodeNum();
+        ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
+        
+        ArrayList<CoreInfo> result = new ArrayList<CoreInfo>();
+        for (int i = 0; i < usingCores.size(); ++i) {
+            int coreId = usingCores.get(i);
+            CoreInfo coreInfo = getOccupiedCoreInfoByCoreId(occupiedCores, coreId); // TODO: this method is O(N);
+            assert coreId == coreInfo.getCoreId();
+            result.add(coreInfo);
+        }
+        return result;
+    }
+
+    private void printUsingCoreInfo(Job job, int nodeId, ArrayList<CoreInfo> usingCoresWithMultiplicity, boolean afterFlag) {
+        int jobId = job.getJobId();
+        
+        System.out.print("\tdebug) jobId " + jobId + " at node " + nodeId + ", ");
+
+        if (!afterFlag) {
+            System.out.print("Before migrating, ");
+        } else {
+            System.out.print("After  migrating, ");
+        }
+        System.out.print("now using cores: ");
+        for (int i = 0; i < usingCoresWithMultiplicity.size(); ++i) {
+            CoreInfo ci = usingCoresWithMultiplicity.get(i);
+            assert ci.getJobList().contains(jobId);
+            System.out.print(ci.getCoreId() + "(" + ci.getJobList().size() + ")");
+            if (i != usingCoresWithMultiplicity.size() - 1) System.out.print(", ");            
+        }
+        System.out.println();
+    }
+    
+    protected CoreInfo getOccupiedCoreInfoByCoreId(ArrayList<CoreInfo> occupiedCores, int usingCoreId) {
+        CoreInfo ret = new CoreInfo();
+        for (int i = 0; i < occupiedCores.size(); ++i) {
+            CoreInfo coreInfo = occupiedCores.get(i);
+            if (coreInfo.getCoreId() == usingCoreId) {
+                ret = coreInfo;
+                break;
+            }
+        }
+        assert ret.getCoreId() != UNUSED;
+        return ret;
+    }
+
+    private void migrate(Job job, CoreInfo ci, ArrayList<Integer> usingCores, ArrayList<CoreInfo> migrateTargetCores, int migrationCnt) {
+        int jobId = job.getJobId();
+        int usingCoreId = ci.getCoreId();
+        ArrayList<Integer> usingJobList = ci.getJobList();
+        assert usingJobList.contains(jobId);
+        
+        CoreInfo migrateTargetCore = migrateTargetCores.get(migrationCnt);
+        int targetCoreId = migrateTargetCore.getCoreId();
+        assert targetCoreId != usingCoreId;
+        
+        ArrayList<Integer> migrateTargetJobList = migrateTargetCore.getJobList();
+        assert !migrateTargetJobList.contains(jobId);
+        
+        usingJobList.remove((Integer) jobId);
+        usingCores.remove((Integer) usingCoreId);
+        
+        migrateTargetJobList.add(jobId);
+        usingCores.add(targetCoreId);
+    }   
+
+    private boolean checkUseSameNode(ArrayList<UsingNodes> usingNodeList, Job job) {
+        ArrayList<UsingNodes> migratingJobUsingNodeList = job.getUsingNodesList();
+        boolean ret = false;
+        for (int i = 0; i < migratingJobUsingNodeList.size(); ++i) {
+            UsingNodes migratingJobUsingNode = migratingJobUsingNodeList.get(i);
+            int migratingJobNodeId = migratingJobUsingNode.getNodeNum();
+            for (int j = 0; j < usingNodeList.size(); ++j) {
+                UsingNodes usingNode = usingNodeList.get(j);
+                if (usingNode.getNodeNum() == migratingJobNodeId) {
+                    ret = true;
+                    break;
+                }
+            }
+            if (ret) break;
+        }
+        return ret;
+    }
 }
+
+
 
