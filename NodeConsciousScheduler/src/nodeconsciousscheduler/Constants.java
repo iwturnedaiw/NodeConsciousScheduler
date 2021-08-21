@@ -16,4 +16,5 @@ public class Constants {
     static int TS_ENDTIME = 1 << 30;
     static int CANNOT_START = -1;
     static int UNSTARTED = -1;
+    static int BLANK_JOBID = -1;
 }
