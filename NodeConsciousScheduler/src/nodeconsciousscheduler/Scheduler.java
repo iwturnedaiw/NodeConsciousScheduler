@@ -364,6 +364,7 @@ public abstract class Scheduler {
     private void loadBalancing(Event ev) {
         Job endingJob = ev.getJob();
         ArrayList<UsingNode> usingNodeList = endingJob.getUsingNodesList();
+        int endingJobId = endingJob.getJobId();
         ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
         /* Check the all executing jobs */
         for (int i = 0; i < executingJobList.size(); ++i) {
@@ -374,11 +375,24 @@ public abstract class Scheduler {
             if (OCStateLevel == 1) {
                 continue;
             }
-            /* Calculate candidate cores the job migrates */
+            
+            /* 1. Calculate candidate cores the job can migrate */
+            /* 2. Do migration: return the new coexisting jobs and
+                                       the deleted coexisting jobs(changed from coexisting one to NOT coexisting one due to migration)
+                 2.1 modifying usingNode -> usingCoreNum
+                 2.2 modifying allNodeInfo -> NodeInfo -> occupiedCores -> jobList
+            */
+            /* 3. Modify the END Event time */
+            /* 4. Modify the TimeSlices */
+
+            /* 1. Calculate candidate cores the job can migrate */
             ArrayList<MigrateTargetNode> migrateTargetNodes = calculateMigrateTargetCoresPerNode(job);
-            /* Do migrate */
+            /* 2. Do migration */
             NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobs = doMigrate(job, migrateTargetNodes);
             printNewAndDeletedCoexistingJobs(newAndDeletedCoexistingJobs, job);
+            
+            /* 3. Modify the END Event time */
+            
         }
     }
 
