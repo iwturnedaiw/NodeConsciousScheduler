@@ -102,11 +102,11 @@ class End implements EventHandler {
 
     private void freeResources(Job job) {
         int jobId = job.getJobId();
-        ArrayList<UsingNodes> usingNodesList = job.getUsingNodesList();
+        ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
 
         ArrayList<NodeInfo> AllNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
         for (int i = 0; i < usingNodesList.size(); ++i) {
-            UsingNodes usingNode = usingNodesList.get(i);
+            UsingNode usingNode = usingNodesList.get(i);
             int nodeNo = usingNode.getNodeNum();
             NodeInfo nodeInfo = AllNodeInfo.get(nodeNo);
             int numFreeCores = nodeInfo.getNumFreeCores();

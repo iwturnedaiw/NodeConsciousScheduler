@@ -130,7 +130,7 @@ public class EventQueue extends PriorityQueue {
         ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
         for (int i = 0; i < executingJobList.size(); ++i) {
             Job job = executingJobList.get(i);
-            ArrayList<UsingNodes> usingNodes = job.getUsingNodesList();
+            ArrayList<UsingNode> usingNodes = job.getUsingNodesList();
             if (usingNodes == null) {
                 System.out.println("debug) FOUND null pointer HERE: " + job.getJobId() + " at " + currentTime); 
                 System.out.println("\tEventType: " + ev.getEventType() + ", jobId: " + ev.getJob().getJobId()); 

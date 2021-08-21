@@ -193,7 +193,7 @@ public class FCFSOC extends FCFS {
         for (int coexistingJobId : coexistingJobs) {
             Job coexistingJob = getJobByJobId(coexistingJobId);
             /* Calculate new OCStateLevel for coexisting jobs */
-            ArrayList<UsingNodes> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
+            ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
 
             Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
             System.out.println("\tdebug) ending Job Id: " + endingJobId);
@@ -207,7 +207,7 @@ public class FCFSOC extends FCFS {
                 int multiplicityAlongCores = UNUPDATED;
 
                 /* node setting */
-                UsingNodes usingNode = coexistingJobUsingNodeList.get(i);
+                UsingNode usingNode = coexistingJobUsingNodeList.get(i);
                 int usingNodeId = usingNode.getNodeNum();
                 NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(usingNodeId);
                 assert usingNodeId == nodeInfo.getNodeNum();
@@ -522,10 +522,10 @@ public class FCFSOC extends FCFS {
 
     protected void assignJobForOnlyTimeSlices(int startTime, Job job, int expectedEndTime) {
         ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
-        ArrayList<UsingNodes> usingNodeList = job.getUsingNodesList();
+        ArrayList<UsingNode> usingNodeList = job.getUsingNodesList();
         
         for (int i = 0; i < usingNodeList.size(); ++i) {
-            UsingNodes node = usingNodeList.get(i);
+            UsingNode node = usingNodeList.get(i);
             int nodeId = node.getNodeNum();
             assignNodesNo.add(nodeId);
         }
@@ -732,14 +732,14 @@ public class FCFSOC extends FCFS {
     }
 
     private void refiilFreeCoresInTimeSlices(int currentTime, int timeSliceIndex, Job victimJob) {
-        ArrayList<UsingNodes> usingNodes = victimJob.getUsingNodesList();
+        ArrayList<UsingNode> usingNodes = victimJob.getUsingNodesList();
 
         for (int i = 0; i <= timeSliceIndex; ++i) {
             TimeSlice ts = timeSlices.get(i);
             assert currentTime <= ts.getStartTime(); 
             ArrayList<Integer> availableCores = ts.getAvailableCores();
             for (int j = 0; j < usingNodes.size(); ++j) {
-                UsingNodes usingNode = usingNodes.get(j);
+                UsingNode usingNode = usingNodes.get(j);
                 int nodeId = usingNode.getNodeNum();
                 int releaseCore = usingNode.getNumUsingCores();
                 
@@ -753,7 +753,7 @@ public class FCFSOC extends FCFS {
     }
 
     private void reallocateOccupiedCoresInTimeSlices(int currentTime, int newExpectedEndTime, Job victimJob) {
-        ArrayList<UsingNodes> usingNodes = victimJob.getUsingNodesList();
+        ArrayList<UsingNode> usingNodes = victimJob.getUsingNodesList();
         
         for (int i = 0; i < timeSlices.size(); ++i) {
             TimeSlice ts = timeSlices.get(i);
@@ -762,7 +762,7 @@ public class FCFSOC extends FCFS {
 
             ArrayList<Integer> availableCores = ts.getAvailableCores();
             for (int j = 0; j < usingNodes.size(); ++j) {
-                UsingNodes usingNode = usingNodes.get(j);
+                UsingNode usingNode = usingNodes.get(j);
                 int nodeId = usingNode.getNodeNum();
                 int occupiedCore = usingNode.getNumUsingCores();
                 
@@ -789,7 +789,7 @@ public class FCFSOC extends FCFS {
         Set<Integer> coexistingJobs = endingJob.getCoexistingJobs();
         Job coexistingJob = getJobByJobId(coexistingJobId);
         /* Calculate new OCStateLevel for coexisting jobs */
-        ArrayList<UsingNodes> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
+        ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
 
         Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
         
@@ -797,9 +797,9 @@ public class FCFSOC extends FCFS {
         if (coexistingJobUsingNodeList == null) {
             System.out.println("debug) OCCURRED HERE, ending job Id: " + endingJobId + ", currentTime: " + currentTime);
             System.out.println("debug) usingNodeList: ");
-            ArrayList<UsingNodes> endingJobUsingNodeList = endingJob.getUsingNodesList();
+            ArrayList<UsingNode> endingJobUsingNodeList = endingJob.getUsingNodesList();
             for (int i = 0; i < endingJobUsingNodeList.size(); ++i) {
-                UsingNodes node = endingJobUsingNodeList.get(i);
+                UsingNode node = endingJobUsingNodeList.get(i);
                 System.out.print("\tNode" + node.getNodeNum() + ": ");
                 ArrayList<Integer> cores = node.getUsingCoreNum();
                 for (int j = 0; j < cores.size(); ++j) {

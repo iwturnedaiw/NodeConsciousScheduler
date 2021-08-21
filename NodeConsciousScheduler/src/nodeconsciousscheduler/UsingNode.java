@@ -12,17 +12,17 @@ import java.util.ArrayList;
  *
  * @author sminami
  */
-public class UsingNodes implements Comparable<UsingNodes>{
+public class UsingNode implements Comparable<UsingNode>{
     int nodeNum;
     int numUsingCores;
     ArrayList<Integer> usingCoreNum;
     
-    UsingNodes(int nodeNum, int numUsingCores) {
+    UsingNode(int nodeNum, int numUsingCores) {
         this.nodeNum = nodeNum;
         this.numUsingCores = numUsingCores;
     }
 
-    UsingNodes(int nodeNo, int addedPpn, ArrayList<Integer> coreNum) {
+    UsingNode(int nodeNo, int addedPpn, ArrayList<Integer> coreNum) {
         this.nodeNum = nodeNo;
         this.numUsingCores = addedPpn;
         this.usingCoreNum = new ArrayList<Integer>();
@@ -30,7 +30,7 @@ public class UsingNodes implements Comparable<UsingNodes>{
     }
 
     @Override
-    public int compareTo(UsingNodes o) {
+    public int compareTo(UsingNode o) {
         if (this.nodeNum > o.nodeNum) {
             return 1;
         }

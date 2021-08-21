@@ -179,10 +179,10 @@ public class Simulator {
         pw.print(jobId + "\t" + arrivalTime + "\t" + waitTime + "\t" + startTime + "\t" + finishedTime + "\t" + runningTime + "\t"
                 + slowdown + "\t" + numCores + "\t" + numNodes + "\t");
         
-        ArrayList<UsingNodes> usingNodesList = job.getUsingNodesList();
+        ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
         Collections.sort(usingNodesList);
         for (int i = 0; i < numNodes; ++i) {
-            UsingNodes usingNode = usingNodesList.get(i);
+            UsingNode usingNode = usingNodesList.get(i);
             int nodeNo = usingNode.getNodeNum();
             int numUsingCores = usingNode.getNumUsingCores();
             ArrayList<Integer> usingCoreNum = usingNode.getUsingCoreNum();

@@ -243,7 +243,7 @@ public abstract class Scheduler {
         
         /* Job Setting */
         if (tmpFlag) return;
-        ArrayList<UsingNodes> nodes = job.getUsingNodesList();
+        ArrayList<UsingNode> nodes = job.getUsingNodesList();
 
         for (int i = 0; i < assignNodesNo.size(); ++i) {
             int nodeNo = assignNodesNo.get(i);
@@ -264,7 +264,7 @@ public abstract class Scheduler {
                 // Collections.sort(coreNum);
             }
             
-            UsingNodes node = new UsingNodes(nodeNo, addedPpn, coreNum);
+            UsingNode node = new UsingNode(nodeNo, addedPpn, coreNum);
             nodes.add(node);
         }
     }
@@ -335,7 +335,7 @@ public abstract class Scheduler {
         
         /* Job Setting */
         if (tmpFlag) return;
-        ArrayList<UsingNodes> nodes = job.getUsingNodesList();
+        ArrayList<UsingNode> nodes = job.getUsingNodesList();
 
         for (int i = 0; i < assignNodesNo.size(); ++i) {
             int nodeNo = assignNodesNo.get(i);
@@ -354,14 +354,14 @@ public abstract class Scheduler {
                 }
             }
             
-            UsingNodes node = new UsingNodes(nodeNo, addedPpn, coreNum);
+            UsingNode node = new UsingNode(nodeNo, addedPpn, coreNum);
             nodes.add(node);
         }
     }
 
     private void loadBalancing(Event ev) {
         Job endingJob = ev.getJob();
-        ArrayList<UsingNodes> usingNodeList = endingJob.getUsingNodesList();
+        ArrayList<UsingNode> usingNodeList = endingJob.getUsingNodesList();
         ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
         /* Check the all executing jobs */
         for (int i = 0; i < executingJobList.size(); ++i) {
@@ -380,14 +380,14 @@ public abstract class Scheduler {
     }
 
     private ArrayList<MigrateTargetNode> calculateMigrateTargetCoresPerNode(Job job) {
-        ArrayList<UsingNodes> usingNodes = job.getUsingNodesList();
+        ArrayList<UsingNode> usingNodes = job.getUsingNodesList();
         ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
         int OCStateLevel = job.getOCStateLevel();
         int jobId = job.getJobId();
         ArrayList migrateTargetNodes = new ArrayList<MigrateTargetNode>();
         
         for (int i = 0; i < usingNodes.size(); ++i) {
-            UsingNodes usingNode = usingNodes.get(i);
+            UsingNode usingNode = usingNodes.get(i);
             int nodeId = usingNode.getNodeNum();
             ArrayList<Integer> usingCores = usingNode.getUsingCoreNum();
             NodeInfo nodeInfo = allNodeInfo.get(nodeId);
@@ -411,7 +411,7 @@ public abstract class Scheduler {
     }
 
     private void doMigrate(Job job, ArrayList<MigrateTargetNode> migrateTargetNodes) {
-        ArrayList<UsingNodes> usingNodes = job.getUsingNodesList();
+        ArrayList<UsingNode> usingNodes = job.getUsingNodesList();
         ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
 
         /* For usingNode */
@@ -420,7 +420,7 @@ public abstract class Scheduler {
             if (migrateTargetNode.getMigrateTargetCores().size() == 0) continue;
             int nodeId = migrateTargetNode.getNodeId();
                         
-            UsingNodes usingNode = usingNodes.get(i);
+            UsingNode usingNode = usingNodes.get(i);
             assert usingNode.getNodeNum() == nodeId;
             ArrayList<Integer> usingCores = usingNode.getUsingCoreNum();
             
@@ -519,14 +519,14 @@ public abstract class Scheduler {
         usingCores.add(targetCoreId);
     }   
 
-    private boolean checkUseSameNode(ArrayList<UsingNodes> usingNodeList, Job job) {
-        ArrayList<UsingNodes> migratingJobUsingNodeList = job.getUsingNodesList();
+    private boolean checkUseSameNode(ArrayList<UsingNode> usingNodeList, Job job) {
+        ArrayList<UsingNode> migratingJobUsingNodeList = job.getUsingNodesList();
         boolean ret = false;
         for (int i = 0; i < migratingJobUsingNodeList.size(); ++i) {
-            UsingNodes migratingJobUsingNode = migratingJobUsingNodeList.get(i);
+            UsingNode migratingJobUsingNode = migratingJobUsingNodeList.get(i);
             int migratingJobNodeId = migratingJobUsingNode.getNodeNum();
             for (int j = 0; j < usingNodeList.size(); ++j) {
-                UsingNodes usingNode = usingNodeList.get(j);
+                UsingNode usingNode = usingNodeList.get(j);
                 if (usingNode.getNodeNum() == migratingJobNodeId) {
                     ret = true;
                     break;

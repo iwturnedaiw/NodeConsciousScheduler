@@ -32,7 +32,7 @@ public class Job {
     private int finishedTime;
     private int waitTime;
     private int numNodes;
-    private ArrayList<UsingNodes> usingNodesList;
+    private ArrayList<UsingNode> usingNodesList;
     private Set<Integer> coexistingJobs;
     
 
@@ -49,7 +49,7 @@ public class Job {
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
         this.cpuTimeForNow = 0;
-        this.usingNodesList = new ArrayList<UsingNodes>();
+        this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
     }
@@ -66,7 +66,7 @@ public class Job {
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
         this.cpuTimeForNow = 0;
-        this.usingNodesList = new ArrayList<UsingNodes>();
+        this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
     }
@@ -116,7 +116,7 @@ public class Job {
         return numNodes;
     }
 
-    public ArrayList<UsingNodes> getUsingNodesList() {
+    public ArrayList<UsingNode> getUsingNodesList() {
         return usingNodesList;
     }
 
@@ -192,7 +192,7 @@ public class Job {
         this.numNodes = numNodes;
     }
 
-    public void setUsingNodesList(ArrayList<UsingNodes> usingNodesList) {
+    public void setUsingNodesList(ArrayList<UsingNode> usingNodesList) {
         this.usingNodesList = usingNodesList;
     }
 
