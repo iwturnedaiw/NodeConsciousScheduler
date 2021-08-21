@@ -84,6 +84,12 @@ public class Event implements Comparable<Event> {
         if (this.eventType == o.eventType) {
             return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());            
         }
+        if (this.eventType == EventType.START) {
+            return -1;
+        }
+        if (o.eventType == EventType.START) {
+            return 1;
+        }        
         if (this.eventType == EventType.END) {
             return -1;
         }

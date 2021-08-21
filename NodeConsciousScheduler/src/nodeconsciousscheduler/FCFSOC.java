@@ -236,7 +236,8 @@ public class FCFSOC extends FCFS {
 
             /*  2. Modify the END event time */
             int coexistingStartTime = coexistingJob.getStartTime();
-            assert coexistingStartTime >= 0 && coexistingStartTime <= currentTime;
+            assert coexistingStartTime >= 0;
+            assert coexistingStartTime <= currentTime;
 
             /*  1-1. Measure the executing time at current time for each victim jobs. */
             measureCurrentExecutingTime(currentTime, coexistingJob);
