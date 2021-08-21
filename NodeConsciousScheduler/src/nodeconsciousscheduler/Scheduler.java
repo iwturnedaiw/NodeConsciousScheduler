@@ -10,8 +10,10 @@ import static java.lang.Math.max;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
@@ -375,7 +377,8 @@ public abstract class Scheduler {
             /* Calculate candidate cores the job migrates */
             ArrayList<MigrateTargetNode> migrateTargetNodes = calculateMigrateTargetCoresPerNode(job);
             /* Do migrate */
-            doMigrate(job, migrateTargetNodes);
+            NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobs = doMigrate(job, migrateTargetNodes);
+            printNewAndDeletedCoexistingJobs(newAndDeletedCoexistingJobs, job);
         }
     }
 
@@ -410,9 +413,10 @@ public abstract class Scheduler {
         return migrateTargetNodes;
     }
 
-    private void doMigrate(Job job, ArrayList<MigrateTargetNode> migrateTargetNodes) {
+    private NewAndDeletedCoexistingJobs doMigrate(Job job, ArrayList<MigrateTargetNode> migrateTargetNodes) {
         ArrayList<UsingNode> usingNodes = job.getUsingNodesList();
         ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
+        NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobs = new NewAndDeletedCoexistingJobs();
 
         /* For usingNode */
         for (int i = 0; i < migrateTargetNodes.size(); ++i) {            
@@ -436,18 +440,23 @@ public abstract class Scheduler {
             int migrationCnt = 0;
             
             /* Do migration */
-            
+            NewAndDeletedCoexistingJobs  newAndDeletedCoexistingJobsAlongCores = new NewAndDeletedCoexistingJobs();
             for (CoreInfo ci: usingCoresWithMultiplicity) {
+                NewAndDeletedCoexistingJobs  newAndDeletedCoexistingJobsOnTheCore = new NewAndDeletedCoexistingJobs();                
                 if (ci.getJobList().size() > 1) {
-                    migrate(job, ci, usingCores, migrateTargetCores, migrationCnt);
+                    newAndDeletedCoexistingJobsOnTheCore = migrate(job, ci, usingCores, migrateTargetCores, migrationCnt);
                     ++migrationCnt;
                 }
+                updateNewAndDeletedCoexistingJobs(newAndDeletedCoexistingJobsAlongCores, newAndDeletedCoexistingJobsOnTheCore);
                 if (migrationCnt >= migrateTargetCores.size()) break;
             }
-                       
+            
             usingCoresWithMultiplicity = getMultiplicityOnUsingCores(nodeId, usingCores);
-            printUsingCoreInfo(job, nodeId, usingCoresWithMultiplicity, true);            
+            printUsingCoreInfo(job, nodeId, usingCoresWithMultiplicity, true);
+            
+            updateNewAndDeletedCoexistingJobs(newAndDeletedCoexistingJobs, newAndDeletedCoexistingJobsAlongCores);
         }
+        return newAndDeletedCoexistingJobs;
     }
 
     private ArrayList<CoreInfo> getMultiplicityOnUsingCores(int nodeId, ArrayList<Integer> usingCores) {
@@ -499,7 +508,13 @@ public abstract class Scheduler {
         return ret;
     }
 
-    private void migrate(Job job, CoreInfo ci, ArrayList<Integer> usingCores, ArrayList<CoreInfo> migrateTargetCores, int migrationCnt) {
+    private NewAndDeletedCoexistingJobs migrate(Job job, CoreInfo ci, ArrayList<Integer> usingCores, ArrayList<CoreInfo> migrateTargetCores, int migrationCnt) {
+        NewAndDeletedCoexistingJobs result = new NewAndDeletedCoexistingJobs();
+        Set<Integer> newCoexistingJobOnTheCore = new HashSet<Integer>();
+        Set<Integer> deletedFromCoexistingJobOnTheCore = new HashSet<Integer>();
+        result.setNewCoexistingJobsOnTheCore(newCoexistingJobOnTheCore);
+        result.setDeletedCoexistingJobsFromTheCore(deletedFromCoexistingJobOnTheCore);
+        
         int jobId = job.getJobId();
         int usingCoreId = ci.getCoreId();
         ArrayList<Integer> usingJobList = ci.getJobList();
@@ -513,11 +528,24 @@ public abstract class Scheduler {
         assert !migrateTargetJobList.contains(jobId);
         
         usingJobList.remove((Integer) jobId);
+        for (int deletedFromCoexistingJob: usingJobList) {
+            deletedFromCoexistingJobOnTheCore.add(deletedFromCoexistingJob);
+        }
         usingCores.remove((Integer) usingCoreId);
         
+        for (int newCoexistingJob: migrateTargetJobList) {
+            newCoexistingJobOnTheCore.add(newCoexistingJob);
+        }
         migrateTargetJobList.add(jobId);
         usingCores.add(targetCoreId);
-    }   
+        
+        deletedFromCoexistingJobOnTheCore.removeAll(newCoexistingJobOnTheCore);
+        assert !deletedFromCoexistingJobOnTheCore.contains(jobId);
+        assert !newCoexistingJobOnTheCore.contains(jobId);
+        //newCoexistingJobOnTheCore.removeAll(deletedFromCoexistingJobOnTheCore);
+        
+        return result;
+    }
 
     private boolean checkUseSameNode(ArrayList<UsingNode> usingNodeList, Job job) {
         ArrayList<UsingNode> migratingJobUsingNodeList = job.getUsingNodesList();
@@ -536,6 +564,27 @@ public abstract class Scheduler {
         }
         return ret;
     }
+
+    private void updateNewAndDeletedCoexistingJobs(NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobsSink, NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobsSource) {
+        Set<Integer> updateSinkNew = newAndDeletedCoexistingJobsSink.getNewCoexistingJobsOnTheCore();
+        Set<Integer> updateSinkDeleted = newAndDeletedCoexistingJobsSink.getDeletedCoexistingJobsFromTheCore();
+        
+        Set<Integer> updateSourceNew = newAndDeletedCoexistingJobsSource.getNewCoexistingJobsOnTheCore();
+        Set<Integer> updateSourceDeleted = newAndDeletedCoexistingJobsSource.getDeletedCoexistingJobsFromTheCore();
+        
+        updateSinkNew.addAll(updateSourceNew);
+        updateSinkDeleted.addAll(updateSourceDeleted);
+        
+        updateSinkDeleted.removeAll(updateSinkNew);
+    }
+
+    private void printNewAndDeletedCoexistingJobs(NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobs, Job job) {
+        System.out.print("\tdebug)job id :" + job.getJobId());
+        System.out.print(", newCoexistingJob"  + newAndDeletedCoexistingJobs.getNewCoexistingJobsOnTheCore());
+        System.out.print(", deletedCoexistingJob" + newAndDeletedCoexistingJobs.getDeletedCoexistingJobsFromTheCore());
+        System.out.println("");
+    }
+
 }
 
 
