@@ -226,7 +226,7 @@ public abstract class Scheduler {
                 ArrayList<Integer> jobList = eachCore.getJobList();
                 /*
                 if (jobList.size() == 0) {
-                    jobList.add(jobId);                    
+                    jobList.add(migratingJobId);                    
                     --coreCnt;                    
                 }
                 */
@@ -371,15 +371,15 @@ public abstract class Scheduler {
         ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
         /* Check the all executing jobs */
         for (int i = 0; i < executingJobList.size(); ++i) {
-            Job job = executingJobList.get(i);
-            if(!checkUseSameNode(usingNodeList, job)) continue;
-            System.out.println("\tdebug)jobId:" +job.getJobId());
-            int OCStateLevel = job.getOCStateLevel();
+            Job migratingJob = executingJobList.get(i);
+            if(!checkUseSameNode(usingNodeList, migratingJob)) continue;
+            System.out.println("\tdebug)jobId:" +migratingJob.getJobId());
+            int OCStateLevel = migratingJob.getOCStateLevel();
             if (OCStateLevel == 1) {
                 continue;
             }
             
-            /* 1. Calculate candidate cores the job can migrate */
+            /* 1. Calculate candidate cores the migratingJob can migrate */
             /* 2. Do migration: return the new coexisting jobs and
                                        the deleted coexisting jobs(changed from coexisting one to NOT coexisting one due to migration)
                  2.1 modifying usingNode -> usingCoreNum
@@ -388,11 +388,11 @@ public abstract class Scheduler {
             /* 3. Modify the END Event time */
             /* 4. Modify the TimeSlices */
 
-            /* 1. Calculate candidate cores the job can migrate */
-            ArrayList<MigrateTargetNode> migrateTargetNodes = calculateMigrateTargetCoresPerNode(job);
+            /* 1. Calculate candidate cores the migratingJob can migrate */
+            ArrayList<MigrateTargetNode> migrateTargetNodes = calculateMigrateTargetCoresPerNode(migratingJob);
             /* 2. Do migration */
-            NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobs = doMigrate(job, migrateTargetNodes);
-            printNewAndDeletedCoexistingJobs(newAndDeletedCoexistingJobs, job);
+            NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobs = doMigrate(migratingJob, migrateTargetNodes);
+            printNewAndDeletedCoexistingJobs(newAndDeletedCoexistingJobs, migratingJob);
 
             Set<Integer> newCoexistingJobs = newAndDeletedCoexistingJobs.getNewCoexistingJobsOnTheCore();
             for (int newCoexistingJobId: newCoexistingJobs) {
@@ -427,6 +427,15 @@ public abstract class Scheduler {
                 Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
                 modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);
             }
+            
+            int migratingJobId = migratingJob.getJobId();
+            ArrayList<UsingNode> migratingJobUsingNodeList = migratingJob.getUsingNodesList();
+            int newOCStateLevel = checkMultiplicityAlongNodes(migratingJobUsingNodeList, BLANK_JOBID, migratingJobId);
+            modifyTheENDEventTime(migratingJob, migratingJobId, currentTime, newOCStateLevel, result);
+
+            Set<Integer> migratingJobCoexistingJob = migratingJob.getCoexistingJobs();
+            modifyTheTimeSlices(migratingJob, migratingJobCoexistingJob, currentTime, endingJobId);
+            
         }
         return result;
     }
@@ -669,7 +678,7 @@ public abstract class Scheduler {
             ArrayList<Integer> usingCoreIds = usingNode.getUsingCoreNum();
 
                 // Core loop
-            // 1.2 Check all cores used by coexisting job                
+            // 1.2 Check all cores used by coexisting migratingJob                
             ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
             for (int usingCoreId : usingCoreIds) {
                 CoreInfo usingCoreInfo = getOccupiedCoreInfoByCoreId(occupiedCores, usingCoreId); // O(N)
@@ -697,7 +706,7 @@ public abstract class Scheduler {
         int currentOCStateLevel = victimJob.getOCStateLevel();
 
         int jobId = victimJob.getJobId();
-        // System.out.println("JobId: " + jobId);
+        // System.out.println("JobId: " + migratingJobId);
         /* measure current progress */
         int previousMeasuredTime = victimJob.getPreviousMeasuredTime();
         if (previousMeasuredTime == currentTime) {
