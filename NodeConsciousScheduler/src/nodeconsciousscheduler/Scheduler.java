@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.BLANK_JOBID;
+import static nodeconsciousscheduler.Constants.UNSTARTED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.UNUSED;
 
@@ -122,6 +123,89 @@ public abstract class Scheduler {
                 ts.refillResources(job);
             }
         }
+    }
+
+    protected Set<Integer> searchVictimJobs(int startTime, Job job, ArrayList<Integer> assignNodesNo) {
+        return searchVictimJobs(startTime, NodeConsciousScheduler.sim.getAllNodesInfo(), job, assignNodesNo);
+    }
+    
+    /* Search victim jobs for the job */
+    protected Set<Integer> searchVictimJobs(int startTime, ArrayList<NodeInfo> allNodesInfo, Job job, ArrayList<Integer> assignNodesNo) {
+        Set<Integer> victimJobs = new HashSet<Integer>();
+        
+        int jobId = job.getJobId();
+        int addedPpn = job.getRequiredCores()/job.getRequiredNodes();
+        /* TODO: The case requiredCores ist not dividable  */
+        if (job.getRequiredCores()%job.getRequiredNodes() != 0) {
+            ++addedPpn;
+            System.out.println("Not dividable, Job ID = " + job.getJobId());
+        }
+        
+        for (int i = 0; i < assignNodesNo.size(); ++i) {
+            int nodeNo = assignNodesNo.get(i);
+           
+            NodeInfo node = allNodesInfo.get(nodeNo);
+            int numCores = node.getNumCores();
+            
+            int coreCnt = addedPpn;
+            ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
+            Collections.sort(occupiedCores);
+            for (int j = 0; j < numCores; ++j) {
+                CoreInfo eachCore = occupiedCores.get(j);
+                ArrayList<Integer> jobList = eachCore.getJobList();
+                /*
+                if (jobList.size() == 0) {
+                    jobList.add(jobId);                    
+                    --coreCnt;                    
+                }
+                */
+
+                /* Add the victim's jobId */
+                for (int k = 0; k < jobList.size(); ++k) {
+                    int victimJobId = jobList.get(k);
+                    assert victimJobId != jobId;
+                    victimJobs.add(victimJobId);
+                }
+                --coreCnt;
+                if (coreCnt == 0) break;
+            }
+            assert coreCnt == 0;
+        }
+        return victimJobs;
+    }
+    
+    
+    protected boolean checkTimeSlicesAndAllNodeInfo() {
+        /* For TimeSlices */
+        ArrayList<Integer> freeCoreInTimeSlices = new ArrayList<Integer>();
+        TimeSlice ts = timeSlices.get(0);
+        for (int i = 0; i < ts.getNumNode(); ++i) {
+            int freeCore = ts.getAvailableCores().get(i);
+            freeCoreInTimeSlices.add(freeCore);
+        }
+
+        /* For AllNodeInfoList */
+        ArrayList<Integer> freeCoreInAllNodeInfo = new ArrayList<Integer>();
+        ArrayList<NodeInfo> allNodeInfoList = NodeConsciousScheduler.sim.getAllNodesInfo();
+
+        for (int i = 0; i < allNodeInfoList.size(); ++i) {
+            NodeInfo nodeInfo = allNodeInfoList.get(i);
+            int freeCore = nodeInfo.getNumFreeCores();
+            freeCoreInAllNodeInfo.add(freeCore);
+        }
+
+        assert freeCoreInTimeSlices.size() == freeCoreInAllNodeInfo.size();
+
+        boolean ret = true;
+        for (int i = 0; i < freeCoreInAllNodeInfo.size(); ++i) {
+            int freeCoreInTimeSlice = freeCoreInTimeSlices.get(i);
+            int freeCoreInNodeInfo = freeCoreInAllNodeInfo.get(i);
+            if (freeCoreInTimeSlice != freeCoreInNodeInfo) {
+                ret = false;
+            }
+        }
+
+        return ret;
     }
     
     protected ArrayList<Event> scheduleJobsOnEnd(Event ev) {
@@ -817,6 +901,10 @@ public abstract class Scheduler {
     }
     
     protected void refiilFreeCoresInTimeSlices(int currentTime, int timeSliceIndex, Job victimJob) {
+        refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob, this.timeSlices);
+    }
+    
+    protected void refiilFreeCoresInTimeSlices(int currentTime, int timeSliceIndex, Job victimJob, LinkedList<TimeSlice> timeSlices) {
         ArrayList<UsingNode> usingNodes = victimJob.getUsingNodesList();
 
         for (int i = 0; i <= timeSliceIndex; ++i) {
@@ -837,6 +925,10 @@ public abstract class Scheduler {
     }
     
     protected void reallocateOccupiedCoresInTimeSlices(int currentTime, int newExpectedEndTime, Job victimJob) {
+        reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob, this.timeSlices);
+    }
+
+    protected void reallocateOccupiedCoresInTimeSlices(int currentTime, int newExpectedEndTime, Job victimJob, LinkedList<TimeSlice> timeSlices) {
         ArrayList<UsingNode> usingNodes = victimJob.getUsingNodesList();
 
         for (int i = 0; i < timeSlices.size(); ++i) {
@@ -885,6 +977,36 @@ public abstract class Scheduler {
             coexistingJobCoexistingJob.remove(endingJobId);
         }
     }     
+    
+    protected ArrayList<Event> modifyTheENDEventTimeForTheJobByJobId(int currentTime, int victimJobId, int OCStateLevel) {
+        ArrayList<Event> result = new ArrayList<Event>();
+
+        /* 1. Modify the victim job's end time in event queue */
+        Job victimJob = getJobByJobId(victimJobId); // O(N)
+        int victimStartTime = victimJob.getStartTime();
+        assert (victimStartTime >= 0 && victimStartTime <= currentTime) || victimStartTime == UNSTARTED;
+
+        /*  1-1. Measure the executing time at current time for each victim jobs. */
+        measureCurrentExecutingTime(currentTime, victimJob);
+        victimJob.setPreviousMeasuredTime(currentTime);
+
+        /*  1-2. Calculate new trueEndTime */
+        int currentOCStateLevel = victimJob.getOCStateLevel();
+        assert (currentOCStateLevel + 1 == OCStateLevel) || (currentOCStateLevel == OCStateLevel);
+        /* debug */
+        printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
+        victimJob.setOCStateLevel(OCStateLevel);
+        int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
+
+        /*  1-3. Rethrow the END event set the time */
+        if (currentOCStateLevel != OCStateLevel) {
+            printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
+            result.add(new Event(EventType.END, trueEndTime, victimJob));
+            printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
+            result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob, trueEndTime)); // This event delete the END event already exists in the event queue. 
+        }
+        return result;
+    }
 }
 
 

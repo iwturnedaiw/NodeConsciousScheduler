@@ -160,7 +160,7 @@ class EasyBackfilling extends Scheduler {
         return new ArrayList<Event>();
     }
     
-    private ArrayList<VacantNode> canExecutableNodesAt(int currentTime, Job job) {
+    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, Job job) {
         return canExecutableNodesAt(currentTime, this.timeSlices, job);
     }
    
@@ -235,7 +235,7 @@ class EasyBackfilling extends Scheduler {
         return nodes;
     }
     
-    private Queue<Job> copyWaitingQueue() {
+    protected Queue<Job> copyWaitingQueue() {
         Queue<Job> tailWaitingQueue = new LinkedList<Job>();
         
         Iterator<Job> it = waitingQueue.iterator();
@@ -246,7 +246,7 @@ class EasyBackfilling extends Scheduler {
         return tailWaitingQueue;
     }
 
-    private void assignFirstJobTemporally(LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, int startTime, Job firstJob, ArrayList<VacantNode> canExecuteTmpNodes) {
+    protected void assignFirstJobTemporally(LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, int startTime, Job firstJob, ArrayList<VacantNode> canExecuteTmpNodes) {
         int addedPpn = firstJob.getRequiredCores()/firstJob.getRequiredNodes();
         int expectedEndTime = startTime + firstJob.getRequiredTime();
 
@@ -279,7 +279,7 @@ class EasyBackfilling extends Scheduler {
         
     }    
     
-    private ArrayList<VacantNode> canExecutableNodesOnBackfilling(int currentTime, LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, Job backfillJob) {
+    protected ArrayList<VacantNode> canExecutableNodesOnBackfilling(int currentTime, LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, Job backfillJob) {
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling = new ArrayList<VacantNode>();
         
         canExecuteNodesEasyBackfiling = canExecutableNodesAt(currentTime, tmpTimeSlices, backfillJob);
@@ -288,11 +288,11 @@ class EasyBackfilling extends Scheduler {
 
     }
     
-    private ArrayList<VacantNode> canExecutableTmpNodes(int startTimeFirstJob, Job firstJob) {
+    protected ArrayList<VacantNode> canExecutableTmpNodes(int startTimeFirstJob, Job firstJob) {
         return canExecutableNodesAt(startTimeFirstJob, firstJob);
     }
 
-    private LinkedList<TimeSlice> cloneTimeSlices(LinkedList<TimeSlice> timeSlices) {
+    protected LinkedList<TimeSlice> cloneTimeSlices(LinkedList<TimeSlice> timeSlices) {
         LinkedList<TimeSlice> tmpTimeSlices = new LinkedList<TimeSlice>();
         
         int size = timeSlices.size();
@@ -305,7 +305,7 @@ class EasyBackfilling extends Scheduler {
         return tmpTimeSlices;
     }
 
-    private ArrayList<NodeInfo> cloneAllNodesInfo(ArrayList<NodeInfo> allNodesInfo) {
+    protected ArrayList<NodeInfo> cloneAllNodesInfo(ArrayList<NodeInfo> allNodesInfo) {
         ArrayList<NodeInfo> tmpAllNodesInfo = new ArrayList<NodeInfo>();
         
         int size = allNodesInfo.size();
@@ -319,7 +319,7 @@ class EasyBackfilling extends Scheduler {
         
     }
 
-    private void assignJobForTmp(int startTime, LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, Job backfillJob, ArrayList<Integer> assignNodesNo) {
+    protected void assignJobForTmp(int startTime, LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, Job backfillJob, ArrayList<Integer> assignNodesNo) {
         assignJob(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo, true);
     }
 
