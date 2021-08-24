@@ -161,10 +161,10 @@ class EasyBackfilling extends Scheduler {
     }
     
     protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, Job job) {
-        return canExecutableNodesAt(currentTime, this.timeSlices, job);
+        return canExecutableNodesAt(currentTime, this.timeSlices, job, false);
     }
    
-    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job) {
+    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job, boolean backfillFlag) {
         /* Return variable
            This have the node no. with # of free core.
         */
@@ -282,7 +282,7 @@ class EasyBackfilling extends Scheduler {
     protected ArrayList<VacantNode> canExecutableNodesOnBackfilling(int currentTime, LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, Job backfillJob) {
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling = new ArrayList<VacantNode>();
         
-        canExecuteNodesEasyBackfiling = canExecutableNodesAt(currentTime, tmpTimeSlices, backfillJob);
+        canExecuteNodesEasyBackfiling = canExecutableNodesAt(currentTime, tmpTimeSlices, backfillJob, true);
         
         return canExecuteNodesEasyBackfiling;
 

@@ -6,6 +6,8 @@
 
 package nodeconsciousscheduler;
 
+
+import static java.lang.Math.ceil;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import java.util.ArrayList;
@@ -205,7 +207,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
         }
 
         // TODO: Erase below line
-        System.out.println("size: " + canExecuteTmpNodes.size() + ", firstJob: " + firstJob.getJobId() + ", tentative start time: " + startTimeFirstJob);
+        int firstJobId = firstJob.getJobId();
+        System.out.println("size: " + canExecuteTmpNodes.size() + ", firstJob: " + firstJobId + ", tentative start time: " + startTimeFirstJob);
 
         assert canExecuteTmpNodes.size() >= firstJob.getRequiredNodes();
         assert startTimeFirstJob != CANNOT_START;
@@ -224,6 +227,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
         while (tailWaitingQueue.size() > 0) {
             Job backfillJob = tailWaitingQueue.poll();
+            int backfillJobId = backfillJob.getJobId();
 
             canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob);
 
@@ -251,7 +255,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     }
                 }
                 
-                if (backfillFlag) continue;
+                if (!backfillFlag) continue;
 
                 System.out.println("Succeed Backfill Job: " + backfillJob.getJobId() + ", at " + currentTime);
                 
@@ -284,7 +288,6 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));
                 } else {
-                    int backfillJobId = backfillJob.getJobId();
                     System.out.println("OC allocating, opponent jobId: " + backfillJobId + ", OCStateLevel: " + OCStateLevelForBackfillJob + ", victim jobId: " + victimJobs);
 
                     backfillJob.setCoexistingJobs(victimJobs);
@@ -347,7 +350,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
     }
     
     @Override
-    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job) {
+    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job, boolean backfillFlag) {
         /* Return variable
            This have the node no. with # of free core.
         */
@@ -373,48 +376,79 @@ public class EasyBackfillingOC extends EasyBackfilling {
         int expectedEndTime = startTime + job.getRequiredTime();
 //        int expectedEndTime = UNUPDATED;
         int alongTimeSlices = 0;
-        for (int i = 0; i < timeSlices.size(); ++i) {
-            TimeSlice ts = timeSlices.get(i);
+        ArrayList<Integer> jobRestTimeEachNode = new ArrayList<Integer>();
 
-/*
-            if (i == 0) {
-                ArrayList<Integer> multiplicityEachNodeAtNow = new ArrayList<Integer>();
-                for (int j = 0; j < ts.getNumNode(); ++j) {
-                    int freeCores = ts.getAvailableCores().get(j);
-                    multiplicityEachNodeAtNow.add(calculateEstimatedMultiplicityAtNow(ts, freeCores, requiredCoresPerNode));
-                }
-                Collections.sort(multiplicityEachNodeAtNow);
-                int multiplicity = UNUPDATED;
-                multiplicity = multiplicityEachNodeAtNow.get(requiredNodes-1);
-                expectedEndTime = startTime + job.getRequiredTime()*multiplicity;
-                assert expectedEndTime != UNUPDATED;
-            }
-*/            
-            if ((ts.getStartTime() <= startTime && startTime < ts.getEndTime())
-                    || (ts.getStartTime() < expectedEndTime && expectedEndTime <= ts.getEndTime())
-                    || (startTime <= ts.getStartTime() && ts.getEndTime() <= expectedEndTime)) {
-                //ts.printTsInfo();
-                ++alongTimeSlices;
-                for (int j = 0; j < ts.getNumNode(); ++j) {
-                    int freeCores = ts.getAvailableCores().get(j);
-                    VacantNode node = vacantNodes.get(j);
-                    
-                    assert node.getNodeNo() == j;
+        if (!backfillFlag) {
+            for (int i = 0; i < timeSlices.size(); ++i) {
+                TimeSlice ts = timeSlices.get(i);
+                if ((ts.getStartTime() <= startTime && startTime < ts.getEndTime())
+                        || (ts.getStartTime() < expectedEndTime && expectedEndTime <= ts.getEndTime())
+                        || (startTime <= ts.getStartTime() && ts.getEndTime() <= expectedEndTime)) {
+                    //ts.printTsInfo();
+                    ++alongTimeSlices;
+                    for (int j = 0; j < ts.getNumNode(); ++j) {
+                        int freeCores = ts.getAvailableCores().get(j);
+                        VacantNode node = vacantNodes.get(j);
 
-                    freeCores = min(freeCores, node.getFreeCores());
-                    node.setFreeCores(freeCores);
+                        assert node.getNodeNo() == j;
 
-                    int numCore = ts.getPpn();
+                        freeCores = min(freeCores, node.getFreeCores());
+                        node.setFreeCores(freeCores);
+
+                        int numCore = ts.getPpn();
 //                    if (freeCores >= requiredCoresPerNode ) {
-                    if (freeCores - requiredCoresPerNode >= -(NodeConsciousScheduler.M-1)*numCore) {
-                        int cnt = vacantNodeCount.get(j);
-                        vacantNodeCount.set(j, ++cnt);
+                        if (freeCores - requiredCoresPerNode >= -(NodeConsciousScheduler.M - 1) * numCore) {
+                            int cnt = vacantNodeCount.get(j);
+                            vacantNodeCount.set(j, ++cnt);
+                        }
                     }
                 }
             }
-        }
+        } else {
+            boolean checkFlag[];
+            checkFlag = new boolean[NodeConsciousScheduler.numNodes];
+            int jobRequiredTime = job.getRequiredTime();
+            for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
+                jobRestTimeEachNode.add(jobRequiredTime);
+                checkFlag[i] = true;
+            }            
+            TimeSlice lastTs = timeSlices.get(timeSlices.size()-1);
+            int firstJobStartTime = lastTs.getStartTime();
+            // まちがってる
 
-        if (alongTimeSlices == 0) return nodes;
+            // 1. Calculate estimated multiplicity for each node.
+            // 2. S += duration/multiplicity
+            // 3. If ts.endTime > firstJobEndTime before S reaches actualTime, it nodes is fails            
+            for (int i = 0; i < timeSlices.size(); ++i) {                
+                TimeSlice ts = timeSlices.get(i);
+                // 3. If ts.endTime > firstJobEndTime before S reaches actualTime, it nodes is fails
+                if (ts.startTime >= firstJobStartTime) break;
+
+                for (int j = 0; j < ts.getNumNode(); ++j) {
+                    if(!checkFlag[j]) continue;
+
+                    int freeCores = ts.getAvailableCores().get(j);
+
+                    // 1. Calculate estimated multiplicity for each node.
+                    int tentativeMultiplicityForBackfillJob = caculateTentativeMultiplicity(freeCores, requiredCoresPerNode);
+                    if (tentativeMultiplicityForBackfillJob > NodeConsciousScheduler.M) {
+                        checkFlag[j] = false;
+                        continue;
+                    }
+
+                    // 2. restTime -= duration/multiplicity
+                    int restTime = jobRestTimeEachNode.get(j) - ts.duration/tentativeMultiplicityForBackfillJob;
+                    if (restTime <= 0) {                   
+                        VacantNode node = vacantNodes.get(j);
+                        assert node.getNodeNo() == j;
+                        node.setFreeCores(freeCores);
+                        nodes.add(node);
+                        checkFlag[j] = false;
+                    }
+                }
+            }    
+        }
+        if (!backfillFlag && (alongTimeSlices == 0)) return nodes;
 
         /*
         for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
@@ -425,12 +459,14 @@ public class EasyBackfillingOC extends EasyBackfilling {
         */
 
         /* If cnt == alongTimeSlices, the job is executable on the nodes along the timeSlices */        
-        for (int i = 0; i < vacantNodeCount.size(); ++i) {
-            int cnt = vacantNodeCount.get(i);
-            if (cnt == alongTimeSlices) {
-                VacantNode node = vacantNodes.get(i);
-                assert node.getNodeNo() == i;
-                nodes.add(node);
+        if (!backfillFlag) {
+            for (int i = 0; i < vacantNodeCount.size(); ++i) {
+                int cnt = vacantNodeCount.get(i);
+                if (cnt == alongTimeSlices) {
+                    VacantNode node = vacantNodes.get(i);
+                    assert node.getNodeNo() == i;
+                    nodes.add(node);
+                }
             }
         }
 
@@ -450,9 +486,14 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     break;
                 }
             }
-        }
-        
+        }   
         return nodes;
+    }
+
+    private int caculateTentativeMultiplicity(int freeCores, int requiredCoresPerNode) {
+        int numUsingCore = NodeConsciousScheduler.numCores - freeCores + requiredCoresPerNode;
+        double divide = (double)numUsingCore/NodeConsciousScheduler.numCores;
+        return (int)ceil(divide);
     }
  
 }
