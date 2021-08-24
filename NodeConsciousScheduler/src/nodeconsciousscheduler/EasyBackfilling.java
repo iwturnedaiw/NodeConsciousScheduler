@@ -18,8 +18,9 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import static nodeconsciousscheduler.Constants.CANNOT_START;
-import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.TS_ENDTIME;
+import static nodeconsciousscheduler.Constants.UNSTARTED;
+import static nodeconsciousscheduler.Constants.UNUPDATED;
 
 /**
  *
@@ -110,7 +111,7 @@ class EasyBackfilling extends Scheduler {
         while (tailWaitingQueue.size() > 0) {
             Job backfillJob = tailWaitingQueue.poll();
 
-            canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob);
+            canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, startTimeFirstJob);
 
             if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
                 System.out.println("Succeed Backfill Job: " + backfillJob.getJobId() + ", at " + currentTime);
@@ -161,10 +162,10 @@ class EasyBackfilling extends Scheduler {
     }
     
     protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, Job job) {
-        return canExecutableNodesAt(currentTime, this.timeSlices, job, false);
+        return canExecutableNodesAt(currentTime, this.timeSlices, job, false, UNSTARTED);
     }
    
-    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job, boolean backfillFlag) {
+    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job, boolean backfillFlag, int firstJobStartTime) {
         /* Return variable
            This have the node no. with # of free core.
         */
@@ -279,10 +280,10 @@ class EasyBackfilling extends Scheduler {
         
     }    
     
-    protected ArrayList<VacantNode> canExecutableNodesOnBackfilling(int currentTime, LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, Job backfillJob) {
+    protected ArrayList<VacantNode> canExecutableNodesOnBackfilling(int currentTime, LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, Job backfillJob, int firstJobStartTime) {
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling = new ArrayList<VacantNode>();
         
-        canExecuteNodesEasyBackfiling = canExecutableNodesAt(currentTime, tmpTimeSlices, backfillJob, true);
+        canExecuteNodesEasyBackfiling = canExecutableNodesAt(currentTime, tmpTimeSlices, backfillJob, true, firstJobStartTime);
         
         return canExecuteNodesEasyBackfiling;
 

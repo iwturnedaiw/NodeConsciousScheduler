@@ -204,6 +204,27 @@ public abstract class Scheduler {
                 ret = false;
             }
         }
+        
+        // Executing Job List
+        ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
+        int totalFreeCores;
+        int totalOccupiedCores = 0;
+        for (int i = 0; i < executingJobList.size(); ++i) {
+            Job job = executingJobList.get(i);
+            totalOccupiedCores += job.getRequiredCores();
+        }
+        for (int i = 0; i < temporallyScheduledJobList.size(); ++i) {
+            Job job = temporallyScheduledJobList.get(i);
+            totalOccupiedCores += job.getRequiredCores();
+        }
+        totalFreeCores = NodeConsciousScheduler.numCores*NodeConsciousScheduler.numNodes - totalOccupiedCores;
+        
+        int totalFreeCoresFromAllNodeInfo = 0;
+        for (int i = 0; i < freeCoreInAllNodeInfo.size(); ++i) {
+            totalFreeCoresFromAllNodeInfo += freeCoreInAllNodeInfo.get(i);
+        }
+        
+        if (totalFreeCores != totalFreeCoresFromAllNodeInfo) ret = false;
 
         return ret;
     }
@@ -887,7 +908,12 @@ public abstract class Scheduler {
         System.out.println("\tdebug) oldExpectedEndTime: " + oldExpectedEndTime + ", newExpectedEndTime: " + newExpectedEndTime);
     }
     
+
     protected int getTimeSliceIndexEndTimeEquals(int oldExpectedEndTime) {
+        return getTimeSliceIndexEndTimeEquals(oldExpectedEndTime, this.timeSlices);
+    }
+    
+    protected int getTimeSliceIndexEndTimeEquals(int oldExpectedEndTime, LinkedList<TimeSlice> timeSlices) {
         int index = UNUPDATED;
         for (int i = 0; i < timeSlices.size(); ++i) {
             TimeSlice ts = timeSlices.get(i);

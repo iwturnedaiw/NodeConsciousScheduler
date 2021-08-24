@@ -229,7 +229,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
             Job backfillJob = tailWaitingQueue.poll();
             int backfillJobId = backfillJob.getJobId();
 
-            canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob);
+            canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, startTimeFirstJob);
 
             if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
                 // TO CONSIDER:
@@ -315,6 +315,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
                         int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
                         refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob);
+                        timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime, tmpTimeSlices);
                         refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob, tmpTimeSlices);
 
                         makeTimeslices(currentTime);
@@ -350,7 +351,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
     }
     
     @Override
-    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job, boolean backfillFlag) {
+    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job, boolean backfillFlag, int firstJobStartTime) {
         /* Return variable
            This have the node no. with # of free core.
         */
@@ -413,8 +414,6 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 checkFlag[i] = true;
             }            
             TimeSlice lastTs = timeSlices.get(timeSlices.size()-1);
-            int firstJobStartTime = lastTs.getStartTime();
-            // まちがってる
 
             // 1. Calculate estimated multiplicity for each node.
             // 2. S += duration/multiplicity
@@ -438,6 +437,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                     // 2. restTime -= duration/multiplicity
                     int restTime = jobRestTimeEachNode.get(j) - ts.duration/tentativeMultiplicityForBackfillJob;
+                    jobRestTimeEachNode.set(j, restTime);
                     if (restTime <= 0) {                   
                         VacantNode node = vacantNodes.get(j);
                         assert node.getNodeNo() == j;
