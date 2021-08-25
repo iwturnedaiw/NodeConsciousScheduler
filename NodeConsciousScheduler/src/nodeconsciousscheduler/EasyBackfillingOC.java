@@ -250,6 +250,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 boolean backfillFlag = true;
                 for (int victimJobId: victimJobs) {
                     Job victimJob = getJobByJobId(victimJobId);
+                    if (OCStateLevelForBackfillJob == victimJob.getOCStateLevel()) continue;
                     int victimApproximateEndTime = calculateApproximateEndTime(currentTime, victimJob, OCStateLevelForBackfillJob);
                     /*
                     if (OCStateLevelForBackfillJob > victimJob.getOCStateLevel()) {
@@ -433,7 +434,14 @@ public class EasyBackfillingOC extends EasyBackfilling {
             for (int i = 0; i < timeSlices.size(); ++i) {                
                 TimeSlice ts = timeSlices.get(i);
                 // 3. If ts.endTime > firstJobEndTime before S reaches actualTime, it nodes is fails
-                if (ts.startTime >= firstJobStartTime) break;
+                //if (ts.startTime >= firstJobStartTime) break;
+                // This part is unneeded.
+                boolean continueFlag = false;
+                for (int j = 0; j < ts.getNumNode(); ++j) {
+                    continueFlag |= checkFlag[j];
+                }
+                
+                if (!continueFlag) break;
 
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     if(!checkFlag[j]) continue;
