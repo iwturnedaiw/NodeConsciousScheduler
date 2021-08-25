@@ -886,7 +886,7 @@ public abstract class Scheduler {
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
 
         //  1-3. Rethrow the END event set the time
-        if (currentOCStateLevel != OCStateLevel) {
+        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
@@ -1034,7 +1034,7 @@ public abstract class Scheduler {
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
 
         /*  1-3. Rethrow the END event set the time */
-        if (currentOCStateLevel != OCStateLevel) {
+        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, victimJob));
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
