@@ -903,6 +903,15 @@ public abstract class Scheduler {
 
         return expectedEndTime;
     }
+
+    protected int calculateApproximateEndTime(int currentTime, Job victimJob, int OCStateLevel) {
+        int cpuTimeForNow = victimJob.getCpuTimeForNow();
+        int requiredTime = victimJob.getRequiredTime();
+        int restRequiredTime = (requiredTime - cpuTimeForNow) * OCStateLevel;
+        int expectedEndTime = currentTime + restRequiredTime;
+
+        return expectedEndTime;
+    }
     
     private void printDifferenceExpectedEndTime(int oldExpectedEndTime, int newExpectedEndTime) {
         System.out.println("\tdebug) oldExpectedEndTime: " + oldExpectedEndTime + ", newExpectedEndTime: " + newExpectedEndTime);

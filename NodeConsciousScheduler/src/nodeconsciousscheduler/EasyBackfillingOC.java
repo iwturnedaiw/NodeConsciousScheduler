@@ -83,8 +83,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                     /* 0. Search victim jobs */
                     Set<Integer> victimJobs = new HashSet<Integer>();
-                    victimJobs = searchVictimJobs(startTime, job, assignNodesNo);
                     int opponentJobId = job.getJobId();
+                    victimJobs = searchVictimJobs(startTime, job, assignNodesNo);
                     System.out.println("OC allocating, opponent jobId: " + opponentJobId + ", OCStateLevel: " + OCStateLevelForJob + ", victim jobId: " + victimJobs);
                     /* Set victim jobList for the opponent job */
                     job.setCoexistingJobs(victimJobs);
@@ -226,6 +226,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
         while (tailWaitingQueue.size() > 0) {
+            assert checkTimeSlicesAndAllNodeInfo();
             Job backfillJob = tailWaitingQueue.poll();
             int backfillJobId = backfillJob.getJobId();
 
@@ -249,7 +250,14 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 boolean backfillFlag = true;
                 for (int victimJobId: victimJobs) {
                     Job victimJob = getJobByJobId(victimJobId);
+                    int victimApproximateEndTime = calculateApproximateEndTime(currentTime, victimJob, OCStateLevelForBackfillJob);
+                    /*
                     if (OCStateLevelForBackfillJob > victimJob.getOCStateLevel()) {
+                        backfillFlag = false;
+                        break;
+                    }
+                    */
+                    if (victimApproximateEndTime > startTimeFirstJob) {
                         backfillFlag = false;
                         break;
                     }
@@ -287,6 +295,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     result.add(new Event(EventType.START, startTime, backfillJob));
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));
+                    temporallyScheduledJobList.add(backfillJob);
                 } else {
                     System.out.println("OC allocating, opponent jobId: " + backfillJobId + ", OCStateLevel: " + OCStateLevelForBackfillJob + ", victim jobId: " + victimJobs);
 
@@ -307,23 +316,25 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
 
                         /*  2-1. Calculate new expectedEndTime */
-                        int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
-                        int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
-                        victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
-                        assert oldExpectedEndTime <= newExpectedEndTime;
-                        
-                        /*  2-2. Update the timeslice between current and new expectedEndTime */
-                        int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
-                        refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob);
-                        timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime, tmpTimeSlices);
-                        refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob, tmpTimeSlices);
+                        if (OCStateLevelForBackfillJob != victimJob.getOCStateLevel()) {
+                            int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
+                            int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
+                            victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
+                            assert oldExpectedEndTime <= newExpectedEndTime;
 
-                        makeTimeslices(currentTime);
-                        makeTimeslices(currentTime, tmpTimeSlices);
-                        makeTimeslices(newExpectedEndTime);
-                        makeTimeslices(newExpectedEndTime, tmpTimeSlices);
-                        reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob);
-                        reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob, tmpTimeSlices);
+                            /*  2-2. Update the timeslice between current and new expectedEndTime */
+                            int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
+                            refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob);
+                            timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime, tmpTimeSlices);
+                            refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob, tmpTimeSlices);
+
+                            makeTimeslices(currentTime);
+                            makeTimeslices(currentTime, tmpTimeSlices);
+                            makeTimeslices(newExpectedEndTime);
+                            makeTimeslices(newExpectedEndTime, tmpTimeSlices);
+                            reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob);
+                            reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob, tmpTimeSlices);
+                        }
                     }
                     
                     backfillJob.setOCStateLevel(OCStateLevelForBackfillJob);
@@ -340,6 +351,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     result.add(new Event(EventType.START, startTime, backfillJob));
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));
+                    temporallyScheduledJobList.add(backfillJob);
                 }
 
             }
@@ -427,7 +439,13 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     if(!checkFlag[j]) continue;
 
                     int freeCores = ts.getAvailableCores().get(j);
+                    VacantNode node = vacantNodes.get(j);
 
+                    assert node.getNodeNo() == j;
+
+                    freeCores = min(freeCores, node.getFreeCores());
+                    node.setFreeCores(freeCores);
+                    
                     // 1. Calculate estimated multiplicity for each node.
                     int tentativeMultiplicityForBackfillJob = caculateTentativeMultiplicity(freeCores, requiredCoresPerNode);
                     if (tentativeMultiplicityForBackfillJob > NodeConsciousScheduler.M) {
@@ -439,9 +457,6 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     int restTime = jobRestTimeEachNode.get(j) - ts.duration/tentativeMultiplicityForBackfillJob;
                     jobRestTimeEachNode.set(j, restTime);
                     if (restTime <= 0) {                   
-                        VacantNode node = vacantNodes.get(j);
-                        assert node.getNodeNo() == j;
-                        node.setFreeCores(freeCores);
                         nodes.add(node);
                         checkFlag[j] = false;
                     }
