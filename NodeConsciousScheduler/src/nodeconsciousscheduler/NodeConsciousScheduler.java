@@ -200,6 +200,9 @@ public class NodeConsciousScheduler {
             
             int submitTime = Integer.parseInt(values[1]);
             int actualExecuteTime = Integer.parseInt(values[3]);
+            if (actualExecuteTime == Constants.NOTSPECIFIED) {
+                actualExecuteTime = Integer.parseInt(values[5]);
+            }
             int specifiedExecuteTime = Integer.parseInt(values[8]);
 
             int requiredNodes = 1;
@@ -214,6 +217,14 @@ public class NodeConsciousScheduler {
                 
             }
             
+            if (requiredNodes > NodeConsciousScheduler.numNodes) {
+                continue;
+            }
+            
+            if (requiredCores%NodeConsciousScheduler.numCores == 0) {
+                requiredNodes = requiredCores/NodeConsciousScheduler.numCores;
+            }
+
             if (requiredNodes > NodeConsciousScheduler.numNodes) {
                 continue;
             }

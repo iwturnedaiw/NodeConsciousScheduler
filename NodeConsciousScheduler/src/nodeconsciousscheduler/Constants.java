@@ -17,4 +17,5 @@ public class Constants {
     static int CANNOT_START = -1;
     static int UNSTARTED = -1;
     static int BLANK_JOBID = -1;
+    static int NOTSPECIFIED = -1;
 }
