@@ -30,10 +30,12 @@ class FCFS extends Scheduler {
     @Override
     protected ArrayList<Event> scheduleJobsStartAt(int currentTime) {
         ArrayList<Event> result = new ArrayList<Event>();
+        temporallyScheduledJobList.clear();
         while (!waitingQueue.isEmpty()) {
             Job job = waitingQueue.peek();
             
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
+            assert checkTimeSlicesAndAllNodeInfo();
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
@@ -56,6 +58,7 @@ class FCFS extends Scheduler {
                 int trueEndTime = startTime + job.getActualExecuteTime();                
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));
+                temporallyScheduledJobList.add(job);
             } else break;
         }
         return result;

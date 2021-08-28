@@ -200,7 +200,10 @@ public abstract class Scheduler {
         for (int i = 0; i < freeCoreInAllNodeInfo.size(); ++i) {
             int freeCoreInTimeSlice = freeCoreInTimeSlices.get(i);
             int freeCoreInNodeInfo = freeCoreInAllNodeInfo.get(i);
-            if (freeCoreInTimeSlice != freeCoreInNodeInfo) {
+            if (freeCoreInTimeSlice == freeCoreInNodeInfo) continue;
+            if (freeCoreInTimeSlice > freeCoreInNodeInfo) {
+                System.out.println("Check multiple END Event with the same event time are.");
+            } else {
                 ret = false;
             }
         }

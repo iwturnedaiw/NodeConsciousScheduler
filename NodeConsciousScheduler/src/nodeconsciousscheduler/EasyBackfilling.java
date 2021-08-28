@@ -34,10 +34,12 @@ class EasyBackfilling extends Scheduler {
     @Override
     protected ArrayList<Event> scheduleJobsStartAt(int currentTime) {
         ArrayList<Event> result = new ArrayList<Event>();
+        temporallyScheduledJobList.clear();
         while (!waitingQueue.isEmpty()) {
             Job job = waitingQueue.peek();
             
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
+            assert checkTimeSlicesAndAllNodeInfo();
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
                 // TODO: Erase below line
                 System.out.println("size: " + canExecuteNodes.size() + ", FCFS job: " + job.getJobId());
@@ -63,6 +65,7 @@ class EasyBackfilling extends Scheduler {
                 int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));
+                temporallyScheduledJobList.add(job);
             } else break;
         }
         
@@ -149,7 +152,7 @@ class EasyBackfilling extends Scheduler {
                 int trueEndTime = startTime + backfillJob.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, backfillJob));
                 result.add(new Event(EventType.END, trueEndTime, backfillJob));
-
+                temporallyScheduledJobList.add(backfillJob);
             }
         }
         
