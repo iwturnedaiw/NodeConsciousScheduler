@@ -20,6 +20,7 @@ public class Job {
     private int submitTime;
     private int actualExecuteTime;
     private int specifiedExecuteTime;
+    private int endEventOccuranceTimeNow;
     private int requiredTime;
     private int requiredCores;
     private int requiredNodes;
@@ -139,6 +140,11 @@ public class Job {
     public Set<Integer> getCoexistingJobs() {
         return coexistingJobs;
     }
+
+    public int getEndEventOccuranceTimeNow() {
+        return endEventOccuranceTimeNow;
+    }
+    
     
     public void setJobId(int jobId) {
         this.jobId = jobId;
@@ -215,5 +221,8 @@ public class Job {
     public void setCoexistingJobs(Set<Integer> coexistingJobs) {
         this.coexistingJobs = coexistingJobs;
     }
-    
+
+    public void setEndEventOccuranceTimeNow(int endEventOccuranceTimeNow) {
+        this.endEventOccuranceTimeNow = endEventOccuranceTimeNow;
+    }
 }

@@ -21,7 +21,7 @@ public interface EventHandler {
 
 class Submission implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
 //        newEvents = 
         
         ArrayList<Event> evs = new ArrayList<Event>();
@@ -34,7 +34,7 @@ class Submission implements EventHandler {
 
 class Start implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
         
         ArrayList<Event> evs = new ArrayList<Event>();
         
@@ -64,6 +64,7 @@ class End implements EventHandler {
         Job job = ev.getJob();
         int jobId = job.getJobId();
         int currentTime = ev.getOccurrenceTime();
+        assert currentTime == job.getEndEventOccuranceTimeNow();
         int previousMeasuredTime = job.getPreviousMeasuredTime();
         int mostRecentRunningTime = currentTime - previousMeasuredTime;
         int cpuTimeForNow = job.getCpuTimeForNow();
@@ -145,7 +146,7 @@ class End implements EventHandler {
 
 class DeleteFromBeginning implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
 //        newEvents = 
         
         
@@ -158,7 +159,7 @@ class DeleteFromBeginning implements EventHandler {
 
 class DeleteFromEnd implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
-        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
 //        newEvents = 
         
         

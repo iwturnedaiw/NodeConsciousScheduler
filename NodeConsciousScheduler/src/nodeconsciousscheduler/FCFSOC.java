@@ -62,6 +62,7 @@ public class FCFSOC extends FCFS {
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, job));
+                    job.setEndEventOccuranceTimeNow(trueEndTime);
                 } else {
                     /* If OCStateLevel is greater than 1, */
                     /* we must modify the three points below */
@@ -167,7 +168,8 @@ public class FCFSOC extends FCFS {
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
-                    result.add(new Event(EventType.END, trueEndTime, job));                    
+                    result.add(new Event(EventType.END, trueEndTime, job));
+                    job.setEndEventOccuranceTimeNow(trueEndTime);
                 }
             } else break;
         }

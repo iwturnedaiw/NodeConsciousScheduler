@@ -58,6 +58,7 @@ class FCFS extends Scheduler {
                 int trueEndTime = startTime + job.getActualExecuteTime();                
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));
+                job.setEndEventOccuranceTimeNow(trueEndTime);
                 temporallyScheduledJobList.add(job);
             } else break;
         }

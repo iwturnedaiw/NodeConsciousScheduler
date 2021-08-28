@@ -65,6 +65,7 @@ class EasyBackfilling extends Scheduler {
                 int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));
+                job.setEndEventOccuranceTimeNow(trueEndTime);
                 temporallyScheduledJobList.add(job);
             } else break;
         }
@@ -152,6 +153,7 @@ class EasyBackfilling extends Scheduler {
                 int trueEndTime = startTime + backfillJob.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, backfillJob));
                 result.add(new Event(EventType.END, trueEndTime, backfillJob));
+                backfillJob.setEndEventOccuranceTimeNow(trueEndTime);
                 temporallyScheduledJobList.add(backfillJob);
             }
         }
