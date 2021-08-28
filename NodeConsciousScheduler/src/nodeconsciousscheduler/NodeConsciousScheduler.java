@@ -204,6 +204,10 @@ public class NodeConsciousScheduler {
                 actualExecuteTime = Integer.parseInt(values[5]);
             }
             int specifiedExecuteTime = Integer.parseInt(values[8]);
+            
+            if (specifiedExecuteTime < actualExecuteTime) {
+                specifiedExecuteTime = actualExecuteTime;
+            }
 
             int requiredNodes = 1;
             int ppn = -1;
