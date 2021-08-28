@@ -73,7 +73,7 @@ public class EventQueue extends PriorityQueue {
         
         Job job = ev.getJob();
         int jobId = job.getJobId();
-        int updatedTime = ev.getUpdatedTime();        
+        int deleteTargetTime = ev.getDeleteTargetTime();        
         int deleteCnt = 0;
         while(itr.hasNext()) {
             Event candidateEvent = (Event) itr.next();
@@ -81,7 +81,7 @@ public class EventQueue extends PriorityQueue {
             int occuranceTime = candidateEvent.getOccurrenceTime();            
             Job candidateJob = candidateEvent.getJob();
             int candidateJobId = candidateJob.getJobId();
-            if (evt == EventType.END && jobId == candidateJobId && occuranceTime != updatedTime) {
+            if (evt == EventType.END && jobId == candidateJobId && occuranceTime == deleteTargetTime) {
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
                 // int originalEndTime = candidateEvent.getOccurrenceTime();                               
                 itr.remove();
@@ -97,7 +97,7 @@ public class EventQueue extends PriorityQueue {
         Iterator itr = this.iterator();
         Job job = ev.getJob();
         int jobId = job.getJobId();
-        int updatedTime = ev.getUpdatedTime();
+        int deleteTargetTime = ev.getDeleteTargetTime();
         int deleteCnt = 0;
         while(itr.hasNext()) {
             Event candidateEvent = (Event) itr.next();
@@ -105,7 +105,7 @@ public class EventQueue extends PriorityQueue {
             int occuranceTime = candidateEvent.getOccurrenceTime();
             Job candidateJob = candidateEvent.getJob();
             int candidateJobId = candidateJob.getJobId();
-            if (evt == EventType.END && jobId == candidateJobId && occuranceTime != updatedTime) {                
+            if (evt == EventType.END && jobId == candidateJobId && occuranceTime == deleteTargetTime) {                
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
                 // int originalEndTime = candidateEvent.getOccurrenceTime();                                               
                 itr.remove();

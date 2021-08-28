@@ -18,7 +18,7 @@ public class Event implements Comparable<Event> {
     private EventType eventType;
     private int occurrenceTime;
     private Job job;
-    private int updatedTime = UNUSED;
+    private int deleteTargetTime = UNUSED;
     
     
     Event(EventType eventType, int occurrenceTime, Job job) {
@@ -28,11 +28,11 @@ public class Event implements Comparable<Event> {
         
     }
 
-    Event(EventType eventType, int occurrenceTime, Job job, int updatedTime) {
+    Event(EventType eventType, int occurrenceTime, Job job, int deleteTargetTime) {
         this.eventType = eventType;
         this.occurrenceTime = occurrenceTime;
         this.job = job;
-        this.updatedTime = updatedTime;        
+        this.deleteTargetTime = deleteTargetTime;        
     }
     
     Event(int occurrenceTime, Job job) {
@@ -64,12 +64,12 @@ public class Event implements Comparable<Event> {
         return job;
     }
 
-    public int getUpdatedTime() {
-        return updatedTime;
+    public int getDeleteTargetTime() {
+        return deleteTargetTime;
     }
 
-    public void setUpdatedTime(int updatedTime) {
-        this.updatedTime = updatedTime;
+    public void setDeleteTargetTime(int deleteTargetTime) {
+        this.deleteTargetTime = deleteTargetTime;
     }
     
     @Override
