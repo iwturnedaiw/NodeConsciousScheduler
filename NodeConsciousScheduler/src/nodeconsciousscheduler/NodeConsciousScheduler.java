@@ -213,19 +213,20 @@ public class NodeConsciousScheduler {
             int ppn = -1;
 
             String properties = "";
+            boolean nodeSpecifiedFlag = false;
             if (values.length > 19) {
                 properties = values[20];
 
                 String[] req_nodes = values[20].split(":");
                 requiredNodes = Integer.parseInt(req_nodes[0]);
-                
+                nodeSpecifiedFlag = true;
             }
             
             if (requiredNodes > NodeConsciousScheduler.numNodes) {
                 continue;
             }
             
-            if (requiredCores%NodeConsciousScheduler.numCores == 0) {
+            if (!nodeSpecifiedFlag && requiredCores%NodeConsciousScheduler.numCores == 0) {
                 requiredNodes = requiredCores/NodeConsciousScheduler.numCores;
             }
 
