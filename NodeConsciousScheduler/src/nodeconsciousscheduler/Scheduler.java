@@ -480,6 +480,7 @@ public abstract class Scheduler {
         /* Check the all executing jobs */
         for (int i = 0; i < executingJobList.size(); ++i) {
             Job migratingJob = executingJobList.get(i);
+            int migratingJobId = migratingJob.getJobId();
             if(!checkUseSameNode(usingNodeList, migratingJob)) continue;
             System.out.println("\tdebug)jobId:" +migratingJob.getJobId());
             int OCStateLevel = migratingJob.getOCStateLevel();
@@ -502,24 +503,6 @@ public abstract class Scheduler {
             NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobs = doMigrate(migratingJob, migrateTargetNodes);
             printNewAndDeletedCoexistingJobs(newAndDeletedCoexistingJobs, migratingJob);
 
-            Set<Integer> newCoexistingJobs = newAndDeletedCoexistingJobs.getNewCoexistingJobsOnTheCore();
-            for (int newCoexistingJobId: newCoexistingJobs) {
-                // 3. Modify the END Event time 
-                //  3.1 Check the OCStateLevel
-                Job coexistingJob = getJobByJobId(newCoexistingJobId);
-                int coexistingJobId = coexistingJob.getJobId();
-                ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
-                int OCStateLevelCoexistingJob = checkMultiplicityAlongNodes(coexistingJobUsingNodeList, BLANK_JOBID, coexistingJobId);
-
-                // 3.2 Modify the END Event time
-                modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevelCoexistingJob, result);
-
-                /* 4. Modify the TimeSlices */
-                Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
-                modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);
-                
-            }
-
             Set<Integer> deletedCoexistingJobs = newAndDeletedCoexistingJobs.getDeletedCoexistingJobsFromTheCore();
             for (int deletedCoexistingJobId: deletedCoexistingJobs) {
                 
@@ -536,7 +519,24 @@ public abstract class Scheduler {
                 modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);
             }
             
-            int migratingJobId = migratingJob.getJobId();
+            Set<Integer> newCoexistingJobs = newAndDeletedCoexistingJobs.getNewCoexistingJobsOnTheCore();
+            for (int newCoexistingJobId: newCoexistingJobs) {
+                // 3. Modify the END Event time 
+                //  3.1 Check the OCStateLevel
+                Job coexistingJob = getJobByJobId(newCoexistingJobId);
+                int coexistingJobId = coexistingJob.getJobId();
+                ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
+                int OCStateLevelCoexistingJob = checkMultiplicityAlongNodes(coexistingJobUsingNodeList, BLANK_JOBID, coexistingJobId);
+
+                // 3.2 Modify the END Event time
+                // modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevelCoexistingJob, result);
+                result.addAll(modifyTheENDEventTimeForTheJobByJobId(currentTime, coexistingJobId, OCStateLevelCoexistingJob));
+
+                /* 4. Modify the TimeSlices */
+                Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
+                modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);                
+            }
+
             ArrayList<UsingNode> migratingJobUsingNodeList = migratingJob.getUsingNodesList();
             int newOCStateLevel = checkMultiplicityAlongNodes(migratingJobUsingNodeList, BLANK_JOBID, migratingJobId);
             modifyTheENDEventTime(migratingJob, migratingJobId, currentTime, newOCStateLevel, result);
@@ -600,6 +600,7 @@ public abstract class Scheduler {
             }
             
             ArrayList<CoreInfo> usingCoresWithMultiplicity = getMultiplicityOnUsingCores(nodeId, usingCores);
+//            Collections.sort(usingCoresWithMultiplicity);
             Collections.reverse(usingCoresWithMultiplicity);
             printUsingCoreInfo(job, nodeId, usingCoresWithMultiplicity, false);
             
@@ -609,7 +610,7 @@ public abstract class Scheduler {
             NewAndDeletedCoexistingJobs  newAndDeletedCoexistingJobsAlongCores = new NewAndDeletedCoexistingJobs();
             for (CoreInfo ci: usingCoresWithMultiplicity) {
                 NewAndDeletedCoexistingJobs  newAndDeletedCoexistingJobsOnTheCore = new NewAndDeletedCoexistingJobs();                
-                if (ci.getJobList().size() > 1) {
+                if (ci.getJobList().size() > 1) { // 1 is hard-coded?
                     newAndDeletedCoexistingJobsOnTheCore = migrate(job, ci, usingCores, migrateTargetCores, migrationCnt);
                     ++migrationCnt;
                 }
@@ -737,7 +738,7 @@ public abstract class Scheduler {
         
         Set<Integer> updateSourceNew = newAndDeletedCoexistingJobsSource.getNewCoexistingJobsOnTheCore();
         Set<Integer> updateSourceDeleted = newAndDeletedCoexistingJobsSource.getDeletedCoexistingJobsFromTheCore();
-        
+  
         updateSinkNew.addAll(updateSourceNew);
         updateSinkDeleted.addAll(updateSourceDeleted);
         
@@ -841,11 +842,11 @@ public abstract class Scheduler {
 
     protected void printOCStateLevelTransition(int currentOCStateLevel, int newOCStateLevelForJob, int victimJobId) {
         if (currentOCStateLevel + 1 == newOCStateLevelForJob) {
-            System.out.print("debug) OC State is updated from " + currentOCStateLevel + " to " + newOCStateLevelForJob);
+            System.out.print("\t\tdebug) OC State is updated from " + currentOCStateLevel + " to " + newOCStateLevelForJob);
         } else if (currentOCStateLevel == newOCStateLevelForJob) {
-            System.out.print("debug) OC State is not updated, remains " + currentOCStateLevel);
+            System.out.print("\t\tdebug) OC State is not updated, remains " + currentOCStateLevel);
         } else if (currentOCStateLevel - 1 == newOCStateLevelForJob) {
-            System.out.print("debug) OC State is updated from " + currentOCStateLevel + " to " + newOCStateLevelForJob);
+            System.out.print("\t\tdebug) OC State is updated from " + currentOCStateLevel + " to " + newOCStateLevelForJob);
         }
         System.out.println(", jobId: " + victimJobId);
     }
@@ -867,8 +868,14 @@ public abstract class Scheduler {
         return trueEndTime;
     }
     
+ 
     protected void printThrowENDEvent(int currentTime, int trueEndTime, Job job, EventType evt) {
-        System.out.println("\tdebug) Throw " + evt + " event: jobId " + job.getJobId() + ", newTrueEndTime: " + trueEndTime + " at " + currentTime);
+        printThrowENDEvent(currentTime, trueEndTime, job, evt, 1);
+    }
+    
+    protected void printThrowENDEvent(int currentTime, int trueEndTime, Job job, EventType evt, int tabno) {
+        for (int i = 0; i < tabno; ++i) System.out.print("\t");
+        System.out.println("debug) Throw " + evt + " event: jobId " + job.getJobId() + ", newTrueEndTime: " + trueEndTime + " at " + currentTime);
     }
     
     protected void modifyTheENDEventTime(Job coexistingJob, int coexistingJobId, int currentTime, int OCStateLevel, ArrayList<Event> result) {
@@ -920,8 +927,8 @@ public abstract class Scheduler {
         return expectedEndTime;
     }
     
-    private void printDifferenceExpectedEndTime(int oldExpectedEndTime, int newExpectedEndTime) {
-        System.out.println("\tdebug) oldExpectedEndTime: " + oldExpectedEndTime + ", newExpectedEndTime: " + newExpectedEndTime);
+    private void printDifferenceExpectedEndTime(int oldExpectedEndTime, int newExpectedEndTime, int jobId) {
+        System.out.println("\t\tdebug) Modify the timeslices, oldExpectedEndTime: " + oldExpectedEndTime + ", newExpectedEndTime: " + newExpectedEndTime + ", jobId: " + jobId);
     }
     
 
@@ -1006,7 +1013,7 @@ public abstract class Scheduler {
         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, coexistingJob);
         coexistingJob.setSpecifiedExecuteTime(newExpectedEndTime);
         // assert newExpectedEndTime <= oldExpectedEndTime;
-        printDifferenceExpectedEndTime(oldExpectedEndTime, newExpectedEndTime);
+        printDifferenceExpectedEndTime(oldExpectedEndTime, newExpectedEndTime, coexistingJob.getJobId());
 
         //  2-2. Update the timeslice between current and new expectedEndTime           
         int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);

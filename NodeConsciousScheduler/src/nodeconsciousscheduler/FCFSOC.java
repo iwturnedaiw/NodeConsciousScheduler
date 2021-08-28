@@ -191,6 +191,9 @@ public class FCFSOC extends FCFS {
         int endingJobId = endingJob.getJobId();
         Set<Integer> coexistingJobs = endingJob.getCoexistingJobs();
 
+        System.out.println("debug) ending Job Id: " + endingJobId);
+        System.out.println("\tdebug) coexistingJobs: " + coexistingJobs);
+        
         /* 1. Check the OCStateLevel */
         /*    Change appropriate OCStateLevel for coexisting jobs */
         for (int coexistingJobId : coexistingJobs) {
@@ -199,7 +202,6 @@ public class FCFSOC extends FCFS {
             ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
 
             Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
-            System.out.println("\tdebug) ending Job Id: " + endingJobId);
             assert coexistingJobCoexistingJob.contains(endingJobId);
            
             printDebugForCoexistingJob(ev, coexistingJobId);
