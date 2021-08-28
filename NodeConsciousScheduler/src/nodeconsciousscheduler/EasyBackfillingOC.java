@@ -251,6 +251,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 for (int victimJobId: victimJobs) {
                     Job victimJob = getJobByJobId(victimJobId);
                     if (OCStateLevelForBackfillJob == victimJob.getOCStateLevel()) continue;
+                    int currentVictimExpectedEndTime = victimJob.getSpecifiedExecuteTime();
+                    if (currentVictimExpectedEndTime >= startTimeFirstJob) continue;
                     int victimApproximateEndTime = calculateApproximateEndTime(currentTime, victimJob, OCStateLevelForBackfillJob);
                     /*
                     if (OCStateLevelForBackfillJob > victimJob.getOCStateLevel()) {
@@ -258,6 +260,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         break;
                     }
                     */
+//                    if (checkEffectOnVictimJob(victimJob)) {
                     if (victimApproximateEndTime > startTimeFirstJob) {
                         backfillFlag = false;
                         break;
@@ -517,6 +520,10 @@ public class EasyBackfillingOC extends EasyBackfilling {
         int numUsingCore = NodeConsciousScheduler.numCores - freeCores + requiredCoresPerNode;
         double divide = (double)numUsingCore/NodeConsciousScheduler.numCores;
         return (int)ceil(divide);
+    }
+
+    private boolean checkEffectOnVictimJob(Job victimJob) {
+        return false;
     }
  
 }
