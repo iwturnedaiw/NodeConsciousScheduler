@@ -885,13 +885,15 @@ public abstract class Scheduler {
         assert (currentOCStateLevel - 1 == OCStateLevel) || (currentOCStateLevel == OCStateLevel);
         // debug
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
+        int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
         coexistingJob.setOCStateLevel(OCStateLevel);
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
 
         //  1-3. Rethrow the END event set the time
-        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
+        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
+            coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
             result.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob, trueEndTime)); // This event delete the END event already exists in the event queue. 
         }
@@ -1033,13 +1035,15 @@ public abstract class Scheduler {
         assert (currentOCStateLevel + 1 == OCStateLevel) || (currentOCStateLevel == OCStateLevel);
         /* debug */
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
+        int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
 
         /*  1-3. Rethrow the END event set the time */
-        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
+        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, victimJob));
+            victimJob.setEndEventOccuranceTimeNow(trueEndTime);
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
             result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob, trueEndTime)); // This event delete the END event already exists in the event queue. 
         }

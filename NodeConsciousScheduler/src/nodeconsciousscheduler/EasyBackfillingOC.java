@@ -63,6 +63,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, job));
+                    job.setEndEventOccuranceTimeNow(trueEndTime);
                 } else {
                     /* If OCStateLevel is greater than 1, */
                     /* we must modify the three points below */
@@ -168,7 +169,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
-                    result.add(new Event(EventType.END, trueEndTime, job));                    
+                    result.add(new Event(EventType.END, trueEndTime, job));          
+                    job.setEndEventOccuranceTimeNow(trueEndTime);
                 }
             } else break;
         }
@@ -299,6 +301,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     result.add(new Event(EventType.START, startTime, backfillJob));
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));
+                    backfillJob.setEndEventOccuranceTimeNow(trueEndTime);
                     temporallyScheduledJobList.add(backfillJob);
                 } else {
                     System.out.println("OC allocating, opponent jobId: " + backfillJobId + ", OCStateLevel: " + OCStateLevelForBackfillJob + ", victim jobId: " + victimJobs);
@@ -355,6 +358,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     result.add(new Event(EventType.START, startTime, backfillJob));
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));
+                    backfillJob.setEndEventOccuranceTimeNow(trueEndTime);
                     temporallyScheduledJobList.add(backfillJob);
                 }
 
