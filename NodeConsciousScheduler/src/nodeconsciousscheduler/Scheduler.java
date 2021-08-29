@@ -531,7 +531,7 @@ public abstract class Scheduler {
 
                 // 3.2 Modify the END Event time
                 // modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevelCoexistingJob, result);
-                result.addAll(modifyTheENDEventTimeForTheJobByJobId(currentTime, coexistingJobId, OCStateLevelCoexistingJob));
+                result.addAll(modifyTheENDEventTimeForNewCoexistingJobByJobId(currentTime, coexistingJobId, OCStateLevelCoexistingJob));
                 coexistingJob.setOCStateLevel(OCStateLevelCoexistingJob);
                 /* 4. Modify the TimeSlices */
                 Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
@@ -1102,4 +1102,40 @@ public abstract class Scheduler {
             System.exit(1);
         }   
     }    
+
+    protected ArrayList<Event> modifyTheENDEventTimeForNewCoexistingJobByJobId(int currentTime, int victimJobId, int OCStateLevel) {        
+        ArrayList<Event> result = new ArrayList<Event>();
+
+        /* 1. Modify the victim job's end time in event queue */
+        Job victimJob = getJobByJobId(victimJobId); // O(N)
+        int victimStartTime = victimJob.getStartTime();
+        assert (victimStartTime >= 0 && victimStartTime <= currentTime) || victimStartTime == UNSTARTED;
+
+        /*  1-1. Measure the executing time at current time for each victim jobs. */
+        measureCurrentExecutingTime(currentTime, victimJob);
+        victimJob.setPreviousMeasuredTime(currentTime);
+
+        /*  1-2. Calculate new trueEndTime */
+        int currentOCStateLevel = victimJob.getOCStateLevel();
+        boolean OCStateLevelIncreasingflag = OCStateLevel >= currentOCStateLevel ? true : false;
+        assert (OCStateLevelIncreasingflag && currentOCStateLevel + 1 == OCStateLevel) || (!OCStateLevelIncreasingflag && currentOCStateLevel - 1 == OCStateLevel) || (currentOCStateLevel == OCStateLevel);
+        /* debug */
+        printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
+        int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
+        victimJob.setOCStateLevel(OCStateLevel);
+        int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
+        assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime) || (!OCStateLevelIncreasingflag && oldTrueEndTime > trueEndTime);
+        victimJob.setOCStateLevel(currentOCStateLevel);
+        
+        /*  1-3. Rethrow the END event set the time */
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
+        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
+            printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
+            result.add(new Event(EventType.END, trueEndTime, victimJob));
+            victimJob.setEndEventOccuranceTimeNow(trueEndTime);
+            printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
+            result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
+        }
+        return result;
+    }
 }
