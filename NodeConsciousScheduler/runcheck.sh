@@ -8,19 +8,19 @@ LOG=./log/runcheck_`date +%Y%m%d%H%M`.log
 CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n1c256 n1c512 n1c192 n2c64 n4c64 n8c64 n16c64 n1c1024" # for non-OC
 #CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n1c256 n1c512" # for OC
 #CASE="n8c32" # for OC
-#CASE="n4c64"
-#CASE="n16c64"
+#CASE="n2c16"
+#CASE="n1c16"
 TP="gen01 gen02 gen03 short short1"
 #TP="gen01 gen02"
 #TP="short1"
-#TP="gen03"
+#TP="gen01"
 #TP="short short1"
 #TP="short"
-#M=2
+M=2
 #ALGORITHM=FCFS
-ALGORITHM=FCFSOC
+#ALGORITHM=FCFSOC
 #ALGORITHM=EasyBackfilling
-#ALGORITHM=EasyBackfillingOC
+ALGORITHM=EasyBackfillingOC
 
 # path
 DATADIR=./data-set
