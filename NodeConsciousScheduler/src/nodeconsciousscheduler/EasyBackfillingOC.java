@@ -127,7 +127,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         result.add(new Event(EventType.END, trueEndTime, victimJob));
                         result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
                         */
-                        victimJob.getCoexistingJobs().add(opponentJobId);                        
+                        victimJob.getCoexistingJobs().add(opponentJobId);          
+                        victimJob.setOCStateLevel(OCStateLevelForJob);
                     }
                     
                     /* 2. Modify the time slices (variable name: timeSlices defined in Class Scheduler) */
@@ -324,6 +325,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                         /*  2-1. Calculate new expectedEndTime */
                         if (OCStateLevelForBackfillJob != victimJob.getOCStateLevel()) {
+                            victimJob.setOCStateLevel(OCStateLevelForBackfillJob);
                             int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
                             int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
                             victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
@@ -342,6 +344,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                             reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob);
                             reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob, tmpTimeSlices);
                         }
+                        victimJob.setOCStateLevel(OCStateLevelForBackfillJob);
                     }
                     
                     backfillJob.setOCStateLevel(OCStateLevelForBackfillJob);

@@ -202,6 +202,7 @@ public abstract class Scheduler {
             int freeCoreInNodeInfo = freeCoreInAllNodeInfo.get(i);
             if (freeCoreInTimeSlice == freeCoreInNodeInfo) continue;
             if (freeCoreInTimeSlice > freeCoreInNodeInfo) {
+                System.out.println("Differ freecore value at node " + i);
                 System.out.println("Check multiple END Event with the same event time are.");
             } else {
                 ret = false;
@@ -531,7 +532,7 @@ public abstract class Scheduler {
                 // 3.2 Modify the END Event time
                 // modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevelCoexistingJob, result);
                 result.addAll(modifyTheENDEventTimeForTheJobByJobId(currentTime, coexistingJobId, OCStateLevelCoexistingJob));
-
+                coexistingJob.setOCStateLevel(OCStateLevelCoexistingJob);
                 /* 4. Modify the TimeSlices */
                 Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
                 modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);                
@@ -1048,7 +1049,8 @@ public abstract class Scheduler {
         victimJob.setOCStateLevel(OCStateLevel);
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         assert oldTrueEndTime <= trueEndTime;
-
+        victimJob.setOCStateLevel(currentOCStateLevel);
+        
         /*  1-3. Rethrow the END event set the time */
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {

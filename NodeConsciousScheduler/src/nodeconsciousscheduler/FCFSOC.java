@@ -126,7 +126,8 @@ public class FCFSOC extends FCFS {
                         result.add(new Event(EventType.END, trueEndTime, victimJob));
                         result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
                         */
-                        victimJob.getCoexistingJobs().add(opponentJobId);                        
+                        victimJob.getCoexistingJobs().add(opponentJobId);         
+                        victimJob.setOCStateLevel(OCStateLevelForJob);
                     }
                     
                     /* 2. Modify the time slices (variable name: timeSlices defined in Class Scheduler) */
