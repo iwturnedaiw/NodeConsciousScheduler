@@ -46,7 +46,7 @@ public abstract class Scheduler {
         this.temporallyScheduledJobList = new ArrayList<Job>();
     }
     
-    protected boolean existSliceStartAt(int currentTime) {
+    protected boolean existSliceStartAt(int currentTime, LinkedList<TimeSlice> timeSlices) {
         for (int i = 0; i < timeSlices.size(); ++i) {
             if (timeSlices.get(i).getStartTime() == currentTime) {
                 return true;
@@ -55,7 +55,7 @@ public abstract class Scheduler {
         return false;
     }
     
-    protected int sliceIndexToSplit(int currentTime) {
+    protected int sliceIndexToSplit(int currentTime, LinkedList<TimeSlice> timeSlices) {
         int breakIndex = -1;
         for (int i = 0; i < timeSlices.size(); ++i) {
             TimeSlice ts = timeSlices.get(i);
@@ -74,11 +74,11 @@ public abstract class Scheduler {
     }
     
     protected void makeTimeslices(int currentTime, LinkedList<TimeSlice> timeSlices) {        
-        if (existSliceStartAt(currentTime))
+        if (existSliceStartAt(currentTime, timeSlices))
             return;
 
         int breakIndex = UNUPDATED;
-        breakIndex = sliceIndexToSplit(currentTime);
+        breakIndex = sliceIndexToSplit(currentTime, timeSlices);
 
         if (breakIndex != UNUPDATED) {
             TimeSlice ts = timeSlices.get(breakIndex);
@@ -1062,7 +1062,44 @@ public abstract class Scheduler {
         }
         return result;
     }
+
+    protected void printDebugForCoexistingJob(Event ev, int coexistingJobId) {
+        int currentTime = ev.getOccurrenceTime();
+        Job endingJob = ev.getJob();
+        int endingJobId = endingJob.getJobId();
+        Set<Integer> coexistingJobs = endingJob.getCoexistingJobs();
+        Job coexistingJob = getJobByJobId(coexistingJobId);
+        /* Calculate new OCStateLevel for coexisting jobs */
+        ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
+
+        Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
+        
+        if (coexistingJobUsingNodeList == null) {
+            System.out.println("debug) OCCURRED HERE, ending job Id: " + endingJobId + ", currentTime: " + currentTime);
+            System.out.println("debug) usingNodeList: ");
+            ArrayList<UsingNode> endingJobUsingNodeList = endingJob.getUsingNodesList();
+            for (int i = 0; i < endingJobUsingNodeList.size(); ++i) {
+                UsingNode node = endingJobUsingNodeList.get(i);
+                System.out.print("\tNode" + node.getNodeNum() + ": ");
+                ArrayList<Integer> cores = node.getUsingCoreNum();
+                for (int j = 0; j < cores.size(); ++j) {
+                    System.out.print(cores.get(j));
+                    if (j != cores.size() - 1) {
+                        System.out.print(", ");
+                    }
+                }
+                System.out.println("");
+            }
+            System.out.println("");
+            System.out.println("debug) coexisting jobs: " + coexistingJobs);
+            System.out.println("debug) coexisting job Id: " + coexistingJobId);
+            try {
+                Thread.sleep(2000);
+                throw new Exception();
+            } catch (Exception ex) {
+                Logger.getLogger(FCFSOC.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            System.exit(1);
+        }   
+    }    
 }
-
-
-

@@ -374,6 +374,81 @@ public class EasyBackfillingOC extends EasyBackfilling {
     }
     
     @Override
+    protected ArrayList<Event>  checkCoexistingJobsOCStateAndModifyENDEventAndTimeSlices(Event ev) {
+        ArrayList<Event> result = new ArrayList<Event>();
+
+        /* Check the OCStateLevel for coexisting jobs */
+        /*  1. Check the OCStateLevel */
+        /*  2. Modify the END event time */
+        /*  3. Modify the timeSlices */
+
+        /* Setting */
+        int currentTime = ev.getOccurrenceTime();
+        Job endingJob = ev.getJob();
+        int endingJobId = endingJob.getJobId();
+        Set<Integer> coexistingJobs = endingJob.getCoexistingJobs();
+
+        System.out.println("debug) ending Job Id: " + endingJobId);
+        System.out.println("\tdebug) coexistingJobs: " + coexistingJobs);
+        
+        /* 1. Check the OCStateLevel */
+        /*    Change appropriate OCStateLevel for coexisting jobs */
+        for (int coexistingJobId : coexistingJobs) {
+            Job coexistingJob = getJobByJobId(coexistingJobId);
+            /* Calculate new OCStateLevel for coexisting jobs */
+            ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
+
+            Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
+            assert coexistingJobCoexistingJob.contains(endingJobId);
+           
+            printDebugForCoexistingJob(ev, coexistingJobId);
+ 
+            /* 1.1 Check all nodes used by coexisting job */
+            /*
+            for (int i = 0; i < coexistingJobUsingNodeList.size(); ++i) {
+                int multiplicityAlongCores = UNUPDATED;
+
+                // node setting
+                UsingNode usingNode = coexistingJobUsingNodeList.get(i);
+                int usingNodeId = usingNode.getNodeNum();
+                NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(usingNodeId);
+                assert usingNodeId == nodeInfo.getNodeNum();
+                
+                ArrayList<Integer> usingCoreIds = usingNode.getUsingCoreNum();
+
+                // Core loop
+                // 1.2 Check all cores used by coexisting job                
+                ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
+                for (int usingCoreId: usingCoreIds) {
+                    CoreInfo usingCoreInfo = getOccupiedCoreInfoByCoreId(occupiedCores, usingCoreId); // O(N)
+                    assert usingCoreId == usingCoreInfo.getCoreId();
+                    ArrayList<Integer> jobListOnTheCore = usingCoreInfo.getJobList();
+                    assert jobListOnTheCore.contains(coexistingJobId);
+                    assert !jobListOnTheCore.contains(endingJobId);
+                    multiplicityAlongCores = max(multiplicityAlongCores, jobListOnTheCore.size());
+                }
+                assert multiplicityAlongCores != UNUPDATED;
+                assert multiplicityAlongCores <= NodeConsciousScheduler.M;
+                multiplicityAlongNodes = max(multiplicityAlongNodes, multiplicityAlongCores);
+            }
+            assert multiplicityAlongNodes != UNUPDATED; 
+            assert multiplicityAlongNodes <= NodeConsciousScheduler.M;
+            */
+            
+            //int OCStateLevel = multiplicityAlongNodes;
+            int OCStateLevel = checkMultiplicityAlongNodes(coexistingJobUsingNodeList, endingJobId, coexistingJobId);
+
+            // 2. Modify the END event time
+            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevel, result);
+
+            // 3. Modify the timeSlices
+            modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);
+        }
+        
+        return result;
+    }
+    
+    @Override
     protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job, boolean backfillFlag, int firstJobStartTime) {
         /* Return variable
            This have the node no. with # of free core.
