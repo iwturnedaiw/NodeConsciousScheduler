@@ -95,6 +95,7 @@ public class NodeConsciousScheduler {
         //sim = new Simulator(jobList, allNodesInfo, FCFS);
         sim = new Simulator(jobList, allNodesInfo, sche);
         sim.run();
+        sim.makeResults();
 /*        
         PriorityQueue<Event> pq = new EventQueue();
         EventQueue evq = (EventQueue) pq;

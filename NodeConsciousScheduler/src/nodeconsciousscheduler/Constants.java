@@ -18,4 +18,13 @@ public class Constants {
     static int UNSTARTED = -1;
     static int BLANK_JOBID = -1;
     static int NOTSPECIFIED = -1;
+    static String RESULT_DIRECTORY = "result";
+    static String FINISH_ORDER_JOB_OUTPUT = "test.out";
+    static String SLOWDOWN_OUTPUT = "slowdown.out";
+    static String CUMULATIVE_JOB_PER_DAY_OUTPUT = "cumulative_job_day.out";
+    static int DAY_IN_SECOND = 60 * 60 * 24;
+    static String CUMULATIVE_JOB_PER_HOUR_OUTPUT = "cumulative_job_hour.out";
+    static int HOUR_IN_SECOND = 60 * 60;
+    static String CUMULATIVE_JOB_PER_MINUTE_OUTPUT = "cumulative_job_minute.out";
+    static int MINUTE_IN_SECOND = 60;
 }

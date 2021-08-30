@@ -33,6 +33,7 @@ public class Job {
     private int finishedTime;
     private int waitTime;
     private int numNodes;
+    private double slowdown;
     private ArrayList<UsingNode> usingNodesList;
     private Set<Integer> coexistingJobs;
     
@@ -224,5 +225,13 @@ public class Job {
 
     public void setEndEventOccuranceTimeNow(int endEventOccuranceTimeNow) {
         this.endEventOccuranceTimeNow = endEventOccuranceTimeNow;
+    }
+
+    public double getSlowdown() {
+        return slowdown;
+    }
+
+    public void setSlowdown(double slowdown) {
+        this.slowdown = slowdown;
     }
 }
