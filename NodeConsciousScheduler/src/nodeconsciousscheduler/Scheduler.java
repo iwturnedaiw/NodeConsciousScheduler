@@ -1063,6 +1063,41 @@ public abstract class Scheduler {
         return result;
     }
 
+    protected ArrayList<Event> modifyTheENDEventTimeForTheJob(int currentTime, Job victimJob, int OCStateLevel) {
+        ArrayList<Event> result = new ArrayList<Event>();
+
+        /* 1. Modify the victim job's end time in event queue */
+        int victimJobId = victimJob.getJobId();
+        int victimStartTime = victimJob.getStartTime();
+        assert (victimStartTime >= 0 && victimStartTime <= currentTime) || victimStartTime == UNSTARTED;
+
+        /*  1-1. Measure the executing time at current time for each victim jobs. */
+        measureCurrentExecutingTime(currentTime, victimJob);
+        victimJob.setPreviousMeasuredTime(currentTime);
+
+        /*  1-2. Calculate new trueEndTime */
+        int currentOCStateLevel = victimJob.getOCStateLevel();
+        assert (currentOCStateLevel + 1 == OCStateLevel) || (currentOCStateLevel == OCStateLevel);
+        /* debug */
+        printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
+        int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
+        victimJob.setOCStateLevel(OCStateLevel);
+        int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
+        assert oldTrueEndTime <= trueEndTime;
+        victimJob.setOCStateLevel(currentOCStateLevel);
+        
+        /*  1-3. Rethrow the END event set the time */
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
+        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
+            printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
+            result.add(new Event(EventType.END, trueEndTime, victimJob));
+            victimJob.setEndEventOccuranceTimeNow(trueEndTime);
+            printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
+            result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
+        }
+        return result;
+    }
+    
     protected void printDebugForCoexistingJob(Event ev, int coexistingJobId) {
         int currentTime = ev.getOccurrenceTime();
         Job endingJob = ev.getJob();

@@ -27,16 +27,29 @@ import static nodeconsciousscheduler.Constants.UNUSED;
 public class FCFSOC extends FCFS {
     @Override
     protected ArrayList<Event> scheduleJobsStartAt(int currentTime) {
+        /* 1. Obtain the head job in the queue */ 
+        /* 2. Obtain the nodes the job can execute at */
+        /* 3. Select nodes the job is assigned to */        
+        /* 4. Calculate opponent job (the head job) OCStateLevel */        
+        /* 5. Modify the timeSlices */        
+        /* 6. Modify the resource informaiton */        
+        /* 7. Enqueue the START and END Events */                
+        
         ArrayList<Event> result = new ArrayList<Event>();
         temporallyScheduledJobList.clear();
+        
+        /* 1. Obtain the head job in the queue */
         while (!waitingQueue.isEmpty()) {
             Job job = waitingQueue.peek();
             int jobId = job.getJobId();
-            
+
+            /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
             assert checkTimeSlicesAndAllNodeInfo();
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
-                temporallyScheduledJobList.add(job);
+
+                /* 3. Select nodes the job is assigned to */        
+                /* 4. Calculate opponent job (the head job) OCStateLevel */        
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForJob = 1;
@@ -49,15 +62,23 @@ public class FCFSOC extends FCFS {
                 int startTime = currentTime;
                 //job.setStartTime(startTime);
                 makeTimeslices(startTime);
+
+
+                /* 5. Modify the timeSlices */        
+                /* 6. Modify the resource informaiton */        
+                /* 7. Enqueue the START and END Events */                
                 
                 if (OCStateLevelForJob == 1) {
+                    /* 5. Modify the timeSlices */        
                     int expectedEndTime = startTime + job.getRequiredTime();
                     makeTimeslices(expectedEndTime);
                     job.setSpecifiedExecuteTime(expectedEndTime);
 
                     job.setOCStateLevel(OCStateLevelForJob);
+                    /* 6. Modify the resource informaiton */        
                     assignJob(startTime, job, assignNodesNo);
 
+                    /* 7. Enqueue the START and END Events */                
                     int trueEndTime = startTime + job.getActualExecuteTime();
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
@@ -98,7 +119,8 @@ public class FCFSOC extends FCFS {
                     /*  1-2. Calculate new trueEndTime */
                     /*  1-3. Rethrow the END event set the time */
                     for (int victimJobId: victimJobs) {
-                        ArrayList<Event> resultForVictim = new ArrayList<Event>();
+                        ArrayList<Event> resultForVictim = new ArrayList<Event>();                        
+//                        int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJobId, assignNodesNo);
                         resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
                         for (Event ev: resultForVictim) {
                             result.add(ev);
@@ -170,8 +192,9 @@ public class FCFSOC extends FCFS {
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, job));
-                    job.setEndEventOccuranceTimeNow(trueEndTime);
+                    job.setEndEventOccuranceTimeNow(trueEndTime);                   
                 }
+                temporallyScheduledJobList.add(job);
             } else break;
         }
         return result;
@@ -269,8 +292,9 @@ public class FCFSOC extends FCFS {
 
         /* Calculate ppn */
         /* TODO: The case requiredCores ist not dividable  */
-        int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
-        if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
+        //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        int requiredCoresPerNode = job.getRequiredCoresPerNode();
 
         int jobId = job.getJobId();
         int M = NodeConsciousScheduler.M;

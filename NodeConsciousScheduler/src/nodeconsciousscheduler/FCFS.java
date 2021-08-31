@@ -29,14 +29,24 @@ class FCFS extends Scheduler {
 
     @Override
     protected ArrayList<Event> scheduleJobsStartAt(int currentTime) {
+        /* 1. Obtain the head job in the queue */ 
+        /* 2. Obtain the nodes the job can execute at */
+        /* 3. Select nodes the job is assigned to */        
+        /* 4. Modify the timeSlices */        
+        /* 5. Modify the resource informaiton */        
+        /* 6. Enqueue the START and END Events */                
+        
         ArrayList<Event> result = new ArrayList<Event>();
         temporallyScheduledJobList.clear();
         while (!waitingQueue.isEmpty()) {
+            /* 1. Obtain the head job in the queue */
             Job job = waitingQueue.peek();
-            
+
+            /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
             assert checkTimeSlicesAndAllNodeInfo();
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
+                /* 3. Select nodes the job is assigned to */
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 for (int i = 0; i < job.getRequiredNodes(); ++i) {
@@ -44,6 +54,8 @@ class FCFS extends Scheduler {
                 }
 
                 waitingQueue.poll();
+                
+                /* 4. Modify the timeSlices */
                 int startTime = currentTime;
                 job.setStartTime(startTime);
                 makeTimeslices(startTime);
@@ -52,10 +64,12 @@ class FCFS extends Scheduler {
                 makeTimeslices(expectedEndTime);
                 job.setSpecifiedExecuteTime(expectedEndTime);
 
+                /* 5. Modify the resource informaiton */
                 assignJob(startTime, job, assignNodesNo);
-                
+
+                /* 6. Enqueue the START and END Events */                
                 job.setPreviousMeasuredTime(startTime);
-                int trueEndTime = startTime + job.getActualExecuteTime();                
+                int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
                 result.add(new Event(EventType.END, trueEndTime, job));
                 job.setEndEventOccuranceTimeNow(trueEndTime);
@@ -86,8 +100,9 @@ class FCFS extends Scheduler {
 
         /* Calculate ppn */
         /* TODO: The case requiredCores ist not dividable  */
-        int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
-        if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
+        //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        int requiredCoresPerNode = job.getRequiredCoresPerNode();
         
         int alongTimeSlices = 0;
         for (int i = 0; i < timeSlices.size(); ++i) {

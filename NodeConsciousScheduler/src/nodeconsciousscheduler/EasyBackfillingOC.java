@@ -37,7 +37,6 @@ public class EasyBackfillingOC extends EasyBackfilling {
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
             assert checkTimeSlicesAndAllNodeInfo();
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
-                temporallyScheduledJobList.add(job);
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForJob = 1;
@@ -173,6 +172,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     result.add(new Event(EventType.END, trueEndTime, job));          
                     job.setEndEventOccuranceTimeNow(trueEndTime);
                 }
+                temporallyScheduledJobList.add(job);
             } else break;
         }
         
@@ -304,7 +304,6 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));
                     backfillJob.setEndEventOccuranceTimeNow(trueEndTime);
-                    temporallyScheduledJobList.add(backfillJob);
                 } else {
                     System.out.println("OC allocating, opponent jobId: " + backfillJobId + ", OCStateLevel: " + OCStateLevelForBackfillJob + ", victim jobId: " + victimJobs);
 
@@ -363,9 +362,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));
                     backfillJob.setEndEventOccuranceTimeNow(trueEndTime);
-                    temporallyScheduledJobList.add(backfillJob);
                 }
-
+                temporallyScheduledJobList.add(backfillJob);
             }
         }
         // TODO: firstJob clear
@@ -466,8 +464,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
         
         /* Calculate ppn */
         /* TODO: The case requiredCores ist not dividable  */
-        int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
-        if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
+        //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        int requiredCoresPerNode = job.getRequiredCoresPerNode();
         
         int requiredNodes = job.getRequiredNodes();
 

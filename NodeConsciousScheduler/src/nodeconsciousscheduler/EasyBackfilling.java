@@ -33,17 +33,27 @@ class EasyBackfilling extends Scheduler {
 
     @Override
     protected ArrayList<Event> scheduleJobsStartAt(int currentTime) {
+        /* 1. Obtain the head job in the queue */ 
+        /* 2. Obtain the nodes the job can execute at */
+        /* 3. Select nodes the job is assigned to */        
+        /* 4. Modify the timeSlices */        
+        /* 5. Modify the resource informaiton */        
+        /* 6. Enqueue the START and END Events */                
+        
         ArrayList<Event> result = new ArrayList<Event>();
         temporallyScheduledJobList.clear();
         while (!waitingQueue.isEmpty()) {
+            /* 1. Obtain the head job in the queue */ 
             Job job = waitingQueue.peek();
-            
+
+            /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
             assert checkTimeSlicesAndAllNodeInfo();
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
                 // TODO: Erase below line
                 System.out.println("size: " + canExecuteNodes.size() + ", FCFS job: " + job.getJobId());
 
+                /* 3. Select nodes the job is assigned to */        
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 for (int i = 0; i < job.getRequiredNodes(); ++i) {
@@ -51,6 +61,8 @@ class EasyBackfilling extends Scheduler {
                 }
 
                 waitingQueue.poll();
+
+                /* 4. Modify the timeSlices */        
                 int startTime = currentTime;
                 job.setStartTime(startTime);
                 makeTimeslices(startTime);
@@ -59,8 +71,10 @@ class EasyBackfilling extends Scheduler {
                 makeTimeslices(expectedEndTime);
                 job.setSpecifiedExecuteTime(expectedEndTime);
 
+                /* 5. Modify the resource informaiton */        
                 assignJob(startTime, job, assignNodesNo);
 
+                /* 6. Enqueue the START and END Events */                                
                 job.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
@@ -73,9 +87,19 @@ class EasyBackfilling extends Scheduler {
         if (waitingQueue.size() <= 1) return result;
         
         /* Backfilling */
+
+        /* 1. Assign the head job at the time it can start */ 
+        /* 2. Obtain the 2nd or later job in the queue */ 
+        /* 3. Select nodes the job is assigned to */        
+        /* 4. Modify the timeSlices */        
+        /* 5. Modify the resource informaiton */        
+        /* 6. Enqueue the START and END Events */                
+
         Queue<Job> tailWaitingQueue = copyWaitingQueue();
         Job firstJob = waitingQueue.peek();
 
+        /* 1. Assign the head job at the time it can start */ 
+        /* TODO: break down the 1 in detail */
         int startTimeFirstJob = CANNOT_START;
         ArrayList<VacantNode> canExecuteTmpNodes = new ArrayList<VacantNode>();
         /* Find tempollary executable nodes */
@@ -110,22 +134,26 @@ class EasyBackfilling extends Scheduler {
         int endTimeFirstJob = startTimeFirstJob + firstJob.getRequiredTime();
         makeTimeslices(endTimeFirstJob, tmpTimeSlices);
         assignFirstJobTemporally(tmpTimeSlices, tmpAllNodesInfo, startTimeFirstJob, firstJob, canExecuteTmpNodes);
-
+        
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
         while (tailWaitingQueue.size() > 0) {
+            /* 2. Obtain the 2nd or later job in the queue */ 
             Job backfillJob = tailWaitingQueue.poll();
 
+            /* 3. Obtain the nodes the job can execute at */            
             canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, startTimeFirstJob);
 
             if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
                 System.out.println("Succeed Backfill Job: " + backfillJob.getJobId() + ", at " + currentTime);
 
+                /* 4. Select nodes the job is assigned to */        
                 Collections.sort(canExecuteNodesEasyBackfiling);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 for (int i = 0; i < backfillJob.getRequiredNodes(); ++i) {
                     assignNodesNo.add(canExecuteNodesEasyBackfiling.get(i).getNodeNo());
                 }
 
+                /* Delete the job from original queue */
                 Iterator itr = waitingQueue.iterator();
                 while (itr.hasNext()) {
                     Job deleteJob = (Job) itr.next();
@@ -135,6 +163,7 @@ class EasyBackfilling extends Scheduler {
                     }
                 }
 
+                /* 4. Modify the timeSlices */        
                 int startTime = currentTime;
                 backfillJob.setStartTime(startTime);
 
@@ -146,9 +175,11 @@ class EasyBackfilling extends Scheduler {
                 makeTimeslices(expectedEndTime, tmpTimeSlices);
                 backfillJob.setSpecifiedExecuteTime(expectedEndTime);
 
+                /* 5. Modify the resource informaiton */        
                 assignJob(startTime, backfillJob, assignNodesNo);
                 assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
 
+                /* 6. Enqueue the START and END Events */                                                
                 backfillJob.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + backfillJob.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, backfillJob));
@@ -186,8 +217,9 @@ class EasyBackfilling extends Scheduler {
 
         /* Calculate ppn */
         /* TODO: The case requiredCores ist not dividable  */
-        int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
-        if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
+        //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        int requiredCoresPerNode = job.getRequiredCoresPerNode();
         
         int jobId = job.getJobId();
         int startTime = currentTime;

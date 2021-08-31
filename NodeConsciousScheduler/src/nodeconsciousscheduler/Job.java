@@ -24,6 +24,7 @@ public class Job {
     private int requiredTime;
     private int requiredCores;
     private int requiredNodes;
+    private int requiredCoresPerNode;
     private int runningTimeDed;
     private int runningTimeOC;
     private int cpuTimeForNow;
@@ -63,6 +64,8 @@ public class Job {
         this.requiredTime = requiredTime;
         this.requiredCores = requiredCores;
         this.requiredNodes = requiredNodes;
+        this.requiredCoresPerNode = requiredCores/requiredNodes;
+        if (requiredCores%requiredNodes != 0) ++this.requiredCoresPerNode;
         
         this.startTime = -1;
         this.finishedTime = 2 << 30;
@@ -234,4 +237,14 @@ public class Job {
     public void setSlowdown(double slowdown) {
         this.slowdown = slowdown;
     }
+
+    public int getRequiredCoresPerNode() {
+        return requiredCoresPerNode;
+    }
+
+    public void setRequiredCoresPerNode(int requiredCoresPerNode) {
+        this.requiredCoresPerNode = requiredCoresPerNode;
+    }
+    
+    
 }
