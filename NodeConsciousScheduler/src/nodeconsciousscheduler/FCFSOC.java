@@ -119,13 +119,14 @@ public class FCFSOC extends FCFS {
                     /*  1-2. Calculate new trueEndTime */
                     /*  1-3. Rethrow the END event set the time */
                     for (int victimJobId: victimJobs) {
-                        ArrayList<Event> resultForVictim = new ArrayList<Event>();                        
-//                        int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJobId, assignNodesNo);
-                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
+                        ArrayList<Event> resultForVictim = new ArrayList<Event>();           
+                        Job victimJob = getJobByJobId(victimJobId);
+                        int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
+//                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
+                        resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
                             result.add(ev);
                         }
-                        Job victimJob = getJobByJobId(victimJobId); // O(N)
                         /*
 
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
@@ -149,7 +150,7 @@ public class FCFSOC extends FCFS {
                         result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
                         */
                         victimJob.getCoexistingJobs().add(opponentJobId);         
-                        victimJob.setOCStateLevel(OCStateLevelForJob);
+                        victimJob.setOCStateLevel(victimNewOCStateLevel);
                     }
                     
                     /* 2. Modify the time slices (variable name: timeSlices defined in Class Scheduler) */
@@ -539,4 +540,63 @@ public class FCFSOC extends FCFS {
 
     }
 
+    int calculateVictimNewOCStateLevel(Job victimJob, int requiredCoresPerNode, ArrayList<Integer> assignNodesNo) {
+        int newOCStateLevel = UNUPDATED;
+        
+        int currentOCStateLevel = victimJob.getOCStateLevel();
+        
+        ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
+        
+        int victimJobId = victimJob.getJobId();
+        
+        // 1. Check the all assignNodes
+        int OCStateLevelAlongNodes = UNUPDATED;
+        for (int i = 0; i < assignNodesNo.size(); ++i) {
+            int nodeId = assignNodesNo.get(i);
+            NodeInfo node = allNodeInfo.get(nodeId);
+            assert nodeId == node.getNodeNum();
+             
+            // if the victim job doesn't use the node, skip
+            if (!node.getExecutingJobIds().contains(victimJobId))
+                continue;
+
+            // Check the least requiredCoresPerNode CoreInfos
+            int OCStateLevelAlongCores = UNUPDATED;
+            ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
+
+            // debug
+            printOccupiedCores(nodeId, occupiedCores);
+
+            
+            for (int j = 0; j < requiredCoresPerNode; ++j) {
+                CoreInfo coreInfo = occupiedCores.get(j);
+                
+                // if the victim job doesn't use the core, skip
+                if (!coreInfo.getJobList().contains(victimJobId))
+                    continue;
+                
+                int OCStateLevelOnTheCore = coreInfo.getJobList().size();
+                assert OCStateLevelOnTheCore <= currentOCStateLevel;
+                ++OCStateLevelOnTheCore;
+                OCStateLevelAlongCores = max(OCStateLevelAlongCores, OCStateLevelOnTheCore);
+            }
+            OCStateLevelAlongNodes = max(OCStateLevelAlongNodes, OCStateLevelAlongCores);
+        }
+        newOCStateLevel = max(currentOCStateLevel, OCStateLevelAlongNodes);
+        
+        return newOCStateLevel;
+    }
+
+    private void printOccupiedCores(int nodeId, ArrayList<CoreInfo> occupiedCores) {
+        System.out.print("\tdebug) nodeId: " + nodeId + ", m(coreId), ");
+        for (int i = 0; i < occupiedCores.size(); ++i) {
+            CoreInfo coreInfo = occupiedCores.get(i);
+            int coreId = coreInfo.getCoreId();
+            ArrayList<Integer> jobList = coreInfo.getJobList();
+            System.out.print(jobList.size() + "(" + coreId + ")");
+            if (i == occupiedCores.size()-1) break;
+            System.out.print(", ");
+        }
+        System.out.println("");
+    }
 }
