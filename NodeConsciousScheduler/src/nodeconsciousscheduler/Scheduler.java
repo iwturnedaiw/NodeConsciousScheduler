@@ -6,6 +6,7 @@
 
 package nodeconsciousscheduler;
 
+import static java.lang.Math.ceil;
 import static java.lang.Math.max;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -291,8 +292,8 @@ public abstract class Scheduler {
 
     protected void assignJob(int startTime, LinkedList<TimeSlice> timeSlices, ArrayList<NodeInfo> allNodesInfo, Job job, ArrayList<Integer> assignNodesNo, boolean tmpFlag) {
         int addedPpn = job.getRequiredCores()/job.getRequiredNodes();
-        int expectedEndTime = startTime + (job.getRequiredTime()-job.getCpuTimeForNow())*job.getOCStateLevel();
-
+        double expectedEndTimeDouble = startTime + (job.getRequiredTime()-job.getCpuTimeForNow())*job.getOCStateLevel();
+        int expectedEndTime = (int) ceil(expectedEndTimeDouble);
         /* TODO: The case requiredCores ist not dividable  */
         if (job.getRequiredCores()%job.getRequiredNodes() != 0) {
             ++addedPpn;
@@ -823,9 +824,9 @@ public abstract class Scheduler {
             return;
         }
         // TODO: should be double, but now int.
-        int cpuTimeForNow = victimJob.getCpuTimeForNow();
+        double cpuTimeForNow = victimJob.getCpuTimeForNow();
         int realDeltaTime = currentTime - previousMeasuredTime;
-        cpuTimeForNow += realDeltaTime / currentOCStateLevel;
+        cpuTimeForNow += (double)realDeltaTime / currentOCStateLevel;
         victimJob.setCpuTimeForNow(cpuTimeForNow);
 
         if (OCStateLevel == 1) {
@@ -861,12 +862,12 @@ public abstract class Scheduler {
     protected int calculateNewActualEndTime(int startTime, Job victimJob) {
         /* calculate new actual End Time */
         int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
-        int cpuTimeForNow = victimJob.getCpuTimeForNow();
+        double cpuTimeForNow = victimJob.getCpuTimeForNow();
         int actualExecuteTime = victimJob.getActualExecuteTime();
-        int restActualExecuteTime = (actualExecuteTime - cpuTimeForNow) * currentOCStateLevel;
-        int trueEndTime = startTime + restActualExecuteTime;
+        double restActualExecuteTime = (actualExecuteTime - cpuTimeForNow) * currentOCStateLevel;
+        double trueEndTime = startTime + restActualExecuteTime;
 
-        return trueEndTime;
+        return (int) ceil(trueEndTime);
     }
     
  
@@ -911,21 +912,21 @@ public abstract class Scheduler {
     /* This method return the exepeceted end time. */
     protected int calculateNewExpectedEndTime(int currentTime, Job victimJob) {
         int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
-        int cpuTimeForNow = victimJob.getCpuTimeForNow();
+        double cpuTimeForNow = victimJob.getCpuTimeForNow();
         int requiredTime = victimJob.getRequiredTime();
-        int restRequiredTime = (requiredTime - cpuTimeForNow) * currentOCStateLevel;
-        int expectedEndTime = currentTime + restRequiredTime;
+        double restRequiredTime = (requiredTime - cpuTimeForNow) * currentOCStateLevel;
+        double expectedEndTime = currentTime + restRequiredTime;
 
-        return expectedEndTime;
+        return (int) ceil(expectedEndTime);
     }
 
     protected int calculateApproximateEndTime(int currentTime, Job victimJob, int OCStateLevel) {
-        int cpuTimeForNow = victimJob.getCpuTimeForNow();
+        double cpuTimeForNow = victimJob.getCpuTimeForNow();
         int requiredTime = victimJob.getRequiredTime();
-        int restRequiredTime = (requiredTime - cpuTimeForNow) * OCStateLevel;
-        int expectedEndTime = currentTime + restRequiredTime;
+        double restRequiredTime = (requiredTime - cpuTimeForNow) * OCStateLevel;
+        double expectedEndTime = currentTime + restRequiredTime;
 
-        return expectedEndTime;
+        return (int) ceil(expectedEndTime);
     }
     
     private void printDifferenceExpectedEndTime(int oldExpectedEndTime, int newExpectedEndTime, int jobId) {

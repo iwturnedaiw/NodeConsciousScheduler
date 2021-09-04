@@ -27,7 +27,7 @@ public class Job {
     private int requiredCoresPerNode;
     private int runningTimeDed;
     private int runningTimeOC;
-    private int cpuTimeForNow;
+    private double cpuTimeForNow;
     private int OCStateLevel;
     private int startTime;
     private int previousMeasuredTime;
@@ -51,7 +51,7 @@ public class Job {
         this.startTime = UNSTARTED;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
-        this.cpuTimeForNow = 0;
+        this.cpuTimeForNow = 0.0;
         this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
@@ -70,7 +70,7 @@ public class Job {
         this.startTime = -1;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
-        this.cpuTimeForNow = 0;
+        this.cpuTimeForNow = 0.0;
         this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
@@ -133,7 +133,7 @@ public class Job {
         return requiredNodes;
     }
 
-    public int getCpuTimeForNow() {
+    public double getCpuTimeForNow() {
         return cpuTimeForNow;
     }
     
@@ -214,7 +214,7 @@ public class Job {
         this.specifiedExecuteTime = specifiedExecuteTime;
     }
 
-    public void setCpuTimeForNow(int cpuTimeForNow) {
+    public void setCpuTimeForNow(double cpuTimeForNow) {
         this.cpuTimeForNow = cpuTimeForNow;
     }
     
