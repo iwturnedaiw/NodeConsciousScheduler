@@ -1161,7 +1161,7 @@ public abstract class Scheduler {
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
-        assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime) || (!OCStateLevelIncreasingflag && oldTrueEndTime > trueEndTime);
+        assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime+1) || (!OCStateLevelIncreasingflag && oldTrueEndTime > trueEndTime);
         victimJob.setOCStateLevel(currentOCStateLevel);
         
         /*  1-3. Rethrow the END event set the time */
