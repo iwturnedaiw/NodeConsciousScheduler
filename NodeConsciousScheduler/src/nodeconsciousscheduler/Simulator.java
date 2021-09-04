@@ -298,11 +298,12 @@ public class Simulator {
 
             ArrayList<Integer> result = new ArrayList<Integer>();
             result.addAll(countCumlativeJob(MODE));
-
-            for (int i = 0; i < result.size() - 1; ++i) {
-                pwCumulative.println(i+1 + "\t" + result.get(i));
+            if (result.size() != 0) {
+                for (int i = 0; i < result.size() - 1; ++i) {
+                    pwCumulative.println(i + 1 + "\t" + result.get(i));
+                }
+                pwCumulative.println(result.size() - 1 + 1 + "\t" + result.get(result.size() - 1));
             }
-            pwCumulative.println(result.size()-1+1 + "\t" + result.get(result.size() - 1));
             pwCumulative.close();
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
