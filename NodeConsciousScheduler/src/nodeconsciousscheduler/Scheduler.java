@@ -518,7 +518,7 @@ public abstract class Scheduler {
 
                 /* 4. Modify the TimeSlices */
                 Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
-                modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);
+                modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, migratingJobId);
             }
             
             Set<Integer> newCoexistingJobs = newAndDeletedCoexistingJobs.getNewCoexistingJobsOnTheCore();
@@ -536,7 +536,8 @@ public abstract class Scheduler {
                 coexistingJob.setOCStateLevel(OCStateLevelCoexistingJob);
                 /* 4. Modify the TimeSlices */
                 Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
-                modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);                
+                modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);
+                coexistingJobCoexistingJob.add(migratingJobId);
             }
 
             ArrayList<UsingNode> migratingJobUsingNodeList = migratingJob.getUsingNodesList();
@@ -546,6 +547,8 @@ public abstract class Scheduler {
             Set<Integer> migratingJobCoexistingJob = migratingJob.getCoexistingJobs();
             modifyTheTimeSlices(migratingJob, migratingJobCoexistingJob, currentTime, endingJobId);
             
+            migratingJobCoexistingJob.addAll(newCoexistingJobs);
+            migratingJobCoexistingJob.removeAll(deletedCoexistingJobs);
         }
         return result;
     }
@@ -891,7 +894,7 @@ public abstract class Scheduler {
 
         //  1-2. Calculate new trueEndTime
         int currentOCStateLevel = coexistingJob.getOCStateLevel();
-        assert (currentOCStateLevel - 1 == OCStateLevel) || (currentOCStateLevel == OCStateLevel);
+        assert (currentOCStateLevel - 1 == OCStateLevel) || (currentOCStateLevel == OCStateLevel) || (currentOCStateLevel > OCStateLevel);
         // debug
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
