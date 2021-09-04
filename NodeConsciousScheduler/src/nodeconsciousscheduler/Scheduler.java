@@ -1139,6 +1139,7 @@ public abstract class Scheduler {
     }    
 
     protected ArrayList<Event> modifyTheENDEventTimeForNewCoexistingJobByJobId(int currentTime, int victimJobId, int OCStateLevel) {        
+        int M = NodeConsciousScheduler.M;
         ArrayList<Event> result = new ArrayList<Event>();
 
         /* 1. Modify the victim job's end time in event queue */
@@ -1153,7 +1154,7 @@ public abstract class Scheduler {
         /*  1-2. Calculate new trueEndTime */
         int currentOCStateLevel = victimJob.getOCStateLevel();
         boolean OCStateLevelIncreasingflag = OCStateLevel >= currentOCStateLevel ? true : false;
-        assert (OCStateLevelIncreasingflag && currentOCStateLevel + 1 == OCStateLevel) || (!OCStateLevelIncreasingflag && currentOCStateLevel - 1 == OCStateLevel) || (currentOCStateLevel == OCStateLevel);
+        assert (M == 2 && OCStateLevelIncreasingflag && currentOCStateLevel + 1 == OCStateLevel) || (M == 2 && !OCStateLevelIncreasingflag && currentOCStateLevel - 1 == OCStateLevel) || (OCStateLevelIncreasingflag && currentOCStateLevel <= OCStateLevel) || (!OCStateLevelIncreasingflag && currentOCStateLevel > OCStateLevel);
         /* debug */
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
