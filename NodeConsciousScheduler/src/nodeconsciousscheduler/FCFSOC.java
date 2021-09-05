@@ -164,7 +164,7 @@ public class FCFSOC extends FCFS {
                         int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
                         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
                         victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
-                        assert oldExpectedEndTime <= newExpectedEndTime;
+                        assert oldExpectedEndTime <= newExpectedEndTime+1;
                         
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
                         int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
