@@ -17,6 +17,7 @@ public class UsingNode implements Comparable<UsingNode>{
     int numUsingCores;
     ArrayList<Integer> usingCoreNum;
     
+    UsingNode() {}
     UsingNode(int nodeNum, int numUsingCores) {
         this.nodeNum = nodeNum;
         this.numUsingCores = numUsingCores;

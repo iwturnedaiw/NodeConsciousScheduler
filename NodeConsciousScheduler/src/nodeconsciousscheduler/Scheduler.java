@@ -260,7 +260,8 @@ public abstract class Scheduler {
         }
 
         ArrayList<Event> newEventsLoadBalancing = new ArrayList<Event>();
-        newEventsLoadBalancing = loadBalancing(ev);
+//        newEventsLoadBalancing = loadBalancing(ev);
+        newEventsLoadBalancing = loadBalancing(ev, -1);
         for (int i = 0; i < newEventsLoadBalancing.size(); ++i) {
             newEvents.add(newEventsLoadBalancing.get(i));
         }
@@ -553,6 +554,41 @@ public abstract class Scheduler {
         return result;
     }
 
+    private ArrayList<Event> loadBalancing(Event ev, int x) {
+        ArrayList<Event> result = new ArrayList<Event>();        
+        int currentTime = ev.getOccurrenceTime();
+        Job endingJob = ev.getJob();
+        ArrayList<UsingNode> usingNodeList = endingJob.getUsingNodesList();
+        int endingJobId = endingJob.getJobId();
+        
+        // 1. Check Ending jobs UsingNodes
+        // 2. For each node, obtain the maximum/minimum multiplicity core
+        // 3. Migrate the job
+
+        System.out.println("\tdebug)Try to migrate, endingJobId:" +endingJobId);                    
+        // 1. Check Ending jobs UsingNodes
+        for (int i = 0; i < usingNodeList.size(); ++i) {
+            UsingNode usingNode = usingNodeList.get(i);
+            int nodeId = usingNode.getNodeNum();
+            printUsingNode(usingNode, endingJobId);
+            
+            MaxAndMinMultiplicityCores maxAndMinMultiplicityCores = new MaxAndMinMultiplicityCores();
+            while (true) {
+                maxAndMinMultiplicityCores = obtainMaxMultiplicityCores(usingNode);
+                CoreInfo maxCoreInfo = maxAndMinMultiplicityCores.getMaxCoreInfo();
+                CoreInfo minCoreInfo = maxAndMinMultiplicityCores.getMinCoreInfo();
+
+                if (maxCoreInfo.getJobList().size() - minCoreInfo.getJobList().size() <= 1)
+                    break;
+                
+                result.addAll(doMigrate(maxAndMinMultiplicityCores, nodeId, currentTime, endingJobId));
+            }
+        }
+        
+        return result;
+    }
+    
+    
     private ArrayList<MigrateTargetNode> calculateMigrateTargetCoresPerNode(Job job) {
         ArrayList<UsingNode> usingNodes = job.getUsingNodesList();
         ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
@@ -1176,6 +1212,190 @@ public abstract class Scheduler {
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
             result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
         }
+        return result;
+    }
+
+    private void printUsingNode(UsingNode usingNode, int endingJobId) {
+            int nodeId = usingNode.getNodeNum();
+            ArrayList<Integer> usingCores = usingNode.getUsingCoreNum();
+            System.out.print("\t\tdebug)Job " +endingJobId + " used node " + nodeId + "(");
+            for (int j = 0; j < usingCores.size(); ++j) {
+                int coreId = usingCores.get(j);
+                System.out.print(coreId);
+                if (j != usingCores.size() - 1)
+                    System.out.print(", ");
+            }
+            System.out.println(")");
+        
+    }
+
+    private MaxAndMinMultiplicityCores obtainMaxMultiplicityCores(UsingNode usingNode) {
+        int nodeId = usingNode.getNodeNum();
+        CoreInfo maxCoreInfo = new CoreInfo();
+        CoreInfo minCoreInfo = new CoreInfo();
+        ArrayList<Integer> usingCores = usingNode.getUsingCoreNum();
+
+        // nodeInfo managed by simulator
+        NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeId);
+        assert nodeId == nodeInfo.getNodeNum();
+        ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
+        
+        int minCoreMultiplicity = UNUPDATED;
+        int maxCoreMultiplicity = UNUPDATED;
+        for (int i = 0; i < occupiedCores.size(); ++i) {
+            CoreInfo coreInfo = occupiedCores.get(i);
+            int multiplicity = coreInfo.getJobList().size();
+            if (minCoreMultiplicity == UNUPDATED && maxCoreMultiplicity == UNUPDATED) {
+                minCoreMultiplicity = multiplicity;
+                maxCoreMultiplicity = multiplicity;
+                maxCoreInfo = coreInfo;
+                minCoreInfo = coreInfo;
+            }
+            
+            if (multiplicity > maxCoreMultiplicity) {
+                maxCoreMultiplicity = multiplicity;
+                maxCoreInfo = coreInfo;
+            }
+
+            if (multiplicity < minCoreMultiplicity) {
+                minCoreMultiplicity = multiplicity;
+                minCoreInfo = coreInfo;                
+            }
+        }
+        
+        return new MaxAndMinMultiplicityCores(maxCoreInfo, minCoreInfo);
+    }
+
+    private Collection<? extends Event> doMigrate(MaxAndMinMultiplicityCores maxAndMinMultiplicityCores, int nodeId, int currentTime, int endingJobId) {
+        ArrayList<Event> result = new ArrayList<Event>();
+        
+        CoreInfo maxCoreInfo = maxAndMinMultiplicityCores.getMaxCoreInfo();
+        CoreInfo minCoreInfo = maxAndMinMultiplicityCores.getMinCoreInfo();
+        
+        ArrayList<Integer> candidateMigratingJobs = (ArrayList<Integer>) maxCoreInfo.getJobList().clone();
+        candidateMigratingJobs.removeAll(minCoreInfo.getJobList());
+        assert candidateMigratingJobs.size() >= 2;
+
+        int migratingJobId = UNUPDATED;
+        for (int i = 0; i < candidateMigratingJobs.size(); ++i) {
+            migratingJobId = candidateMigratingJobs.get(i);
+            assert maxCoreInfo.getJobList().contains(migratingJobId);
+            if (!minCoreInfo.getJobList().contains(migratingJobId)) {                
+                break;
+            }
+        }
+        assert migratingJobId != UNUPDATED;
+        Job migratingJob = getJobByJobId(migratingJobId);
+        printMigrationInfo(migratingJobId, maxCoreInfo, minCoreInfo);
+        //printMigratingJobCore
+        
+        // Register the info.
+        assert maxCoreInfo.getJobList().contains((Integer) migratingJobId);
+        assert !minCoreInfo.getJobList().contains((Integer) migratingJobId);        
+        maxCoreInfo.getJobList().remove((Integer) migratingJobId);
+        minCoreInfo.getJobList().add((Integer) migratingJobId);
+        UsingNode migratingJobUsingNode = new UsingNode();
+        for (UsingNode tmpUsingNode: migratingJob.getUsingNodesList()) {
+            int tmpNodeId = tmpUsingNode.getNodeNum();
+            if (tmpNodeId == nodeId) {
+                migratingJobUsingNode = tmpUsingNode;
+                break;
+            }
+        }
+
+        ArrayList<Integer> usingCores = migratingJobUsingNode.getUsingCoreNum();
+        assert usingCores.contains((Integer) maxCoreInfo.getCoreId());
+        assert !usingCores.contains((Integer) minCoreInfo.getCoreId());
+        usingCores.remove((Integer) maxCoreInfo.getCoreId());
+        usingCores.add((Integer) minCoreInfo.getCoreId());
+        
+        // For migrating job, reobtain the coexisting job
+        HashSet<Integer> newCoexistingJobs = obtainCoexistingJobsForJob(migratingJob);
+        HashSet<Integer> deletedCoexistingJobs = new HashSet<Integer>();
+        deletedCoexistingJobs.addAll(minCoreInfo.getJobList());
+        deletedCoexistingJobs.removeAll(newCoexistingJobs);
+        deletedCoexistingJobs.remove((Integer) migratingJobId);
+        
+        // debug
+        NewAndDeletedCoexistingJobs newAndDeletedCoexistingJobs = new NewAndDeletedCoexistingJobs(newCoexistingJobs, deletedCoexistingJobs);
+        printNewAndDeletedCoexistingJobs(newAndDeletedCoexistingJobs, migratingJob);
+        
+        for (int deletedCoexistingJobId : deletedCoexistingJobs) {
+
+            Job coexistingJob = getJobByJobId(deletedCoexistingJobId);
+            int coexistingJobId = coexistingJob.getJobId();
+            ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
+            int OCStateLevelCoexistingJob = checkMultiplicityAlongNodes(coexistingJobUsingNodeList, BLANK_JOBID, coexistingJobId);
+
+            // 3.2 Modify the END Event time
+            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevelCoexistingJob, result);
+
+            /* 4. Modify the TimeSlices */
+            Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
+            modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, migratingJobId);
+        }
+
+        for (int newCoexistingJobId : newCoexistingJobs) {
+                // 3. Modify the END Event time 
+            //  3.1 Check the OCStateLevel
+            Job coexistingJob = getJobByJobId(newCoexistingJobId);
+            int coexistingJobId = coexistingJob.getJobId();
+            ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
+            int OCStateLevelCoexistingJob = checkMultiplicityAlongNodes(coexistingJobUsingNodeList, BLANK_JOBID, coexistingJobId);
+
+                // 3.2 Modify the END Event time
+            // modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevelCoexistingJob, result);
+            result.addAll(modifyTheENDEventTimeForNewCoexistingJobByJobId(currentTime, coexistingJobId, OCStateLevelCoexistingJob));
+            coexistingJob.setOCStateLevel(OCStateLevelCoexistingJob);
+            /* 4. Modify the TimeSlices */
+            Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
+            modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);
+
+            coexistingJobCoexistingJob.add((Integer) migratingJobId);
+        }
+
+        ArrayList<UsingNode> migratingJobUsingNodeList = migratingJob.getUsingNodesList();
+        int newOCStateLevel = checkMultiplicityAlongNodes(migratingJobUsingNodeList, BLANK_JOBID, migratingJobId);
+        modifyTheENDEventTime(migratingJob, migratingJobId, currentTime, newOCStateLevel, result);
+
+        Set<Integer> migratingJobCoexistingJob = migratingJob.getCoexistingJobs();
+        modifyTheTimeSlices(migratingJob, migratingJobCoexistingJob, currentTime, endingJobId);
+
+        migratingJobCoexistingJob.addAll(newCoexistingJobs);
+        migratingJobCoexistingJob.removeAll(deletedCoexistingJobs);
+        
+
+        return result;
+    }
+
+    private void printMigrationInfo(int migratingJobId, CoreInfo maxCoreInfo, CoreInfo minCoreInfo) {
+        System.out.println("\t\t\tdebug)migrating job " + migratingJobId
+                + " from core " + maxCoreInfo.getCoreId() + "(" + maxCoreInfo.getJobList().size() + ")"
+                +   " to core " + minCoreInfo.getCoreId() + "(" + minCoreInfo.getJobList().size() + ")");
+    }
+
+    private HashSet<Integer> obtainCoexistingJobsForJob(Job job) {
+        int jobId = job.getJobId();
+        ArrayList<UsingNode> usingNodeList = job.getUsingNodesList();
+        HashSet<Integer> result = new HashSet<Integer>();
+        
+        for (int i = 0; i < usingNodeList.size(); ++i) {
+            UsingNode usingNode = usingNodeList.get(i);
+            int nodeId = usingNode.getNodeNum();
+            NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeId);
+            assert nodeId == nodeInfo.getNodeNum();
+            ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
+            for (int j = 0; j < occupiedCores.size(); ++j) {
+                CoreInfo coreInfo = occupiedCores.get(j);
+                ArrayList<Integer> jobList = coreInfo.getJobList();
+                if (jobList.contains(jobId)) {
+                    int coreId = coreInfo.getCoreId();
+                    assert usingNode.getUsingCoreNum().contains(coreId);
+                    result.addAll(jobList);
+                }
+            }
+        }
+        result.remove(jobId);
         return result;
     }
 }
