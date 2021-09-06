@@ -255,7 +255,6 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 boolean backfillFlag = true;
                 for (int victimJobId: victimJobs) {
                     Job victimJob = getJobByJobId(victimJobId);
-                    assert OCStateLevelForBackfillJob >= victimJob.getOCStateLevel();
                     if (OCStateLevelForBackfillJob == victimJob.getOCStateLevel()) continue;
                     int currentVictimExpectedEndTime = victimJob.getSpecifiedExecuteTime();
                     if (currentVictimExpectedEndTime > startTimeFirstJob) continue;
