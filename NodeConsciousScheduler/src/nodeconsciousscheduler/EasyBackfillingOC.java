@@ -99,11 +99,13 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     /*  1-3. Rethrow the END event set the time */
                     for (int victimJobId: victimJobs) {
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();
-                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
+                        Job victimJob = getJobByJobId(victimJobId); // O(N)
+                        int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
+                        resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
                             result.add(ev);
                         }
-                        Job victimJob = getJobByJobId(victimJobId); // O(N)
+
                         /*
 
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
@@ -127,7 +129,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
                         */
                         victimJob.getCoexistingJobs().add(opponentJobId);          
-                        victimJob.setOCStateLevel(OCStateLevelForJob);
+                        victimJob.setOCStateLevel(victimNewOCStateLevel);
                     }
                     
                     /* 2. Modify the time slices (variable name: timeSlices defined in Class Scheduler) */
@@ -141,7 +143,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
                         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
                         victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
-                        assert oldExpectedEndTime <= newExpectedEndTime;
+                        assert oldExpectedEndTime <= newExpectedEndTime+1;
                         
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
                         int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
@@ -311,12 +313,14 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     /* 1. Modify the victim job's end time in event queue */
                     for (int victimJobId: victimJobs) {                        
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();
-                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForBackfillJob);
+                        Job victimJob = getJobByJobId(victimJobId); // O(N)                        
+                        int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, backfillJob.getRequiredCoresPerNode(), assignNodesNo);
+                        resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
                             result.add(ev);
                         }
-                        Job victimJob = getJobByJobId(victimJobId); // O(N)
-                        victimJob.getCoexistingJobs().add(backfillJobId);                        
+                        victimJob.getCoexistingJobs().add(backfillJobId);
+                        victimJob.setOCStateLevel(victimNewOCStateLevel);
                     }
 
                     /* 2. Modify the time slices (variable name: timeSlices defined in Class Scheduler) */
@@ -329,7 +333,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                             int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
                             int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
                             victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
-                            assert oldExpectedEndTime <= newExpectedEndTime;
+                            assert oldExpectedEndTime <= newExpectedEndTime+1;
 
                             /*  2-2. Update the timeslice between current and new expectedEndTime */
                             int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);

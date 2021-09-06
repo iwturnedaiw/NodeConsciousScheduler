@@ -1398,4 +1398,65 @@ public abstract class Scheduler {
         result.remove(jobId);
         return result;
     }
+
+    protected int calculateVictimNewOCStateLevel(Job victimJob, int requiredCoresPerNode, ArrayList<Integer> assignNodesNo) {
+        int newOCStateLevel = UNUPDATED;
+        
+        int currentOCStateLevel = victimJob.getOCStateLevel();
+        
+        ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
+        
+        int victimJobId = victimJob.getJobId();
+        
+        // 1. Check the all assignNodes
+        int OCStateLevelAlongNodes = UNUPDATED;
+        for (int i = 0; i < assignNodesNo.size(); ++i) {
+            int nodeId = assignNodesNo.get(i);
+            NodeInfo node = allNodeInfo.get(nodeId);
+            assert nodeId == node.getNodeNum();
+             
+            // if the victim job doesn't use the node, skip
+            if (!node.getExecutingJobIds().contains(victimJobId))
+                continue;
+
+            // Check the least requiredCoresPerNode CoreInfos
+            int OCStateLevelAlongCores = UNUPDATED;
+            ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
+
+            // debug
+            printOccupiedCores(nodeId, occupiedCores);
+
+            
+            for (int j = 0; j < requiredCoresPerNode; ++j) {
+                CoreInfo coreInfo = occupiedCores.get(j);
+                
+                // if the victim job doesn't use the core, skip
+                if (!coreInfo.getJobList().contains(victimJobId))
+                    continue;
+                
+                int OCStateLevelOnTheCore = coreInfo.getJobList().size();
+                assert OCStateLevelOnTheCore <= currentOCStateLevel;
+                ++OCStateLevelOnTheCore;
+                OCStateLevelAlongCores = max(OCStateLevelAlongCores, OCStateLevelOnTheCore);
+            }
+            OCStateLevelAlongNodes = max(OCStateLevelAlongNodes, OCStateLevelAlongCores);
+        }
+        newOCStateLevel = max(currentOCStateLevel, OCStateLevelAlongNodes);
+        
+        return newOCStateLevel;
+    }
+
+    protected void printOccupiedCores(int nodeId, ArrayList<CoreInfo> occupiedCores) {
+        System.out.print("\tdebug) nodeId: " + nodeId + ", m(coreId), ");
+        for (int i = 0; i < occupiedCores.size(); ++i) {
+            CoreInfo coreInfo = occupiedCores.get(i);
+            int coreId = coreInfo.getCoreId();
+            ArrayList<Integer> jobList = coreInfo.getJobList();
+            System.out.print(jobList.size() + "(" + coreId + ")");
+            if (i == occupiedCores.size()-1) break;
+            System.out.print(", ");
+        }
+        System.out.println("");
+    }
+
 }
