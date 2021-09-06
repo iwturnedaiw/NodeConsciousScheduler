@@ -327,27 +327,24 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
 
                         /*  2-1. Calculate new expectedEndTime */
-                        if (OCStateLevelForBackfillJob != victimJob.getOCStateLevel()) {
-                            victimJob.setOCStateLevel(OCStateLevelForBackfillJob);
-                            int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
-                            int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
-                            victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
-                            assert oldExpectedEndTime <= newExpectedEndTime+1;
 
-                            /*  2-2. Update the timeslice between current and new expectedEndTime */
-                            int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
-                            refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob);
-                            timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime, tmpTimeSlices);
-                            refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob, tmpTimeSlices);
+                        int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
+                        int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
+                        victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
+                        assert oldExpectedEndTime <= newExpectedEndTime + 1;
 
-                            makeTimeslices(currentTime);
-                            makeTimeslices(currentTime, tmpTimeSlices);
-                            makeTimeslices(newExpectedEndTime);
-                            makeTimeslices(newExpectedEndTime, tmpTimeSlices);
-                            reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob);
-                            reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob, tmpTimeSlices);
-                        }
-                        victimJob.setOCStateLevel(OCStateLevelForBackfillJob);
+                        /*  2-2. Update the timeslice between current and new expectedEndTime */
+                        int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
+                        refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob);
+                        timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime, tmpTimeSlices);
+                        refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob, tmpTimeSlices);
+
+                        makeTimeslices(currentTime);
+                        makeTimeslices(currentTime, tmpTimeSlices);
+                        makeTimeslices(newExpectedEndTime);
+                        makeTimeslices(newExpectedEndTime, tmpTimeSlices);
+                        reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob);
+                        reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob, tmpTimeSlices);
                     }
                     
                     backfillJob.setOCStateLevel(OCStateLevelForBackfillJob);
