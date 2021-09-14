@@ -1312,7 +1312,8 @@ public abstract class Scheduler {
         // For migrating job, reobtain the coexisting job
         HashSet<Integer> newCoexistingJobs = obtainCoexistingJobsForJob(migratingJob);
         HashSet<Integer> deletedCoexistingJobs = new HashSet<Integer>();
-        deletedCoexistingJobs.addAll(minCoreInfo.getJobList());
+        //deletedCoexistingJobs.addAll(minCoreInfo.getJobList());
+        deletedCoexistingJobs.addAll(maxCoreInfo.getJobList());
         deletedCoexistingJobs.removeAll(newCoexistingJobs);
         deletedCoexistingJobs.remove((Integer) migratingJobId);
         
