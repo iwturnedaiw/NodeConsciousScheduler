@@ -20,8 +20,10 @@ HEIGHT_UNIT = 10
 RED_R = 100
 WIDTH_UNIT=WIDTH_UNIT/RED_R
 OFFSET=10
+NEWLINE_THRESHOLD=27
+INF = 2<<30
 OUTPUT_INIT="""
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 10" preserveAspectRatio="xMinYMin">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="xMinYMin">
   <defs>
     <style>
       text {
@@ -29,9 +31,8 @@ OUTPUT_INIT="""
         font-family:sans-serif;
       }
       line {
-        stroke: black;
         stroke-dasharray: 1;
-        stroke-width: 0.1;
+        stroke-width: 0.5;
       }
     </style>
   </defs>
@@ -54,7 +55,6 @@ def parse_record(input):
     end_time = int(input[CNUM_END_TIME])
     num_node = int(input[CNUM_NUM_NODE])
     num_core = int(input[CNUM_NUM_CORE])
-    cnt = 0
     nodes=[]
     for cnum in range(CNUM_NODE_INFO, CNUM_NODE_INFO + num_node):
       #print(cnum)
@@ -101,19 +101,24 @@ def output_text(x, y, jobid):
    ret = "<text transform=\"translate(" + str(x) + ", " + str(y) + ")\">" +  str(jobid) + "</text>"
    return ret
 
-def output_timestamp(start_time, end_time):
-   y = ORIGIN_Y + (num_node*num_core + 3) * HEIGHT_UNIT
+def output_timestamp(start_time, end_time, Y, color, cnt):
+   if cnt == NEWLINE_THRESHOLD:
+     cnt = 0
+   y = ORIGIN_Y + (num_node*num_core + 3 + cnt) * HEIGHT_UNIT
    x_st = ORIGIN_X + start_time * WIDTH_UNIT
    x_ed = ORIGIN_X + end_time * WIDTH_UNIT
    
-   ret = "<text transform=\"translate(" + str(x_st) + ", " + str(y) + ")\">" +  str(start_time) + "</text>"
-   ret += "<text text-anchor=\"end\" transform=\"translate(" + str(x_ed) + ", " + str(y) + ")\">" +  str(end_time) + "</text>"
-   return ret
+   ret = "<text text-anchor=\"end\" transform=\"translate(" + str(x_st) + ", " + str(y) + ")\">" +  str(start_time) + "</text>"
+   ret += "<text text-anchor=\"start\" transform=\"translate(" + str(x_ed) + ", " + str(y) + ")\">" +  str(end_time) + "</text>"
+   ret += "<line x1=\"" + str(x_st) + "\" y1=\"" + str(Y) + "\" x2=\"" + str(x_st) + "\" y2=\"" + str(y) + "\" stroke=\"#" + hex(color)[2:] + "\"/>"
+   ret += "<line x1=\"" + str(x_ed) + "\" y1=\"" + str(Y) + "\" x2=\"" + str(x_ed) + "\" y2=\"" + str(y) + "\" stroke=\"#" + hex(color)[2:] + "\"/>"
+   return ret, cnt
 
 def visualize(input, num_node, num_core):
     output_file = init_outputfile(num_node, num_core)
     init_rand()
 
+    cnt = 0
     for record in input:
         ret, jobid, start_time, end_time, jnum_node, jnum_core, nodes = parse_record(record)
         
@@ -127,6 +132,7 @@ def visualize(input, num_node, num_core):
           cores = nodenum[1:]
           nodenum = int(nodenum[0])
 
+          Y = INF
           for cnum in cores:
             cnum = int(cnum)
             y = ORIGIN_Y + (nodenum*num_core + cnum) * HEIGHT_UNIT
@@ -137,9 +143,11 @@ def visualize(input, num_node, num_core):
             text = output_text(x, y + OFFSET, jobid)
             output_file.write(rect + "\n")
             output_file.write(text + "\n")
+            Y = min(Y, y)
 
-        time_stamp = output_timestamp(start_time, end_time)
+        time_stamp, cnt = output_timestamp(start_time, end_time, Y, color, cnt)
         output_file.write(time_stamp + "\n")
+        cnt = cnt + 1
 
     finalize_outputfile(output_file)
     return
