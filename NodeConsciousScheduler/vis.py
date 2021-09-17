@@ -3,6 +3,7 @@ import csv
 import re
 import sys
 import random
+import datetime
 
 CNUM_JOBID=0
 CNUM_START_TIME=3
@@ -19,6 +20,24 @@ HEIGHT_UNIT = 10
 RED_R = 100
 WIDTH_UNIT=WIDTH_UNIT/RED_R
 OFFSET=10
+OUTPUT_INIT="""
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 10" preserveAspectRatio="xMinYMin">
+  <defs>
+    <style>
+      text {
+        font-size:10px;
+        font-family:sans-serif;
+      }
+      line {
+        stroke: black;
+        stroke-dasharray: 1;
+        stroke-width: 0.1;
+      }
+    </style>
+  </defs>
+  <title></title>
+"""
+OUTPUT_FINAL="</svg>"
 
 
 def file_open(file_name):
@@ -48,21 +67,30 @@ def parse_record(input):
     return 1, jobid, start_time, end_time, num_node, num_core, nodes
 
 def init_outputfile(num_node, num_core):
+   filename = "visualize_" + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + ".svg"
+   output_file = open(filename, "w", encoding="utf-8")
+   output_file.write(OUTPUT_INIT + "\n")
    for nodenum in range(num_node):
      for cnum in range(num_core):
        y = ORIGIN_Y + (nodenum*num_core + cnum) * HEIGHT_UNIT - 1 + OFFSET
        x = ORIGIN_X 
 
        ret = "<text text-anchor=\"end\" transform=\"translate(" + str(x) + ", " + str(y) + ")\">n" + str(nodenum) + "c" + str(cnum) + "</text>"
-       print(ret)
+       output_file.write(ret + "\n")
    
-   return True
+   return output_file
+
+def finalize_outputfile(output_file):
+   output_file.write(OUTPUT_FINAL + "\n")
+   output_file.close()
+   return
 
 def init_rand():
    random.seed(SEED)
    return
 
-def get_color():
+def get_color(jobid):
+   random.seed(jobid)
    return random.randint(0, BIT_24)
 
 def output_rect(x, y, w, color):
@@ -83,7 +111,7 @@ def output_timestamp(start_time, end_time):
    return ret
 
 def visualize(input, num_node, num_core):
-    init_outputfile(num_node, num_core)
+    output_file = init_outputfile(num_node, num_core)
     init_rand()
 
     for record in input:
@@ -92,7 +120,7 @@ def visualize(input, num_node, num_core):
         if ret == 0:
           continue
 
-        color = get_color()
+        color = get_color(jobid)
         ppn = jnum_core/jnum_node
         for node in nodes:
           nodenum = node.split()
@@ -107,24 +135,19 @@ def visualize(input, num_node, num_core):
 
             rect = output_rect(x, y, w, color)
             text = output_text(x, y + OFFSET, jobid)
-            print(rect)
-            print(text)
+            output_file.write(rect + "\n")
+            output_file.write(text + "\n")
 
         time_stamp = output_timestamp(start_time, end_time)
-        print(time_stamp)
+        output_file.write(time_stamp + "\n")
 
-    ret = True
-    return ret
+    finalize_outputfile(output_file)
+    return
 
 
 def main(input_file, num_node, num_core):
     f_input = file_open(input_file)
-
     ret = visualize(f_input, num_node, num_core)
-    if ret:
-      exit(0)
-    else:
-      exit(1)
 
 
 if __name__ == "__main__" :
