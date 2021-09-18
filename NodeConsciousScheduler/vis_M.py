@@ -155,7 +155,6 @@ def visualize(input, num_node, num_core, multiplicity):
           cores = nodenum[1:]
           nodenum = int(nodenum[0])
 
-          Y = INF
           x = ORIGIN_X + start_time * WIDTH_UNIT
           w = (end_time - start_time) * WIDTH_UNIT
 
@@ -170,7 +169,8 @@ def visualize(input, num_node, num_core, multiplicity):
                 break
             #assert lane_num != -1
             if lane_num == -1:
-              print("j" + str(jobid) + ", n" + str(nodenum) + "c" + str(cnum) )
+              print("j" + str(jobid) + ", n" + str(nodenum) + "c" + str(cnum))
+              lane_num = 0
 
             y = ORIGIN_Y + (nodenum*num_core + cnum) * HEIGHT_UNIT + lane_num * HEIGHT_UNIT/multiplicity
 
