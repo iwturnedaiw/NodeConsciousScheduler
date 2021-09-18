@@ -18,6 +18,7 @@ ORIGIN_Y = 0
 WIDTH_UNIT = 1
 HEIGHT_UNIT = 10
 RED_R = 100
+ROOM = WIDTH_UNIT*80
 WIDTH_UNIT=WIDTH_UNIT/RED_R
 OFFSET=10
 NEWLINE_THRESHOLD=27
@@ -101,24 +102,39 @@ def output_text(x, y, jobid):
    ret = "<text transform=\"translate(" + str(x) + ", " + str(y) + ")\">" +  str(jobid) + "</text>"
    return ret
 
-def output_timestamp(start_time, end_time, Y, color, cnt):
-   if cnt == NEWLINE_THRESHOLD:
-     cnt = 0
-   y = ORIGIN_Y + (num_node*num_core + 3 + cnt) * HEIGHT_UNIT
+class Xed:
+  def __init__(self, value):
+    self.value = value
+
+def output_timestamp(start_time, end_time, Y, xeds, color):
    x_st = ORIGIN_X + start_time * WIDTH_UNIT
    x_ed = ORIGIN_X + end_time * WIDTH_UNIT
+
+   cnt = 0
+   for xed in xeds:
+     if x_st - xed.value >= ROOM:
+       xed.value = x_ed
+       break
+     cnt = cnt + 1
+
+   if cnt == len(xeds):
+     xeds.append(Xed(x_ed))
+
+   y = ORIGIN_Y + (num_node*num_core + 3 + cnt) * HEIGHT_UNIT
    
-   ret = "<text text-anchor=\"end\" transform=\"translate(" + str(x_st) + ", " + str(y) + ")\">" +  str(start_time) + "</text>"
-   ret += "<text text-anchor=\"start\" transform=\"translate(" + str(x_ed) + ", " + str(y) + ")\">" +  str(end_time) + "</text>"
+   #ret = "<text text-anchor=\"end\" transform=\"translate(" + str(x_st) + ", " + str(y) + ")\">" +  str(start_time) + "</text>"
+   ret  = "<text text-anchor=\"end\"   transform=\"translate(" + str(x_st) + ", " + str(y) + ")\" stroke=\"#" + hex(color)[2:] + "\">" +  str(start_time) + "</text>"
+   ret += "<text text-anchor=\"start\" transform=\"translate(" + str(x_ed) + ", " + str(y) + ")\" stroke=\"#" + hex(color)[2:] + "\">" +  str(end_time)   + "</text>"
    ret += "<line x1=\"" + str(x_st) + "\" y1=\"" + str(Y) + "\" x2=\"" + str(x_st) + "\" y2=\"" + str(y) + "\" stroke=\"#" + hex(color)[2:] + "\"/>"
    ret += "<line x1=\"" + str(x_ed) + "\" y1=\"" + str(Y) + "\" x2=\"" + str(x_ed) + "\" y2=\"" + str(y) + "\" stroke=\"#" + hex(color)[2:] + "\"/>"
-   return ret, cnt
+   return ret, xeds
+
 
 def visualize(input, num_node, num_core):
     output_file = init_outputfile(num_node, num_core)
     init_rand()
-
-    cnt = 0
+    xeds =[]
+    xeds.append(Xed(0))
     for record in input:
         ret, jobid, start_time, end_time, jnum_node, jnum_core, nodes = parse_record(record)
         
@@ -127,17 +143,19 @@ def visualize(input, num_node, num_core):
 
         color = get_color(jobid)
         ppn = jnum_core/jnum_node
+        Y = INF
         for node in nodes:
           nodenum = node.split()
           cores = nodenum[1:]
           nodenum = int(nodenum[0])
 
           Y = INF
+          x = ORIGIN_X + start_time * WIDTH_UNIT
+          w = (end_time - start_time) * WIDTH_UNIT
+
           for cnum in cores:
             cnum = int(cnum)
             y = ORIGIN_Y + (nodenum*num_core + cnum) * HEIGHT_UNIT
-            x = ORIGIN_X + start_time * WIDTH_UNIT
-            w = (end_time - start_time) * WIDTH_UNIT
 
             rect = output_rect(x, y, w, color)
             text = output_text(x, y + OFFSET, jobid)
@@ -145,9 +163,9 @@ def visualize(input, num_node, num_core):
             output_file.write(text + "\n")
             Y = min(Y, y)
 
-        time_stamp, cnt = output_timestamp(start_time, end_time, Y, color, cnt)
+
+        time_stamp, xeds = output_timestamp(start_time, end_time, Y, xeds, color)
         output_file.write(time_stamp + "\n")
-        cnt = cnt + 1
 
     finalize_outputfile(output_file)
     return
