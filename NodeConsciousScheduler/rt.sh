@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 LOG=./log/test_`date +%Y%m%d%H%M`.log
 
@@ -55,16 +55,16 @@ test() {
     echo ${algorithm}
     for m in ${M}
     do
-      echo "\tM=${m}"
+      echo -e "\tM=${m}"
       for tp in ${TP}
       do
-        echo "\t\t${tp}"
+        echo -e "\t\t${tp}"
         if [ ${tp} = "hpc2n" ]; then
           c="n120c2"
           core=${c#*c}
           node=${c%c*}
           node=${node#*n}
-          echo "\t\t\tn${node} c${core}"
+          echo -e "\t\t\tn${node} c${core}"
           sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
           sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
           RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
@@ -76,7 +76,7 @@ test() {
           fi
           python3 diff.py ${MASTER_FILE} ${RESULT_FILE} ${core}
           RET=$?
-          echo -n "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${c}\t"
+          echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${c}\t"
           if [ ${RET} -eq 0 ]; then
             echo "OK"
           else
@@ -88,7 +88,7 @@ test() {
             core=${c#*c}
             node=${c%c*}
             node=${node#*n}
-            echo "\t\t\tn${node} c${core}"
+            echo -e "\t\t\tn${node} c${core}"
             sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
             sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
             RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
@@ -112,7 +112,7 @@ test() {
             fi
             python3 diff.py ${MASTER_FILE} ${RESULT_FILE} ${core}
             RET=$?
-            echo -n "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${c}\t"
+            echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${c}\t"
             if [ ${RET} -eq 0 ]; then
               echo "OK"
             else

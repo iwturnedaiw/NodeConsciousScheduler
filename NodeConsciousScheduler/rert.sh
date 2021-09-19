@@ -1,0 +1,66 @@
+#!/bin/bash
+
+LOG=./log/retest_`date +%Y%m%d%H%M`.log
+
+
+# path
+DATADIR=./data-set
+RESULTDIR=./result
+MASTER=./master
+FILENAME=./test.out
+TEMPLATE=template.machines
+export CLASSPATH=./build/classes
+
+
+test() {
+  LIST_FILE=${1}
+
+  cat ${LIST_FILE} | while read l
+  do
+    IFS="$(echo -e '\t' )"
+    record=($l)
+    unset $IFS
+
+    algorithm=${record[0]}
+    m=${record[1]}
+    m=${m#*=}
+    tp=${record[2]}
+    case=${record[3]}
+
+    OC_FLAG=0
+    CHECK=${algorithm##*OC}
+    LEN=${#CHECK}
+    if [ ${LEN} -eq 0 ]; then
+      OC_FLAG=1
+    fi
+ 
+    core=${case#*c}
+    node=${case%c*}
+    node=${node#*n}
+    echo -e "\t\t\tn${node} c${core}"
+    sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
+    sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
+    RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
+    java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 2>&1
+    wait
+    if [ ${OC_FLAG} -eq 1 ]; then
+      MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${case}/${FILENAME}
+    else
+      MASTER_FILE=./${MASTER}/${algorithm}/${tp}/${case}/${FILENAME}
+    fi
+    python3 diff.py ${MASTER_FILE} ${RESULT_FILE} ${core}
+    RET=$?
+    echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${case}\t"
+    if [ ${RET} -eq 0 ]; then
+      echo "OK"
+    else
+    echo "NG"
+    fi
+  done
+}
+
+
+
+
+
+test ${1} | tee -a ${LOG}
