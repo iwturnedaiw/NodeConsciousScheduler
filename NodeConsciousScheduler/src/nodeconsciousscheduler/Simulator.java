@@ -23,6 +23,7 @@ import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.max;
+import static java.lang.StrictMath.max;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +40,7 @@ import static nodeconsciousscheduler.Constants.CUMULATIVE_JOB_PER_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.CUMULATIVE_JOB_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.DAY_IN_SECOND;
 import static nodeconsciousscheduler.Constants.FINISH_ORDER_JOB_OUTPUT;
+import static nodeconsciousscheduler.Constants.FOR_VISUALIZATION_OUTPUT;
 import static nodeconsciousscheduler.Constants.HOUR_IN_SECOND;
 import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
 import static nodeconsciousscheduler.Constants.RESULT_DIRECTORY;
@@ -57,6 +59,7 @@ public class Simulator {
     private ArrayList<Job> executingJobList;
     private ArrayList<Job> completedJobList;
     private PrintWriter pw;
+    private PrintWriter pwForVis;
     private Path p;
 
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo) {
@@ -81,7 +84,7 @@ public class Simulator {
 //            System.out.println("Job Id: " + ev.getJob().getJobId() + ", Submission time " + ev.getJob().getSubmitTime());
             advance();
         }
-        pw.close();
+        finalizeSimulation();        
      }
     
     private void makeEventQueue() {
@@ -179,9 +182,12 @@ public class Simulator {
         Files.createDirectories(this.p);
         
         String fileName = FINISH_ORDER_JOB_OUTPUT;
+        String fileNameForVis = FOR_VISUALIZATION_OUTPUT;
         try {
             this.pw = new PrintWriter(this.p + "/" + fileName);
-            pw.println("JobID\tarrivalTime\twaitTime\tstartTime\tfinishedTime\trunnningTime\tslowdown\tnum cores\tnum nodes\tnode num(tcore num)");                        
+            pw.println("JobID\tarrivalTime\twaitTime\tstartTime\tfinishedTime\trunnningTime\tslowdown\tnum cores\tnum nodes\tnode num(tcore num)");
+            this.pwForVis = new PrintWriter(this.p + "/" + fileNameForVis);
+
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -326,5 +332,44 @@ public class Simulator {
             threshold +=  THRESHOLD;
         }
         return result;
+    }
+
+    private void finalizeSimulation() {
+        pw.close();
+        pwForVis.close();
+    }
+
+    void outputResultForVis(Job job, int currentTime) {
+        int jobId = job.getJobId();
+        int previousMigratingTime = job.getPreviousMigratingTime();
+        int numCores = job.getRequiredCores();
+        int numNodes = job.getRequiredNodes();
+        int startFlag = previousMigratingTime == job.getStartTime() ? 1 : 0;
+        
+        pwForVis.print(jobId + "\t" + previousMigratingTime + "\t" + currentTime + "\t" + startFlag + "\t" + numCores + "\t" + numNodes + "\t");
+        
+        ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
+        Collections.sort(usingNodesList);
+        for (int i = 0; i < numNodes; ++i) {
+            UsingNode usingNode = usingNodesList.get(i);
+            int nodeNo = usingNode.getNodeNum();
+            int numUsingCores = usingNode.getNumUsingCores();
+            ArrayList<Integer> usingCoreNum = usingNode.getUsingCoreNum();
+            
+            pwForVis.print(nodeNo + "(");
+
+            for (int j = 0; j < numUsingCores; ++j) {
+                int coreNum = usingCoreNum.get(j);
+                pwForVis.print(coreNum);
+                if (j != numUsingCores - 1) pwForVis.print(",");
+            }
+            pwForVis.print(")\t");
+        }
+        pwForVis.println();
+    }
+
+    void outputResultForVis(Job job) {
+        outputResultForVis(job, job.getFinishedTime());
+
     }
 }

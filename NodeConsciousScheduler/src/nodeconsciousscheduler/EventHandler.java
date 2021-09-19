@@ -46,6 +46,7 @@ class Start implements EventHandler {
         job.setStartTime(ev.getOccurrenceTime());
         job.setPreviousMeasuredTime(ev.getOccurrenceTime());
         job.setWaitTime(job.getStartTime() - job.getSubmitTime());
+        job.setPreviousMigratingTime(ev.getOccurrenceTime());
         
         NodeConsciousScheduler.sim.getExecutingJobList().add(job);
         
@@ -81,9 +82,11 @@ class End implements EventHandler {
         int runningTime = runningTimeDed + runningTimeOC;
         int finishedTime = runningTime + job.getStartTime();
         job.setFinishedTime(finishedTime);
+        assert currentTime == finishedTime;
         
         // Output the result
         NodeConsciousScheduler.sim.outputResult(job);
+        NodeConsciousScheduler.sim.outputResultForVis(job);
 
         // Erase the job from executing job list
         NodeConsciousScheduler.sim.getExecutingJobList().remove(job);

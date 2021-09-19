@@ -1287,6 +1287,7 @@ public abstract class Scheduler {
         assert migratingJobId != UNUPDATED;
         Job migratingJob = getJobByJobId(migratingJobId);
         printMigrationInfo(migratingJobId, maxCoreInfo, minCoreInfo);
+        outputResultForVis(migratingJob, currentTime);
         //printMigratingJobCore
         
         // Register the info.
@@ -1308,6 +1309,7 @@ public abstract class Scheduler {
         assert !usingCores.contains((Integer) minCoreInfo.getCoreId());
         usingCores.remove((Integer) maxCoreInfo.getCoreId());
         usingCores.add((Integer) minCoreInfo.getCoreId());
+        migratingJob.setPreviousMigratingTime(currentTime);
         
         // For migrating job, reobtain the coexisting job
         HashSet<Integer> newCoexistingJobs = obtainCoexistingJobsForJob(migratingJob);
@@ -1458,6 +1460,10 @@ public abstract class Scheduler {
             System.out.print(", ");
         }
         System.out.println("");
+    }
+
+    private void outputResultForVis(Job migratingJob, int currentTime) {
+        NodeConsciousScheduler.sim.outputResultForVis(migratingJob, currentTime);
     }
 
 }

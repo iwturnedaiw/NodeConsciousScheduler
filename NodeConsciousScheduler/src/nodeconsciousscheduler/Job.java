@@ -31,6 +31,7 @@ public class Job {
     private int OCStateLevel;
     private int startTime;
     private int previousMeasuredTime;
+    private int previousMigratingTime;
     private int finishedTime;
     private int waitTime;
     private int numNodes;
@@ -186,8 +187,8 @@ public class Job {
         this.startTime = startTime;
     }
 
-    public void setPreviousMeasuredTime(int previousSwitchedTime) {
-        this.previousMeasuredTime = previousSwitchedTime;
+    public void setPreviousMeasuredTime(int previousMeasuredTime) {
+        this.previousMeasuredTime = previousMeasuredTime;
     }
     
     public void setFinishedTime(int finishedTime) {
@@ -244,6 +245,14 @@ public class Job {
 
     public void setRequiredCoresPerNode(int requiredCoresPerNode) {
         this.requiredCoresPerNode = requiredCoresPerNode;
+    }
+
+    public int getPreviousMigratingTime() {
+        return previousMigratingTime;
+    }
+
+    public void setPreviousMigratingTime(int previousMigratingTime) {
+        this.previousMigratingTime = previousMigratingTime;
     }
     
     
