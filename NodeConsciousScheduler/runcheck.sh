@@ -9,14 +9,18 @@ CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 
 #CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n1c256 n1c512" # for OC
 #CASE="n8c32" # for OC
 #CASE="n2c16"
-#CASE="n1c16"
-TP="gen01 gen02 gen03 short short1"
+#CASE="n1c512"
+TP="gen01 gen02 gen03 short short1 hpc2n"
+#TP="gen01 gen02 gen03"
+#TP="short short1"
 #TP="gen01 gen02"
 #TP="short1"
-#TP="gen01"
+#TP="gen03"
 #TP="short short1"
 #TP="short"
-M=2
+#M=5
+M="2 3 4 5 6 7 8"
+#M=4
 #ALGORITHM=FCFS
 #ALGORITHM=FCFSOC
 #ALGORITHM=EasyBackfilling
@@ -39,11 +43,14 @@ test() {
     OC_FLAG=1
   fi
   echo ${ALGORITHM}
+  for m in ${M}
+  do
+  echo "M=${m}"
   for tp in ${TP}
   do
     echo ${tp}
-    for c in ${CASE}
-    do
+    if [ ${tp} = "hpc2n" ]; then
+      c="n120c2"
       core=${c#*c}
       node=${c%c*}
       node=${node#*n}
@@ -51,18 +58,39 @@ test() {
       sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
       sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
       RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
-      java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${ALGORITHM} ${M} > /dev/null 2>&1
+      java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${ALGORITHM} ${m} > /dev/null
       RET=$?
-      echo -n "\t\t${PATTERN}\t${c}\tRUNCHECK\t"
+      echo -n "\t\t${m}\t${tp}\t${c}\tRUNCHECK\t"
+      if [ ${RET} -eq 0 ]; then
+        echo "OK"
+      else
+        echo "NG"
+      fi
+    else 
+    for c in ${CASE}
+    do
+      core=${c#*c}
+      node=${c%c*}
+      node=${node#*n}
+      #echo "\tn${node} c${core}"
+      echo "\t${tp}\t${c}\tRUNCHECK\t"
+      sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
+      sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
+      RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
+      java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${ALGORITHM} ${m} > /dev/null
+      RET=$?
+      echo -n "\t\t${m}\t${tp}\t${c}\tRUNCHECK\t"
       if [ ${RET} -eq 0 ]; then
         echo "OK"
       else
         echo "NG"
       fi
     done
+    fi
+  done
   done
 }
 
 
 
-test | tee -a ${LOG}
+test 2>&1 | tee -a ${LOG}
