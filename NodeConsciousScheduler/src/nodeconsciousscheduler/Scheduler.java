@@ -176,7 +176,7 @@ public abstract class Scheduler {
     }
     
     
-    protected boolean checkTimeSlicesAndAllNodeInfo() {
+    protected TimeSlicesAndNodeInfoConsistency checkTimeSlicesAndAllNodeInfo() {
         /* For TimeSlices */
         ArrayList<Integer> freeCoreInTimeSlices = new ArrayList<Integer>();
         TimeSlice ts = timeSlices.get(0);
@@ -197,16 +197,19 @@ public abstract class Scheduler {
 
         assert freeCoreInTimeSlices.size() == freeCoreInAllNodeInfo.size();
 
-        boolean ret = true;
+        boolean ret1 = true;
+        boolean ret2 = false;
+        
         for (int i = 0; i < freeCoreInAllNodeInfo.size(); ++i) {
             int freeCoreInTimeSlice = freeCoreInTimeSlices.get(i);
             int freeCoreInNodeInfo = freeCoreInAllNodeInfo.get(i);
             if (freeCoreInTimeSlice == freeCoreInNodeInfo) continue;
             if (freeCoreInTimeSlice > freeCoreInNodeInfo) {
+                ret2 = true;
                 System.out.println("Differ freecore value at node " + i);
                 System.out.println("Check multiple END Event with the same event time are.");
             } else {
-                ret = false;
+                ret1 = false;
             }
         }
         
@@ -229,9 +232,9 @@ public abstract class Scheduler {
             totalFreeCoresFromAllNodeInfo += freeCoreInAllNodeInfo.get(i);
         }
         
-        if (totalFreeCores != totalFreeCoresFromAllNodeInfo) ret = false;
+        if (totalFreeCores != totalFreeCoresFromAllNodeInfo) ret1 = false;
 
-        return ret;
+        return new TimeSlicesAndNodeInfoConsistency(ret1, ret2);
     }
     
     protected ArrayList<Event> scheduleJobsOnEnd(Event ev) {

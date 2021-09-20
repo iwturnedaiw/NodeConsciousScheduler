@@ -45,7 +45,9 @@ public class FCFSOC extends FCFS {
 
             /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
-            assert checkTimeSlicesAndAllNodeInfo();
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo();
+            assert consistency.isConsistency();
+            if (consistency.isSameEndEventFlag()) return result;            
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
 
                 /* 3. Select nodes the job is assigned to */        

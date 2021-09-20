@@ -48,7 +48,9 @@ class EasyBackfilling extends Scheduler {
 
             /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
-            assert checkTimeSlicesAndAllNodeInfo();
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo();
+            assert consistency.isConsistency();
+            if (consistency.isSameEndEventFlag()) return result;
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
                 // TODO: Erase below line
                 System.out.println("size: " + canExecuteNodes.size() + ", FCFS job: " + job.getJobId());
