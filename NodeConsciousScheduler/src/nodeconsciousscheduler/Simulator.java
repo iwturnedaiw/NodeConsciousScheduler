@@ -104,8 +104,10 @@ public class Simulator {
     private void initScheduler(ScheduleAlgorithm scheAlgo) {
         if (scheAlgo == ScheduleAlgorithm.FCFS) {
             this.sche = new FCFS();
+            NodeConsciousScheduler.M = 1;
         } else if (scheAlgo == ScheduleAlgorithm.EasyBackfilling) {
             this.sche = new EasyBackfilling();
+            NodeConsciousScheduler.M = 1;            
         } else if (scheAlgo == ScheduleAlgorithm.FCFSOC) {
             this.sche = new FCFSOC();
         } else if (scheAlgo == ScheduleAlgorithm.EasyBackfillingOC) {
@@ -345,8 +347,9 @@ public class Simulator {
         int numCores = job.getRequiredCores();
         int numNodes = job.getRequiredNodes();
         int startFlag = previousMigratingTime == job.getStartTime() ? 1 : 0;
-        
-        pwForVis.print(jobId + "\t" + previousMigratingTime + "\t" + currentTime + "\t" + startFlag + "\t" + numCores + "\t" + numNodes + "\t");
+        int endFlag = currentTime == job.getFinishedTime() ? 1 : 0;
+
+        pwForVis.print(jobId + "\t" + previousMigratingTime + "\t" + currentTime + "\t" + startFlag + "\t" + endFlag + "\t" + numCores + "\t" + numNodes + "\t");
         
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
         Collections.sort(usingNodesList);
