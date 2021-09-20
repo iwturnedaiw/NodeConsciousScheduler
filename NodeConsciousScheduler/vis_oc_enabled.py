@@ -14,12 +14,12 @@ CNUM_NUM_NODE=8
 CNUM_NODE_INFO=9
 BIT_24 = 16777216
 SEED = 100
-ORIGIN_X = 20
+HEIGHT_UNIT = 10
+ORIGIN_X = HEIGHT_UNIT*5
 ORIGIN_Y = 0
 WIDTH_UNIT = 1
-HEIGHT_UNIT = 10
 RED_R = 100
-ROOM = WIDTH_UNIT*80
+ROOM = WIDTH_UNIT*100
 WIDTH_UNIT=WIDTH_UNIT/RED_R
 OFFSET=10
 NEWLINE_THRESHOLD=27
@@ -29,9 +29,13 @@ CNUM_JOBID2=0
 CNUM_START_TIME2=1
 CNUM_END_TIME2=2
 CNUM_START_FLAG2=3
-CNUM_NUM_CORE2=4
-CNUM_NUM_NODE2=5
-CNUM_NODE_INFO2=6
+CNUM_END_FLAG2=4
+CNUM_NUM_CORE2=5
+CNUM_NUM_NODE2=6
+CNUM_NODE_INFO2=7
+
+MAX_JOB_NUM=100000
+TIMESTAMP_OFFSET=3
 
 OUTPUT_INIT="""
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="xMinYMin">
@@ -88,11 +92,12 @@ def parse_record(input):
     return 1, jobid, start_time, end_time, num_node, num_core, nodes
 
 def parse_record2(input):
-    jobid = input[CNUM_JOBID2]
+    jobid = int(input[CNUM_JOBID2])
 
     start_time = int(input[CNUM_START_TIME2])
     end_time = int(input[CNUM_END_TIME2])
     start_flag = int(input[CNUM_START_FLAG2])
+    end_flag = int(input[CNUM_END_FLAG2])
     num_node = int(input[CNUM_NUM_NODE2])
     num_core = int(input[CNUM_NUM_CORE2])
     nodes=[]
@@ -104,7 +109,7 @@ def parse_record2(input):
       tmp = tmp.replace(',', ' ')
       nodes.append(tmp)
 
-    return 1, jobid, start_time, end_time, num_node, num_core, nodes, start_flag
+    return 1, jobid, start_time, end_time, num_node, num_core, nodes, start_flag, end_flag
 
 def init_outputfile(num_node, num_core):
    filename = "visualize_" + datetime.datetime.now().strftime('%Y%m%d%H%M%S') + ".svg"
@@ -159,11 +164,11 @@ def output_timestamp(start_time, end_time, Y, xeds, color):
    if cnt == len(xeds):
      xeds.append(Xed(x_ed))
 
-   y = ORIGIN_Y + (num_node*num_core + 3 + cnt) * HEIGHT_UNIT
+   y = ORIGIN_Y + (num_node*num_core + TIMESTAMP_OFFSET + cnt) * HEIGHT_UNIT
    
    #ret = "<text text-anchor=\"end\" transform=\"translate(" + str(x_st) + ", " + str(y) + ")\">" +  str(start_time) + "</text>"
-   ret  = "<text text-anchor=\"end\"   transform=\"translate(" + str(x_st) + ", " + str(y) + ")\" stroke=\"#" + hex(color)[2:] + "\">" +  str(start_time) + "</text>"
-   ret += "<text text-anchor=\"start\" transform=\"translate(" + str(x_ed) + ", " + str(y) + ")\" stroke=\"#" + hex(color)[2:] + "\">" +  str(end_time)   + "</text>"
+   ret  = "<text text-anchor=\"end\"   transform=\"translate(" + str(x_st) + ", " + str(y) + ")\" stroke=\"#" + hex(color)[2:] + "\" font-size=\"" + str(HEIGHT_UNIT) + "\">" +  str(start_time) + "</text>"
+   ret += "<text text-anchor=\"start\" transform=\"translate(" + str(x_ed) + ", " + str(y) + ")\" stroke=\"#" + hex(color)[2:] + "\" font-size=\"" + str(HEIGHT_UNIT) + "\">" +  str(end_time) + "</text>"
    ret += "<line x1=\"" + str(x_st) + "\" y1=\"" + str(Y) + "\" x2=\"" + str(x_st) + "\" y2=\"" + str(y) + "\" stroke=\"#" + hex(color)[2:] + "\"/>"
    ret += "<line x1=\"" + str(x_ed) + "\" y1=\"" + str(Y) + "\" x2=\"" + str(x_ed) + "\" y2=\"" + str(y) + "\" stroke=\"#" + hex(color)[2:] + "\"/>"
    return ret, xeds
@@ -173,6 +178,11 @@ class Rsc_info:
     self.value = value
     self.jobid = jobid
 
+class Job:
+  def __init__(self, start_time, end_time):
+    self.start_time = start_time
+    self.end_time = end_time
+
 def visualize(input, num_node, num_core, multiplicity):
     output_file = init_outputfile(num_node, num_core)
     init_rand()
@@ -180,14 +190,11 @@ def visualize(input, num_node, num_core, multiplicity):
     xeds.append(Xed(0))
 
     rsc_infos = [[[Rsc_info(0, -1) for i in range(multiplicity)] for j in range(num_core)] for k in range(num_node)]
-    #for ncnt in range(num_node):
-    #    for ccnt in range(num_core):
-    #        for mcnt in range(multiplicity):
-    #            rsc_infos[ncnt][ccnt][mcnt] = 0
+    jobs = [Job(-1, -1) for i in range(MAX_JOB_NUM)] 
 
     for record in input:
         #ret, jobid, start_time, end_time, jnum_node, jnum_core, nodes = parse_record(record)
-        ret, jobid, start_time, end_time, jnum_node, jnum_core, nodes, start_flag = parse_record2(record)
+        ret, jobid, start_time, end_time, jnum_node, jnum_core, nodes, start_flag, end_flag = parse_record2(record)
         
         if ret == 0:
           continue
@@ -195,12 +202,14 @@ def visualize(input, num_node, num_core, multiplicity):
         if start_time == end_time:
           continue
 
-        #if jobid == "60":
-        #  sys.exit(1)
+        if start_flag == 1:
+           jobs[jobid].start_time = start_time
+        if end_flag == 1:
+           jobs[jobid].end_time = end_time
 
         color = get_color(jobid)
         ppn = jnum_core/jnum_node
-        Y = INF
+        Y = -1
         for node in nodes:
           nodenum = node.split()
           cores = nodenum[1:]
@@ -248,11 +257,11 @@ def visualize(input, num_node, num_core, multiplicity):
             if start_flag == 1:
               text = output_text(x, y + float(OFFSET/multiplicity), jobid, multiplicity)
               output_file.write(text + "\n")
-            Y = min(Y, y)
+            Y = max(Y, y)
 
-
-        #time_stamp, xeds = output_timestamp(start_time, end_time, Y, xeds, color)
-        #output_file.write(time_stamp + "\n")
+        if end_flag == 1:
+          time_stamp, xeds = output_timestamp(jobs[jobid].start_time, end_time, Y, xeds, color)
+          output_file.write(time_stamp + "\n")
 
     finalize_outputfile(output_file)
     return
