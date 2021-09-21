@@ -21,6 +21,7 @@ import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.Constants.UNUPDATED;
 import nodeconsciousscheduler.ScheduleAlgorithm;
 import static nodeconsciousscheduler.ScheduleAlgorithm.*;
 
@@ -169,7 +170,7 @@ public class NodeConsciousScheduler {
         String line = "";
 
 
-
+        int firstJobSubmitTime = UNUPDATED;
         ArrayList jobList = new ArrayList<Job>();
         while ((line = br.readLine()) != null) {
             if (line.charAt(0) == ' ') {
@@ -200,6 +201,11 @@ public class NodeConsciousScheduler {
             }
             
             int submitTime = Integer.parseInt(values[1]);
+            if (firstJobSubmitTime == UNUPDATED) {
+                firstJobSubmitTime = submitTime;
+            }
+            submitTime = submitTime - firstJobSubmitTime;
+            assert submitTime >= 0;
             int actualExecuteTime = Integer.parseInt(values[3]);
             if (actualExecuteTime == Constants.NOTSPECIFIED) {
                 actualExecuteTime = Integer.parseInt(values[5]);
