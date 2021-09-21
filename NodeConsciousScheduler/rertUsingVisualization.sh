@@ -52,7 +52,7 @@ test() {
     fi
     mkdir ${TMP_DIR}
     cd ${TMP_DIR}
-    python3 ${CURRENT_HOME}/vis_oc_enabled.py ${CURRENT_HOME}/${RESULT_FILE} ${node} ${core} ${m} > /dev/null 2>&1
+    python3 ${CURRENT_HOME}/vis_oc_enabled.py ${CURRENT_HOME}/${RESULT_FILE} ${node} ${core} ${m} > /dev/null
     RET=$?
     echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${case}\t"
     if [ ${RET} -eq 0 ]; then
@@ -65,4 +65,4 @@ test() {
   done
 }
 
-test ${1} | tee -a ${LOG}
+test ${1} 2>&1 | tee -a ${LOG}
