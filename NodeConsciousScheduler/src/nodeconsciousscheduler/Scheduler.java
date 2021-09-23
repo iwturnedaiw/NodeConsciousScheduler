@@ -120,6 +120,8 @@ public abstract class Scheduler {
 //            ts.printTsInfo();
             int endTime = ts.getEndTime();
             
+            if (endTime <= currentTime) continue;
+            
             if (endTime <= expectedEndTime) {                
                 ts.refillResources(job);
             }

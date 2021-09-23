@@ -21,6 +21,7 @@ public class Constants {
     static String RESULT_DIRECTORY = "result";
     static String FINISH_ORDER_JOB_OUTPUT = "test.out";
     static String FOR_VISUALIZATION_OUTPUT = "for_visualization.out";
+    static String UTILIZATION_RATIO_OUTPUT = "utilization.out";
     static String SLOWDOWN_OUTPUT = "slowdown.out";
     static String CUMULATIVE_JOB_PER_DAY_OUTPUT = "cumulative_job_day.out";
     static int DAY_IN_SECOND = 60 * 60 * 24;

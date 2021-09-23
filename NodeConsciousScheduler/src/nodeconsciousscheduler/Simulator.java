@@ -9,6 +9,11 @@ package nodeconsciousscheduler;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import static java.lang.Math.min;
+import static java.lang.StrictMath.max;
+import static java.lang.StrictMath.max;
+import static java.lang.StrictMath.max;
+import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.max;
@@ -32,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,6 +51,8 @@ import static nodeconsciousscheduler.Constants.HOUR_IN_SECOND;
 import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
 import static nodeconsciousscheduler.Constants.RESULT_DIRECTORY;
 import static nodeconsciousscheduler.Constants.SLOWDOWN_OUTPUT;
+import static nodeconsciousscheduler.Constants.UNUPDATED;
+import static nodeconsciousscheduler.Constants.UTILIZATION_RATIO_OUTPUT;
 
 /**
  *
@@ -243,6 +251,7 @@ public class Simulator {
     
     public void makeResults() {
 
+        outputUtilizationRatio();
         outputSlowdown();
 
         outputCumulativeJob(CUMULATIVE_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
@@ -374,5 +383,70 @@ public class Simulator {
     void outputResultForVis(Job job) {
         outputResultForVis(job, job.getFinishedTime());
 
+    }
+
+    private void outputUtilizationRatio() {
+        try {
+            String fileName = UTILIZATION_RATIO_OUTPUT;        
+            PrintWriter pwUtilizationRatio;
+            pwUtilizationRatio = new PrintWriter(this.p + "/" + fileName);
+
+            int numNodes = NodeConsciousScheduler.numNodes;
+            int numCores = NodeConsciousScheduler.numCores;
+            
+            LinkedList<TimeSlice> tsList = this.sche.completedTimeSlices;
+
+            double[] utilizationRatioOC = new double[numNodes];
+            double[] utilizationRatio = new double[numNodes];
+            for (int i = 0; i < numNodes; ++i) {
+                utilizationRatioOC[i] = 0;
+                utilizationRatio[i] = 0;
+            }
+            
+            int startTime = UNUPDATED;
+            int endTime = UNUPDATED;
+            
+            for (TimeSlice ts: tsList) {
+                if (startTime == UNUPDATED) startTime = ts.getStartTime();
+                endTime = max(endTime, ts.getEndTime());
+                
+                int duration = ts.getDuration();
+                ArrayList<Integer> availableCores = ts.getAvailableCores();
+                
+                for (int i = 0; i < numNodes; ++i) {
+                    int numRunningCores = numCores - availableCores.get(i);
+                    utilizationRatioOC[i] += numRunningCores * duration;
+                    utilizationRatio[i] += min(numRunningCores, numCores) * duration;                    
+                }
+            }
+            
+            int duration = endTime - startTime; 
+
+            double totalUtilizationRatio = 0.0;
+            double totalUtilizationRatioOC = 0.0;
+            
+            for (int i = 0; i < numNodes; ++i) {
+                utilizationRatioOC[i] = utilizationRatioOC[i]/duration/numCores*100;
+                utilizationRatio[i] = utilizationRatio[i]/duration/numCores*100;
+                totalUtilizationRatio += utilizationRatio[i];
+                totalUtilizationRatioOC += utilizationRatioOC[i];
+            }
+            totalUtilizationRatio /= numNodes;
+            totalUtilizationRatioOC /= numNodes;
+            
+            
+            pwUtilizationRatio.println("NodeId\tutilizationRatio\tutilizationRatioOC");
+            
+            for (int i = 0; i < numNodes; ++i) {
+                pwUtilizationRatio.println(i + "\t" + utilizationRatio[i] + "\t" + utilizationRatioOC[i]);
+            }
+            
+            pwUtilizationRatio.println("Total\t" + totalUtilizationRatio + "\t" + totalUtilizationRatioOC);
+            pwUtilizationRatio.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        
     }
 }
