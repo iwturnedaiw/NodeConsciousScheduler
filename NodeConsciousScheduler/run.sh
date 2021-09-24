@@ -10,6 +10,12 @@ export CLASSPATH=./build/classes
 
 
 run() {
+  if [ ${#} -ne 5 ]; then
+    echo "Please specify the arguments"
+    exit
+  fi
+
+
   tp=${1}
   algorithm=${2}
   node=${3}
@@ -27,17 +33,15 @@ run() {
   echo -ne "${tp}\t${algorithm}\tM=${m}\t${case}\t"
   if [ ${RET} -eq 0 ]; then
     echo "OK"
+    return 0
   else
     echo "NG"
+    return 1
   fi
 }
 
 
 
 
-if [ ${#} -ne 5 ]; then
-  echo "Please specify the arguments"
-  exit
-fi
 
 run ${1} ${2} ${3} ${4} ${5} 2>&1 | tee -a ${LOG}

@@ -5,14 +5,23 @@ LOG=./log/retest_`date +%Y%m%d%H%M`.log
 
 # path
 DATADIR=./data-set
+RUN_SCRIPT=run.sh
+PYTHON_SCRIPT=diff.py
 RESULTDIR=./result
 MASTER=./master
 FILENAME=./test.out
 TEMPLATE=template.machines
+SH=bash
+PYTHON=python3
 export CLASSPATH=./build/classes
 
 
 test() {
+  if [ ${#} -ne 1 ]; then
+    echo "Please specify the arguments"
+    exit
+  fi
+
   LIST_FILE=${1}
 
   cat ${LIST_FILE} | while read l
@@ -41,14 +50,14 @@ test() {
     sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
     sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
     RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
-    java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 2>&1
+    ${SH} ./${RUN_SCRIPT} ${tp} ${algorithm} ${node} ${core} ${m} > /dev/null 2>&1
     wait
     if [ ${OC_FLAG} -eq 1 ]; then
       MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${case}/${FILENAME}
     else
       MASTER_FILE=./${MASTER}/${algorithm}/${tp}/${case}/${FILENAME}
     fi
-    python3 diff.py ${MASTER_FILE} ${RESULT_FILE} ${core}
+    ${PYTHON} ${PYTHON_SCRIPT} ${MASTER_FILE} ${RESULT_FILE} ${core}
     RET=$?
     echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${case}\t"
     if [ ${RET} -eq 0 ]; then

@@ -28,10 +28,12 @@ ALGORITHM=EasyBackfillingOC
 
 # path
 DATADIR=./data-set
+RUN_SCRIPT=run.sh
 RESULTDIR=./result
 MASTER=./master
 FILENAME=./test.out
 TEMPLATE=template.machines
+SH=bash
 export CLASSPATH=./build/classes
 
 
@@ -54,13 +56,14 @@ test() {
       core=${c#*c}
       node=${c%c*}
       node=${node#*n}
-      echo "\tn${node} c${core}"
+      echo -e "\tn${node} c${core}"
       sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
       sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
       RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
-      java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${ALGORITHM} ${m} > /dev/null
+      ${SH} ./${RUN_SCRIPT} ${tp} ${ALGORITHM} ${node} ${core} ${m} > /dev/null 2>&1
+      wait
       RET=$?
-      echo -n "\t\t${m}\t${tp}\t${c}\tRUNCHECK\t"
+      echo -en "\t\tM=${m}\t${tp}\t${c}\tRUNCHECK\t"
       if [ ${RET} -eq 0 ]; then
         echo "OK"
       else
@@ -73,13 +76,14 @@ test() {
       node=${c%c*}
       node=${node#*n}
       #echo "\tn${node} c${core}"
-      echo "\t${tp}\t${c}\tRUNCHECK\t"
+      echo -e "\t${tp}\t${c}\tRUNCHECK\t"
       sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
       sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
       RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
-      java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${ALGORITHM} ${m} > /dev/null
+      ${SH} ./${RUN_SCRIPT} ${tp} ${ALGORITHM} ${node} ${core} ${m} > /dev/null 2>&1
+      wait
       RET=$?
-      echo -n "\t\t${m}\t${tp}\t${c}\tRUNCHECK\t"
+      echo -en "\t\tM=${m}\t${tp}\t${c}\tRUNCHECK\t"
       if [ ${RET} -eq 0 ]; then
         echo "OK"
       else
