@@ -12,23 +12,6 @@ import java.io.PrintWriter;
 import static java.lang.Math.min;
 import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -48,6 +31,12 @@ import static nodeconsciousscheduler.Constants.DAY_IN_SECOND;
 import static nodeconsciousscheduler.Constants.FINISH_ORDER_JOB_OUTPUT;
 import static nodeconsciousscheduler.Constants.FOR_VISUALIZATION_OUTPUT;
 import static nodeconsciousscheduler.Constants.HOUR_IN_SECOND;
+import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_OC_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
 import static nodeconsciousscheduler.Constants.RESULT_DIRECTORY;
 import static nodeconsciousscheduler.Constants.SLOWDOWN_OUTPUT;
@@ -254,6 +243,12 @@ public class Simulator {
     public void makeResults() {
 
         outputUtilizationRatio();
+        outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_DAY_OUTPUT, DAY_IN_SECOND, false);
+        outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_HOUR_OUTPUT, HOUR_IN_SECOND, false);
+        outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT, MINUTE_IN_SECOND, false);
+        outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_DAY_OUTPUT, DAY_IN_SECOND, true);
+        outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT, HOUR_IN_SECOND, true);
+        outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
         outputSlowdown();
 
         outputCumulativeJob(CUMULATIVE_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
@@ -451,4 +446,79 @@ public class Simulator {
         
         
     }
+
+    private void outputInstatntUtilizationRatio(String fileName, int MODE, boolean OCFlag) {
+        try {
+            PrintWriter pwUtilizationRatio;
+            pwUtilizationRatio = new PrintWriter(this.p + "/" + fileName);
+
+            ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
+            result.addAll(calcInstantUtilizationRatio(MODE, OCFlag));
+            
+            for (int j = 0; j < NodeConsciousScheduler.numNodes; ++j) {
+                pwUtilizationRatio.print("\t" + j);
+            }
+            pwUtilizationRatio.println("\tAve.");
+            
+            
+            if (result.size() != 0) {
+                for (int i = 0; i < result.size() - 1; ++i) {
+                    //pwUtilizationRatio.println(i + "\t" + result.get(i));
+                    pwUtilizationRatio.print(i);
+                    ArrayList<Double> ret = result.get(i);
+                    double totalUtilizationRatio = 0.0;
+                    for (int j = 0; j < ret.size(); ++j) {
+                        pwUtilizationRatio.print("\t" + ret.get(j));
+                        totalUtilizationRatio += ret.get(j);
+                    }
+                    pwUtilizationRatio.println("\t" + totalUtilizationRatio/NodeConsciousScheduler.numNodes);
+                }
+                pwUtilizationRatio.print(result.size() - 1);
+
+                double totalUtilizationRatio = 0.0;
+                ArrayList<Double> ret = result.get(result.size() - 1);
+                for (int j = 0; j < ret.size(); ++j) {
+                    pwUtilizationRatio.print("\t" + ret.get(j));
+                    totalUtilizationRatio += ret.get(j);
+                }
+                pwUtilizationRatio.println("\t" + totalUtilizationRatio / NodeConsciousScheduler.numNodes);                
+            }
+            pwUtilizationRatio.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
+        }        
+    }
+
+    private ArrayList<ArrayList<Double>> calcInstantUtilizationRatio(int THRESHOLD, boolean OCFlag) {
+        ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
+        LinkedList<TimeSlice> completedTimeSlices = this.sche.completedTimeSlices;
+        int i = 0;
+        int threshold = THRESHOLD;
+        result.add(calcUtilizationAtTs(completedTimeSlices.get(i), OCFlag));
+        for (; i < completedTimeSlices.size();) {
+            while (completedTimeSlices.get(i).getEndTime() <= threshold) {
+                ++i;
+                if (i == completedTimeSlices.size()) break;
+            }
+            int idx = i == completedTimeSlices.size() ? i-1:i;
+            result.add(calcUtilizationAtTs(completedTimeSlices.get(idx), OCFlag));
+            threshold +=  THRESHOLD;
+        }
+        return result;
+    }
+
+    private ArrayList<Double> calcUtilizationAtTs(TimeSlice ts, boolean OCFlag) {
+        ArrayList<Double> result = new ArrayList<Double>(); 
+        ArrayList<Integer> availableCores = ts.getAvailableCores();
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
+            int numRuuningCore = OCFlag ? NodeConsciousScheduler.numCores - availableCores.get(i) : min(NodeConsciousScheduler.numCores - availableCores.get(i), NodeConsciousScheduler.numCores);
+            result.add((double)numRuuningCore/NodeConsciousScheduler.numCores*100);
+        }
+        return result;
+    }
+
+    
+    
+
+
 }
