@@ -19,6 +19,7 @@ public class Constants {
     static int BLANK_JOBID = -1;
     static int NOTSPECIFIED = -1;
     static String RESULT_DIRECTORY = "result";
+    static String DATASET_DIRECTORY = "data-set";
     static String FINISH_ORDER_JOB_OUTPUT = "test.out";
     static String FOR_VISUALIZATION_OUTPUT = "for_visualization.out";
     static String UTILIZATION_RATIO_OUTPUT = "utilization.out";

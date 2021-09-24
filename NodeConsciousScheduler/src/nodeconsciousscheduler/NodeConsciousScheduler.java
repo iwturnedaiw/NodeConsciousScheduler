@@ -21,6 +21,7 @@ import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.Constants.DATASET_DIRECTORY;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import nodeconsciousscheduler.ScheduleAlgorithm;
 import static nodeconsciousscheduler.ScheduleAlgorithm.*;
@@ -125,8 +126,8 @@ public class NodeConsciousScheduler {
 
         BufferedReader br = null;
 
-        br = r.openFile(new File("data-set/" + data_set + ".machines"));
-        System.out.println("Opening: " + "data-set/" + data_set + ".machines");
+        br = r.openFile(new File(DATASET_DIRECTORY + "/" + data_set + ".machines"));
+        System.out.println("Opening: " + DATASET_DIRECTORY + "/" + data_set + ".machines");
         r.getLines(lines, br);
         r.closeFile(br);
 
@@ -161,10 +162,10 @@ public class NodeConsciousScheduler {
     }
 
     private static ArrayList<Job> readSWFFile(String fname) throws IOException {
-        System.out.println("Opening job file at: " + "data-set/" + fname);
+        System.out.println("Opening job file at: " + DATASET_DIRECTORY + "/" + fname);
         BufferedReader br = null;
         Input in = new Input();
-        br = in.openFile(new File("data-set/" + fname));
+        br = in.openFile(new File(DATASET_DIRECTORY + "/" + fname));
         
         String[] values = null;
         String line = "";
