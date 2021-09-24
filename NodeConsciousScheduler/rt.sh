@@ -71,9 +71,11 @@ test() {
           echo -e "\t\t\tn${node} c${core}"
           sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
           sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
-          RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
+          #RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
           #java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 2>&1
           ${SH} ./${RUN_SCRIPT} ${tp} ${algorithm} ${node} ${core} ${m} > /dev/null 2>&1
+          RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_M${m} | head -n 1`
+          RESULT_FILE+=/${FILENAME}
           if [ ${OC_FLAG} -eq 1 ]; then
             MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}
           else
@@ -96,7 +98,7 @@ test() {
             echo -e "\t\t\tn${node} c${core}"
             sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
             sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
-            RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
+            #RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
             #java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 2>&1
             ${SH} ./${RUN_SCRIPT} ${tp} ${algorithm} ${node} ${core} ${m} > /dev/null 2>&1
             wait
@@ -111,6 +113,10 @@ test() {
     #        MASTER_FILE=./${MASTER}/${algo}/${tp}/n${node}c${coreOC}/${FILENAME}
     #        python3 diff.py ${MASTER_FILE} ${RESULT_FILE} ${core}
     #      fi
+            #RESULT_FILE=`ls ./${RESULTDIR}/*_${tp}_${c}_M${m}/${FILENAME}`
+            #RESULT_FILE=`ls ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_M${m}/${FILE_NAME}`
+            RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_M${m} | head -n 1`
+            RESULT_FILE+=/${FILENAME}
             if [ ${OC_FLAG} -eq 1 ]; then
               MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}
             else

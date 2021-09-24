@@ -49,9 +49,11 @@ test() {
     echo -e "\t\t\tn${node} c${core}"
     sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
     sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
-    RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
+    #RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
     ${SH} ./${RUN_SCRIPT} ${tp} ${algorithm} ${node} ${core} ${m} > /dev/null 2>&1
     wait
+    RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${case}_M${m} | head -n 1`
+    RESULT_FILE+=/${FILENAME}
     if [ ${OC_FLAG} -eq 1 ]; then
       MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${case}/${FILENAME}
     else

@@ -59,7 +59,6 @@ test() {
       echo -e "\tn${node} c${core}"
       sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
       sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
-      RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
       ${SH} ./${RUN_SCRIPT} ${tp} ${ALGORITHM} ${node} ${core} ${m} > /dev/null 2>&1
       wait
       RET=$?
@@ -79,7 +78,6 @@ test() {
       echo -e "\t${tp}\t${c}\tRUNCHECK\t"
       sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
       sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
-      RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
       ${SH} ./${RUN_SCRIPT} ${tp} ${ALGORITHM} ${node} ${core} ${m} > /dev/null 2>&1
       wait
       RET=$?
