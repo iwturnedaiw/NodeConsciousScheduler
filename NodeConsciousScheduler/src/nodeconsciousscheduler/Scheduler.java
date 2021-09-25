@@ -1054,20 +1054,21 @@ public abstract class Scheduler {
         // 3. Modify the timeSlices
         boolean notEndFlag = (endingJobId == BLANK_JOBID);
 
-        //  2-1. Get old expectedEndTime            
-        int oldExpectedEndTime = coexistingJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
-        int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, coexistingJob);
-        coexistingJob.setSpecifiedExecuteTime(newExpectedEndTime);
-        // assert newExpectedEndTime <= oldExpectedEndTime;
-        printDifferenceExpectedEndTime(oldExpectedEndTime, newExpectedEndTime, coexistingJob.getJobId());
+        if (currentTime != coexistingJob.getSpecifiedExecuteTime()) {
+            //  2-1. Get old expectedEndTime            
+            int oldExpectedEndTime = coexistingJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
+            int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, coexistingJob);
+            coexistingJob.setSpecifiedExecuteTime(newExpectedEndTime);
+            // assert newExpectedEndTime <= oldExpectedEndTime;
+            printDifferenceExpectedEndTime(oldExpectedEndTime, newExpectedEndTime, coexistingJob.getJobId());
 
-        //  2-2. Update the timeslice between current and new expectedEndTime           
-        int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
-        refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, coexistingJob);
-        makeTimeslices(currentTime);
-        makeTimeslices(newExpectedEndTime);
-        reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, coexistingJob);
-
+            //  2-2. Update the timeslice between current and new expectedEndTime           
+            int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
+            refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, coexistingJob);
+            makeTimeslices(currentTime);
+            makeTimeslices(newExpectedEndTime);
+            reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, coexistingJob);
+        }
         if (!notEndFlag) {
             coexistingJobCoexistingJob.remove(endingJobId);
         }
