@@ -30,12 +30,13 @@ public class Constants {
     static String INSTANT_UTILIZATION_RATIO_OC_DAY_OUTPUT = "instant_utilization_ratio_OC_day.out";
     static String INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT = "instant_utilization_ratio_OC_hour.out";
     static String INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT = "instant_utilization_ratio_OC_minute.out";
-    
-    
     static String CUMULATIVE_JOB_PER_DAY_OUTPUT = "cumulative_job_day.out";
-    static int DAY_IN_SECOND = 60 * 60 * 24;
     static String CUMULATIVE_JOB_PER_HOUR_OUTPUT = "cumulative_job_hour.out";
-    static int HOUR_IN_SECOND = 60 * 60;
     static String CUMULATIVE_JOB_PER_MINUTE_OUTPUT = "cumulative_job_minute.out";
+    static String WAITING_JOB_PER_DAY_OUTPUT = "waiting_job_day.out";
+    static String WAITING_JOB_PER_HOUR_OUTPUT = "waiting_job_hour.out";
+    static String WAITING_JOB_PER_MINUTE_OUTPUT = "waiting_job_minute.out";    
+    static int DAY_IN_SECOND = 60 * 60 * 24;
+    static int HOUR_IN_SECOND = 60 * 60;
     static int MINUTE_IN_SECOND = 60;
 }

@@ -15,7 +15,7 @@ import static nodeconsciousscheduler.Constants.UNSTARTED;
  *
  * @author sminami
  */
-public class Job {
+public class Job implements Comparable<Job> {
     private int jobId;
     private int submitTime;
     private int actualExecuteTime;
@@ -255,5 +255,23 @@ public class Job {
         this.previousMigratingTime = previousMigratingTime;
     }
     
+    
+    @Override
+    public int compareTo(Job o) {
+        if (this.submitTime < o.submitTime) {
+            return -1;
+        }
+        if (this.submitTime > o.submitTime) {
+            return 1;
+        }
+        if (this.startTime < o.startTime) {
+            return -1;
+        }
+        if (this.startTime > o.startTime) {
+            return 1;
+        }
+        
+        return 0;
+    }
     
 }

@@ -12,6 +12,7 @@ import java.io.PrintWriter;
 import static java.lang.Math.min;
 import static java.lang.StrictMath.max;
 import static java.lang.StrictMath.max;
+import static java.lang.StrictMath.max;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,6 +43,9 @@ import static nodeconsciousscheduler.Constants.RESULT_DIRECTORY;
 import static nodeconsciousscheduler.Constants.SLOWDOWN_OUTPUT;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.UTILIZATION_RATIO_OUTPUT;
+import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_MINUTE_OUTPUT;
 
 /**
  *
@@ -255,6 +259,10 @@ public class Simulator {
         outputCumulativeJob(CUMULATIVE_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
         outputCumulativeJob(CUMULATIVE_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
         
+        outputWaitingJob(WAITING_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
+        outputWaitingJob(WAITING_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
+        outputWaitingJob(WAITING_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+        
         return;
     }
 
@@ -330,7 +338,7 @@ public class Simulator {
         int i = 0;
         int threshold = THRESHOLD;
         int cnt = 0;
-        for (; i < completedJobList.size();) {
+        for (;;) {
             while (completedJobList.get(i).getFinishedTime() <= threshold) {
                 ++cnt;
                 ++i;
@@ -338,6 +346,7 @@ public class Simulator {
             }
             result.add(cnt);
             threshold +=  THRESHOLD;
+            if (i == completedJobList.size()) break;
         }
         return result;
     }
@@ -495,7 +504,7 @@ public class Simulator {
         int i = 0;
         int threshold = THRESHOLD;
         result.add(calcUtilizationAtTs(completedTimeSlices.get(i), OCFlag));
-        for (; i < completedTimeSlices.size();) {
+        for (;;) {
             while (completedTimeSlices.get(i).getEndTime() <= threshold) {
                 ++i;
                 if (i == completedTimeSlices.size()) break;
@@ -503,6 +512,7 @@ public class Simulator {
             int idx = i == completedTimeSlices.size() ? i-1:i;
             result.add(calcUtilizationAtTs(completedTimeSlices.get(idx), OCFlag));
             threshold +=  THRESHOLD;
+            if (i == completedTimeSlices.size()) break;
         }
         return result;
     }
@@ -517,6 +527,58 @@ public class Simulator {
         return result;
     }
 
+    private void outputWaitingJob(String fileName, int MODE) {
+        try {
+            PrintWriter pwWaitingJob;
+            pwWaitingJob = new PrintWriter(this.p + "/" + fileName);
+
+            ArrayList<Integer> result = new ArrayList<Integer>();
+            result.addAll(calcWaitingJob(MODE));
+            
+            if (result.size() != 0) {
+                for (int i = 0; i < result.size() - 1; ++i) {
+                    pwWaitingJob.println(i + 1 + "\t" + result.get(i));
+                }
+                pwWaitingJob.println(result.size() - 1 + 1 + "\t" + result.get(result.size() - 1));
+            }
+            pwWaitingJob.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
+        }        
+    }
+
+    private Collection<? extends Integer> calcWaitingJob(int THRESHOLD) {
+        ArrayList<Integer> result = new ArrayList<Integer>();
+        ArrayList<Job> completedJobList = (ArrayList<Job>) this.completedJobList.clone();
+        int i = 0;
+        int previousI = 0;
+        int threshold = THRESHOLD;
+        int numWaitingJob = 0;
+        
+
+        Collections.sort(completedJobList);
+        
+        for (;;) {
+            while (i != completedJobList.size() && completedJobList.get(i).getSubmitTime()<= threshold) {
+                ++numWaitingJob;
+                ++i;
+            }
+            
+            int numStartedJob = 0;
+            while (completedJobList.get(previousI).getStartTime()<= threshold) {
+                ++numStartedJob;
+                ++previousI;
+                if (previousI == completedJobList.size()) break;
+            }
+
+            numWaitingJob -= numStartedJob;
+            
+            result.add(numWaitingJob);
+            threshold +=  THRESHOLD;
+            if (previousI == completedJobList.size()) break;
+        }
+        return result;
+    }
     
     
 
