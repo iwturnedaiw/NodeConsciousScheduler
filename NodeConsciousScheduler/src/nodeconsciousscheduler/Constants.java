@@ -24,18 +24,41 @@ public class Constants {
     static String FOR_VISUALIZATION_OUTPUT = "for_visualization.out";
     static String UTILIZATION_RATIO_OUTPUT = "utilization.out";
     static String SLOWDOWN_OUTPUT = "slowdown.out";
+
     static String INSTANT_UTILIZATION_RATIO_DAY_OUTPUT = "instant_utilization_ratio_day.out";
     static String INSTANT_UTILIZATION_RATIO_HOUR_OUTPUT = "instant_utilization_ratio_hour.out";
     static String INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT = "instant_utilization_ratio_minute.out";
+
     static String INSTANT_UTILIZATION_RATIO_OC_DAY_OUTPUT = "instant_utilization_ratio_OC_day.out";
     static String INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT = "instant_utilization_ratio_OC_hour.out";
     static String INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT = "instant_utilization_ratio_OC_minute.out";
-    static String CUMULATIVE_JOB_PER_DAY_OUTPUT = "cumulative_job_day.out";
-    static String CUMULATIVE_JOB_PER_HOUR_OUTPUT = "cumulative_job_hour.out";
-    static String CUMULATIVE_JOB_PER_MINUTE_OUTPUT = "cumulative_job_minute.out";
+
+    static String CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT = "cumulative_finished_job_day.out";
+    static String CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT = "cumulative_finished_job_hour.out";
+    static String CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT = "cumulative_finished_job_minute.out";
+
     static String WAITING_JOB_PER_DAY_OUTPUT = "waiting_job_day.out";
     static String WAITING_JOB_PER_HOUR_OUTPUT = "waiting_job_hour.out";
     static String WAITING_JOB_PER_MINUTE_OUTPUT = "waiting_job_minute.out";    
+
+    static String ARRIVAL_JOB_PER_DAY_OUTPUT = "arrival_job_day.out";
+    static String ARRIVAL_JOB_PER_HOUR_OUTPUT = "arrival_job_hour.out";
+    static String ARRIVAL_JOB_PER_MINUTE_OUTPUT = "arrival_job_minute.out";    
+
+    static String START_JOB_PER_DAY_OUTPUT = "start_job_day.out";
+    static String START_JOB_PER_HOUR_OUTPUT = "start_job_hour.out";
+    static String START_JOB_PER_MINUTE_OUTPUT = "start_job_minute.out";    
+
+    static String FINISHED_JOB_PER_DAY_OUTPUT = "finished_job_day.out";
+    static String FINISHED_JOB_PER_HOUR_OUTPUT = "finished_job_hour.out";
+    static String FINISHED_JOB_PER_MINUTE_OUTPUT = "finished_job_minute.out";    
+    
+    static String CUMULATIVE_STARTED_JOB_PER_DAY_OUTPUT = "cumulative_started_job_day.out";
+    static String CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT = "cumulative_started_job_hour.out";
+    static String CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT = "cumulative_started_job_minute.out";    
+    
+    
+    
     static int DAY_IN_SECOND = 60 * 60 * 24;
     static int HOUR_IN_SECOND = 60 * 60;
     static int MINUTE_IN_SECOND = 60;

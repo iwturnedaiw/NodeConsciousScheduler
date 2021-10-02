@@ -11,8 +11,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import static java.lang.Math.min;
 import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,10 +23,19 @@ import java.util.LinkedList;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static nodeconsciousscheduler.Constants.CUMULATIVE_JOB_PER_DAY_OUTPUT;
-import static nodeconsciousscheduler.Constants.CUMULATIVE_JOB_PER_HOUR_OUTPUT;
-import static nodeconsciousscheduler.Constants.CUMULATIVE_JOB_PER_MINUTE_OUTPUT;
+import static nodeconsciousscheduler.Constants.ARRIVAL_JOB_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.ARRIVAL_JOB_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.ARRIVAL_JOB_PER_MINUTE_OUTPUT;
+import static nodeconsciousscheduler.Constants.CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT;
+import static nodeconsciousscheduler.Constants.CUMULATIVE_STARTED_JOB_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.DAY_IN_SECOND;
+import static nodeconsciousscheduler.Constants.FINISHED_JOB_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.FINISHED_JOB_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.FINISHED_JOB_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.FINISH_ORDER_JOB_OUTPUT;
 import static nodeconsciousscheduler.Constants.FOR_VISUALIZATION_OUTPUT;
 import static nodeconsciousscheduler.Constants.HOUR_IN_SECOND;
@@ -41,6 +48,9 @@ import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_OC_MINU
 import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
 import static nodeconsciousscheduler.Constants.RESULT_DIRECTORY;
 import static nodeconsciousscheduler.Constants.SLOWDOWN_OUTPUT;
+import static nodeconsciousscheduler.Constants.START_JOB_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.START_JOB_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.START_JOB_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.UTILIZATION_RATIO_OUTPUT;
 import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_DAY_OUTPUT;
@@ -255,13 +265,13 @@ public class Simulator {
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
         outputSlowdown();
 
-        outputCumulativeJob(CUMULATIVE_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
-        outputCumulativeJob(CUMULATIVE_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
-        outputCumulativeJob(CUMULATIVE_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+        outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_DAY_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
+        outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_HOUR_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
+        outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
         
-        outputWaitingJob(WAITING_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
-        outputWaitingJob(WAITING_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
-        outputWaitingJob(WAITING_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+        outputWaitingAndNewArrivalJob(WAITING_JOB_PER_DAY_OUTPUT, ARRIVAL_JOB_PER_DAY_OUTPUT, START_JOB_PER_DAY_OUTPUT, CUMULATIVE_STARTED_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
+        outputWaitingAndNewArrivalJob(WAITING_JOB_PER_HOUR_OUTPUT, ARRIVAL_JOB_PER_HOUR_OUTPUT, START_JOB_PER_HOUR_OUTPUT, CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
+        outputWaitingAndNewArrivalJob(WAITING_JOB_PER_MINUTE_OUTPUT, ARRIVAL_JOB_PER_MINUTE_OUTPUT, START_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
         
         return;
     }
@@ -313,38 +323,34 @@ public class Simulator {
         }
     }
 
-    private void outputCumulativeJob(String fileName, int MODE) {
-        try {
-            PrintWriter pwCumulative;
-            pwCumulative = new PrintWriter(this.p + "/" + fileName);
-
-            ArrayList<Integer> result = new ArrayList<Integer>();
-            result.addAll(countCumlativeJob(MODE));
-            if (result.size() != 0) {
-                for (int i = 0; i < result.size() - 1; ++i) {
-                    pwCumulative.println(i + 1 + "\t" + result.get(i));
-                }
-                pwCumulative.println(result.size() - 1 + 1 + "\t" + result.get(result.size() - 1));
-            }
-            pwCumulative.close();
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
+    private void outputFinishedAndCumulativeFinishedJob(String fileNameFinished, String fileNameCumulativeFinished, int MODE) {
+        PairIntegers result = new PairIntegers();
+        result = countCumlativeJob(MODE);
+        ArrayList<Integer> resultFinished = result.getNumNewFinishedJobs();
+        printTimeSeriesToFile(fileNameFinished, resultFinished);        
+        ArrayList<Integer> resultCumulative = result.getNumCumulativeFinishedJobs();
+        printTimeSeriesToFile(fileNameCumulativeFinished, resultCumulative);                
     }
     
-    private Collection<? extends Integer> countCumlativeJob(int THRESHOLD) {
-        ArrayList<Integer> result = new ArrayList<Integer>();
+    private PairIntegers countCumlativeJob(int THRESHOLD) {
+        ArrayList<Integer> resultFinished = new ArrayList<Integer>();
+        ArrayList<Integer> resultCumulative = new ArrayList<Integer>();
+        PairIntegers result = new PairIntegers();
+        result.setNumNewFinishedJobs(resultFinished);
+        result.setNumCumulativeFinishedJobs(resultCumulative);
         int i = 0;
-        int threshold = THRESHOLD;
+        int threshold = 0;
         int cnt = 0;
         for (;;) {
+            int newFinished = 0;
             while (completedJobList.get(i).getFinishedTime() <= threshold) {
                 ++cnt;
+                ++newFinished;
                 ++i;
                 if (i == completedJobList.size()) break;
             }
-            result.add(cnt);
+            resultFinished.add(newFinished);
+            resultCumulative.add(cnt);
             threshold +=  THRESHOLD;
             if (i == completedJobList.size()) break;
         }
@@ -472,7 +478,7 @@ public class Simulator {
             
             if (result.size() != 0) {
                 for (int i = 0; i < result.size() - 1; ++i) {
-                    //pwUtilizationRatio.println(i + "\t" + result.get(i));
+                    //pwUtilizationRatio.println(i + "\t" + resultWaiting.get(i));
                     pwUtilizationRatio.print(i);
                     ArrayList<Double> ret = result.get(i);
                     double totalUtilizationRatio = 0.0;
@@ -527,39 +533,48 @@ public class Simulator {
         return result;
     }
 
-    private void outputWaitingJob(String fileName, int MODE) {
-        try {
-            PrintWriter pwWaitingJob;
-            pwWaitingJob = new PrintWriter(this.p + "/" + fileName);
+    private void outputWaitingAndNewArrivalJob(String fileNameWaiting, String fileNameArrival, String fileNameStart, String fileNameCumulativeStart, int MODE) {
+            PairIntegers pairResult = new PairIntegers();
+            pairResult = calcWaitingAndNewArrivalJob(MODE);
 
-            ArrayList<Integer> result = new ArrayList<Integer>();
-            result.addAll(calcWaitingJob(MODE));
+            ArrayList<Integer> resultWaiting = pairResult.getNumWaitingJobs();
+            printTimeSeriesToFile(fileNameWaiting, resultWaiting);
+
+            ArrayList<Integer> resultArrival = pairResult.getNumNewArrivalJobs();
+            printTimeSeriesToFile(fileNameArrival, resultArrival);
+
+            ArrayList<Integer> resultStart = pairResult.getNumNewStartJobs();
+            printTimeSeriesToFile(fileNameStart, resultStart);
+
+            ArrayList<Integer> resultCumulativeStart = pairResult.getNumCumulativeStartJobs();
+            printTimeSeriesToFile(fileNameCumulativeStart, resultCumulativeStart);
             
-            if (result.size() != 0) {
-                for (int i = 0; i < result.size() - 1; ++i) {
-                    pwWaitingJob.println(i + 1 + "\t" + result.get(i));
-                }
-                pwWaitingJob.println(result.size() - 1 + 1 + "\t" + result.get(result.size() - 1));
-            }
-            pwWaitingJob.close();
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
-        }        
     }
 
-    private Collection<? extends Integer> calcWaitingJob(int THRESHOLD) {
-        ArrayList<Integer> result = new ArrayList<Integer>();
+    private PairIntegers calcWaitingAndNewArrivalJob(int THRESHOLD) {
+        ArrayList<Integer> resultWaiting = new ArrayList<Integer>();
+        ArrayList<Integer> resultArrival = new ArrayList<Integer>();
+        ArrayList<Integer> resultStart = new ArrayList<Integer>();
+        ArrayList<Integer> resultCumulativeStart = new ArrayList<Integer>();
+        PairIntegers resultPair = new PairIntegers();
+        resultPair.setNumNewArrivalJobs(resultArrival);
+        resultPair.setNumWaitingJobs(resultWaiting);
+        resultPair.setNumNewStartJobs(resultStart);
+        resultPair.setNumCumulativeStartJobs(resultCumulativeStart);
         ArrayList<Job> completedJobList = (ArrayList<Job>) this.completedJobList.clone();
         int i = 0;
         int previousI = 0;
-        int threshold = THRESHOLD;
+        int threshold = 0;
         int numWaitingJob = 0;
+        int numNewArrivalJobPerTHRESHOLD = 0;
+        int numCumulativeStartedJobs = 0;
         
 
         Collections.sort(completedJobList);
         
         for (;;) {
             while (i != completedJobList.size() && completedJobList.get(i).getSubmitTime()<= threshold) {
+                ++numNewArrivalJobPerTHRESHOLD;
                 ++numWaitingJob;
                 ++i;
             }
@@ -572,15 +587,32 @@ public class Simulator {
             }
 
             numWaitingJob -= numStartedJob;
+            numCumulativeStartedJobs += numStartedJob;
             
-            result.add(numWaitingJob);
+            resultWaiting.add(numWaitingJob);
+            resultArrival.add(numNewArrivalJobPerTHRESHOLD);
+            resultStart.add(numStartedJob);
+            resultCumulativeStart.add(numCumulativeStartedJobs);
             threshold +=  THRESHOLD;
+            numNewArrivalJobPerTHRESHOLD = 0;
             if (previousI == completedJobList.size()) break;
         }
-        return result;
+        return resultPair;
     }
-    
-    
 
-
+    private void printTimeSeriesToFile(String fileName, ArrayList<Integer> resultTimeSeries) {
+        try {
+            PrintWriter pw;
+            pw = new PrintWriter(this.p + "/" + fileName);
+            
+            if (resultTimeSeries.size() != 0) {
+                for (int i = 0; i < resultTimeSeries.size(); ++i) {
+                    pw.println(i + "\t" + resultTimeSeries.get(i));
+                }
+            }
+            pw.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 }
