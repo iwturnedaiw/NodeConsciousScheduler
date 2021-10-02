@@ -19,7 +19,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -264,6 +266,7 @@ public class Simulator {
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT, HOUR_IN_SECOND, true);
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
         outputSlowdown();
+        outputResultPerUser();
 
         outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_DAY_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
         outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_HOUR_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
@@ -614,5 +617,87 @@ public class Simulator {
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private void outputResultPerUser() {
+        
+        /* separete the list by each user(group) */
+        Map<Integer, Boolean> foundUserId = new HashMap<Integer, Boolean>();
+        Map<Integer, Boolean> foundGroupId = new HashMap<Integer, Boolean>();
+        Map<Integer, ArrayList<Job>> jobByUser = new HashMap<Integer, ArrayList<Job>>();
+        Map<Integer, ArrayList<Job>> jobByGroup = new HashMap<Integer, ArrayList<Job>>();
+        for (Job job: completedJobList) {
+            int userId = job.getUserId();
+            int groupId = job.getGroupId();
+            
+            if (!foundUserId.get(userId)) {
+                foundUserId.put(userId, Boolean.TRUE);                
+            }
+            jobByUser.get(userId).add(job);
+            
+            if (!foundGroupId.get(groupId)) {
+                foundGroupId.put(groupId, Boolean.TRUE);                
+            }
+            jobByGroup.get(groupId).add(job);            
+        }
+
+        assert foundUserId.size() == jobByUser.size();
+        assert foundGroupId.size() == jobByGroup.size();
+        
+        ArrayList<UserResult> resultEachUser = new ArrayList<UserResult>();
+        ArrayList<GroupResult> resultEachGroup = new ArrayList<GroupResult>();
+
+        for (Integer userId: jobByUser.keySet()) {
+            ArrayList<Job> jobList = jobByUser.get(userId);
+            // each collumn value prepared here
+            int numJob = jobList.size();
+            int groupId = jobList.get(0).getGroupId();
+            int accumulatedRunningTime = 0;
+            int accumulatedWaitTime = 0;
+            int accumulatedNumNode = 0;
+            int accumulatedNumCore = 0;
+            int accumulatedCpuTime = 0;
+            int acculatedMaxMemory = 0;
+            int cntSpecifiedMaxMemory = 0;
+            
+            ArrayList<Integer> slowdownHistgramEachUser = new ArrayList<Integer>();
+                        
+            for (Job job: jobList) {
+                assert (int)userId == job.getUserId();
+                assert (int)groupId == job.getGroupId();
+
+                int numNode = job.getNumNodes();
+                int numCorePerNode = job.getRequiredCoresPerNode();
+                
+                accumulatedRunningTime += (job.getRunningTimeDed() + job.getRunningTimeOC());
+                accumulatedWaitTime += job.getWaitTime();
+                accumulatedNumNode += numNode;
+                accumulatedNumCore += numCorePerNode;
+                accumulatedCpuTime += numNode * numCorePerNode;
+                
+                int maxMemory = job.getMaxMemory();
+                if (maxMemory > 0) {
+                    acculatedMaxMemory += maxMemory;
+                    ++cntSpecifiedMaxMemory;
+                }
+                
+                double slowdown = job.getSlowdown();
+                boolean addedFlag = false;
+                for (int i = 0; i < threshold.size(); ++i) {
+                    if (slowdown < threshold.get(i)) {
+                        slowdownHistgramEachUser.put((Integer) i, slowdownHistgramEachUser.get(i) + 1);
+                        addedFlag = true;
+                        break;
+                    }                    
+                }
+                if (!addedFlag) {
+                    int lastIndex = slowdownHistgramEachUser.size()-1;
+                    slowdownHistgramEachUser.put((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
+                }
+            }
+            
+            // printByUser();
+        }
+        
     }
 }
