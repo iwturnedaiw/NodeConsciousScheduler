@@ -38,6 +38,9 @@ public class Job implements Comparable<Job> {
     private double slowdown;
     private ArrayList<UsingNode> usingNodesList;
     private Set<Integer> coexistingJobs;
+    private int userId;
+    private int groupId;
+    private int maxMemory;
     
 
     Job() {}
@@ -58,7 +61,7 @@ public class Job implements Comparable<Job> {
         this.OCStateLevel = 1;
     }
 
-    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes) {
+    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes, int userId, int groupId, int maxMemory) {
         this.jobId = jobId;
         this.submitTime = submitTime;
         this.actualExecuteTime = actualExecuteTime;
@@ -67,6 +70,9 @@ public class Job implements Comparable<Job> {
         this.requiredNodes = requiredNodes;
         this.requiredCoresPerNode = requiredCores/requiredNodes;
         if (requiredCores%requiredNodes != 0) ++this.requiredCoresPerNode;
+        this.userId = userId;
+        this.groupId = groupId;
+        this.maxMemory = maxMemory;
         
         this.startTime = -1;
         this.finishedTime = 2 << 30;
@@ -273,5 +279,30 @@ public class Job implements Comparable<Job> {
         
         return 0;
     }
+
+    public int getUserId() {
+        return userId;
+    }
+
+    public int getGroupId() {
+        return groupId;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+    public void setGroupId(int groupId) {
+        this.groupId = groupId;
+    }   
+
+    public int getMaxMemory() {
+        return maxMemory;
+    }
+
+    public void setMaxMemory(int maxMemory) {
+        this.maxMemory = maxMemory;
+    }
+    
     
 }

@@ -192,6 +192,9 @@ public class NodeConsciousScheduler {
             values = line.split("\\s+");
 
             int jobId = Integer.parseInt(values[0]);
+            int userId = Integer.parseInt(values[11]);
+            int groupId = Integer.parseInt(values[12]);
+            int maxMemory = Integer.parseInt(values[9]);
             int requiredCores = 0;
             try {
                 requiredCores = Integer.parseInt(values[4]);
@@ -249,7 +252,7 @@ public class NodeConsciousScheduler {
             // TODO
             // Decide the accurate num of node for non-specified data
             
-            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes);
+            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, maxMemory);
             jobList.add(job);
             
         }
