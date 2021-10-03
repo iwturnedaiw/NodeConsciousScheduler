@@ -49,6 +49,8 @@ import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_OC_HOUR
 import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
 import static nodeconsciousscheduler.Constants.RESULT_DIRECTORY;
+import static nodeconsciousscheduler.Constants.RESULT_EACH_GROUP;
+import static nodeconsciousscheduler.Constants.RESULT_EACH_USER;
 import static nodeconsciousscheduler.Constants.SLOWDOWN_OUTPUT;
 import static nodeconsciousscheduler.Constants.START_JOB_PER_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.START_JOB_PER_HOUR_OUTPUT;
@@ -268,7 +270,7 @@ public class Simulator {
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT, HOUR_IN_SECOND, true);
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
         outputSlowdown();
-        outputResultPerUser();
+        outputResultEachUserAndGroup();
 
         outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_DAY_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
         outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_HOUR_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
@@ -613,7 +615,7 @@ public class Simulator {
         }
     }
 
-    private void outputResultPerUser() {
+    private void outputResultEachUserAndGroup() {
         
         /* separete the list by each user(group) */
         Map<Integer, Boolean> foundUserId = new HashMap<Integer, Boolean>();
@@ -639,12 +641,66 @@ public class Simulator {
 
         assert foundUserId.size() == jobByUser.size();
         assert foundGroupId.size() == jobByGroup.size();
-        
-        ArrayList<UserResult> resultEachUser = new ArrayList<UserResult>();
-        ArrayList<GroupResult> resultEachGroup = new ArrayList<GroupResult>();
 
-        for (Integer userId: jobByUser.keySet()) {
-            ArrayList<Job> jobList = jobByUser.get(userId);
+        ArrayList<UserResult> resultEachUser = new ArrayList<UserResult>();            
+        ArrayList<GroupResult> resultEachGroup = new ArrayList<GroupResult>();
+        
+        calculateUserResult(jobByUser, resultEachUser);  
+        printByUser(resultEachUser);
+        
+        calculateGroupResult(jobByGroup, resultEachGroup);
+        printByGroup(resultEachGroup);
+    }
+
+    // TODO: Later decide conditions and implement
+    private boolean checkLargeJob(int runningTime, int numNode, int numCorePerNode, int cpuTime) {
+        return false;
+    }
+
+    private void printByUser(ArrayList<UserResult> resultEachUser) {
+        String fileName = RESULT_EACH_USER;
+        try {
+            PrintWriter pw;
+            pw = new PrintWriter(this.p + "/" + fileName);
+            
+            pw.println("userId\tnumJob\trunningTime\trunningTime(ave.)\twaitTime\twaitTime(ave.)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
+                     + "CpuTime\tCpuTime(ave.)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio");
+            
+            for (int i = 0; i < resultEachUser.size() ; ++i) {
+                UserResult result = resultEachUser.get(i);
+                
+                int userId = result.getUserId();
+                int numJob = result.getNumJobs();
+                int runningTime = result.getAccumulatedTime();
+                int waitTime = result.getAccumulatedWaitTime();
+                int numNode = result.getAccumulatedNumNode();
+                int numCore = result.getAccumulatedNumCore();
+                int cpuTime = result.getAccumulatedCpuTime();
+                int memoryFootprint = result.getAccumulatedMemoryFootprint();
+                int cntSpecifiedMaxMemory = result.getNumJobsSetMemory();
+                double averagedNumNode = result.getAccumulatedNumNode();
+                double averagedNumCore = result.getAccumulatedNumCore();
+                double averagedRunningTime = result.getAveragedTime();
+                double averagedCpuTime = result.getAveragedCpuTime();
+                double averagedMemoryFootprint = result.getAveragedMemoryFootprint();
+                double averagedWaitTime = result.getAveragedWaitTime();
+                double largeJobRatio = result.getLargeJobRatio();
+
+
+                pw.println(userId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" +
+                           numNode + "\t" + averagedNumNode + "\t" + numCore + "\t" + averagedNumCore + "\t" + cpuTime + "\t" + averagedCpuTime + "\t" + 
+                           memoryFootprint + "\t" + averagedMemoryFootprint + "\t" + largeJobRatio);
+            }
+            
+            pw.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private void calculateUserResult(Map<Integer, ArrayList<Job>> jobIdEachUser, ArrayList<UserResult> resultEach) {
+        for (Integer userId: jobIdEachUser.keySet()) {
+            ArrayList<Job> jobList = jobIdEachUser.get(userId);
             // each collumn value prepared here
             int numJob = jobList.size();
             int groupId = jobList.get(0).getGroupId();
@@ -653,8 +709,9 @@ public class Simulator {
             int accumulatedNumNode = 0;
             int accumulatedNumCore = 0;
             int accumulatedCpuTime = 0;
-            int acculatedMaxMemory = 0;
+            int accumulatedMaxMemory = 0;
             int cntSpecifiedMaxMemory = 0;
+            int cntLargeJob = 0;
             
             ArrayList<Integer> slowdownHistgramEachUser = new ArrayList<Integer>();
             for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
@@ -665,18 +722,24 @@ public class Simulator {
                 assert (int)userId == job.getUserId();
                 assert (int)groupId == job.getGroupId();
 
-                int numNode = job.getNumNodes();
+                int runningTime = job.getRunningTimeDed() + job.getRunningTimeOC();
+                int numNode = job.getRequiredNodes();
                 int numCorePerNode = job.getRequiredCoresPerNode();
+                int cpuTime = numNode * numCorePerNode * runningTime;
                 
-                accumulatedRunningTime += (job.getRunningTimeDed() + job.getRunningTimeOC());
+                accumulatedRunningTime += runningTime;
                 accumulatedWaitTime += job.getWaitTime();
                 accumulatedNumNode += numNode;
                 accumulatedNumCore += numCorePerNode;
-                accumulatedCpuTime += numNode * numCorePerNode;
+                accumulatedCpuTime += cpuTime;
+                
+                if (checkLargeJob(runningTime, numNode, numCorePerNode, cpuTime)) {
+                    ++cntLargeJob;
+                }
                 
                 int maxMemory = job.getMaxMemory();
                 if (maxMemory > 0) {
-                    acculatedMaxMemory += maxMemory;
+                    accumulatedMaxMemory += maxMemory;
                     ++cntSpecifiedMaxMemory;
                 }
                 
@@ -694,11 +757,135 @@ public class Simulator {
                     slowdownHistgramEachUser.add((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
                 }
             }
+            double averagedNumNode = (double)accumulatedNumNode/numJob;
+            double averagedNumCore = (double)accumulatedNumCore/numJob;
+            double averagedRunningTime = (double)accumulatedRunningTime/numJob;
+            double averagedCpuTime = (double)accumulatedCpuTime/numJob;
+            double averagedMemoryFootprint = (double)accumulatedMaxMemory/cntSpecifiedMaxMemory;
+            double averagedWaitTime = (double)accumulatedWaitTime/numJob;
+            double largeJobRatio = (double)cntLargeJob/numJob;
             
-            assert true;
-            System.out.println("point");
-            // printByUser();
+            
+            resultEach.add(new UserResult(userId, numJob, accumulatedNumNode, averagedNumNode, accumulatedNumCore, averagedNumCore, 
+                                              accumulatedRunningTime, averagedRunningTime, accumulatedCpuTime, averagedCpuTime, 
+                                              accumulatedMaxMemory, cntSpecifiedMaxMemory, averagedMemoryFootprint, 
+                                              accumulatedWaitTime, averagedWaitTime, largeJobRatio, slowdownHistgramEachUser));           
+        }        
+    }
+
+    private void calculateGroupResult(Map<Integer, ArrayList<Job>> jobIdEachGroup, ArrayList<GroupResult> resultEach) {
+        for (Integer groupId: jobIdEachGroup.keySet()) {
+            ArrayList<Job> jobList = jobIdEachGroup.get(groupId);
+            // each collumn value prepared here
+            int numJob = jobList.size();
+            int accumulatedRunningTime = 0;
+            int accumulatedWaitTime = 0;
+            int accumulatedNumNode = 0;
+            int accumulatedNumCore = 0;
+            int accumulatedCpuTime = 0;
+            int accumulatedMaxMemory = 0;
+            int cntSpecifiedMaxMemory = 0;
+            int cntLargeJob = 0;
+            
+            ArrayList<Integer> slowdownHistgramEachUser = new ArrayList<Integer>();
+            for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
+                slowdownHistgramEachUser.add(0);
+            }
+                        
+            for (Job job: jobList) {
+                assert (int)groupId == job.getGroupId();
+
+                int runningTime = job.getRunningTimeDed() + job.getRunningTimeOC();
+                int numNode = job.getRequiredNodes();
+                int numCorePerNode = job.getRequiredCoresPerNode();
+                int cpuTime = numNode * numCorePerNode * runningTime;
+                
+                accumulatedRunningTime += runningTime;
+                accumulatedWaitTime += job.getWaitTime();
+                accumulatedNumNode += numNode;
+                accumulatedNumCore += numCorePerNode;
+                accumulatedCpuTime += cpuTime;
+                
+                if (checkLargeJob(runningTime, numNode, numCorePerNode, cpuTime)) {
+                    ++cntLargeJob;
+                }
+                
+                int maxMemory = job.getMaxMemory();
+                if (maxMemory > 0) {
+                    accumulatedMaxMemory += maxMemory;
+                    ++cntSpecifiedMaxMemory;
+                }
+                
+                double slowdown = job.getSlowdown();
+                boolean addedFlag = false;
+                for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
+                    if (slowdown < thresholdForSlowdown.get(i)) {
+                        slowdownHistgramEachUser.set((Integer) i, slowdownHistgramEachUser.get(i) + 1);
+                        addedFlag = true;
+                        break;
+                    }                    
+                }
+                if (!addedFlag) {
+                    int lastIndex = slowdownHistgramEachUser.size()-1;
+                    slowdownHistgramEachUser.add((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
+                }
+            }
+            double averagedNumNode = (double)accumulatedNumNode/numJob;
+            double averagedNumCore = (double)accumulatedNumCore/numJob;
+            double averagedRunningTime = (double)accumulatedRunningTime/numJob;
+            double averagedCpuTime = (double)accumulatedCpuTime/numJob;
+            double averagedMemoryFootprint = (double)accumulatedMaxMemory/cntSpecifiedMaxMemory;
+            double averagedWaitTime = (double)accumulatedWaitTime/numJob;
+            double largeJobRatio = (double)cntLargeJob/numJob;
+            
+            
+            resultEach.add(new GroupResult(groupId, numJob, accumulatedNumNode, averagedNumNode, accumulatedNumCore, averagedNumCore, 
+                                              accumulatedRunningTime, averagedRunningTime, accumulatedCpuTime, averagedCpuTime, 
+                                              accumulatedMaxMemory, cntSpecifiedMaxMemory, averagedMemoryFootprint, 
+                                              accumulatedWaitTime, averagedWaitTime, largeJobRatio, slowdownHistgramEachUser));           
         }
         
-    }
+    }    
+
+    private void printByGroup(ArrayList<GroupResult> resultEachGroup) {
+        String fileName = RESULT_EACH_GROUP;
+        try {
+            PrintWriter pw;
+            pw = new PrintWriter(this.p + "/" + fileName);
+            
+            pw.println("groupId\tnumJob\trunningTime\trunningTime(ave.)\twaitTime\twaitTime(ave.)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
+                     + "CpuTime\tCpuTime(ave.)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio");
+            
+            for (int i = 0; i < resultEachGroup.size() ; ++i) {
+                GroupResult result = resultEachGroup.get(i);
+                
+                int groupId = result.getGroupId();
+                int numJob = result.getNumJobs();
+                int runningTime = result.getAccumulatedTime();
+                int waitTime = result.getAccumulatedWaitTime();
+                int numNode = result.getAccumulatedNumNode();
+                int numCore = result.getAccumulatedNumCore();
+                int cpuTime = result.getAccumulatedCpuTime();
+                int memoryFootprint = result.getAccumulatedMemoryFootprint();
+                int cntSpecifiedMaxMemory = result.getNumJobsSetMemory();
+                double averagedNumNode = result.getAccumulatedNumNode();
+                double averagedNumCore = result.getAccumulatedNumCore();
+                double averagedRunningTime = result.getAveragedTime();
+                double averagedCpuTime = result.getAveragedCpuTime();
+                double averagedMemoryFootprint = result.getAveragedMemoryFootprint();
+                double averagedWaitTime = result.getAveragedWaitTime();
+                double largeJobRatio = result.getLargeJobRatio();
+
+
+                pw.println(groupId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" +
+                           numNode + "\t" + averagedNumNode + "\t" + numCore + "\t" + averagedNumCore + "\t" + cpuTime + "\t" + averagedCpuTime + "\t" + 
+                           memoryFootprint + "\t" + averagedMemoryFootprint + "\t" + largeJobRatio);
+            }
+            
+            pw.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }    
+    
 }
