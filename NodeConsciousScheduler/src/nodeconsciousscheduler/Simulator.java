@@ -74,8 +74,9 @@ public class Simulator {
     private PrintWriter pw;
     private PrintWriter pwForVis;
     private Path p;
+    ArrayList<Double> thresholdForSlowdown;
 
-    Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo) {
+    Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
         this.allNodesInfo = allNodesInfo;
         this.scheAlgo = scheAlgo;
@@ -83,6 +84,7 @@ public class Simulator {
         makeEventQueue();
         this.executingJobList = new ArrayList<Job>();
         this.completedJobList = new ArrayList<Job>();
+        this.thresholdForSlowdown = simConf.getThresholdForSlowdown();
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -304,22 +306,14 @@ public class Simulator {
             String fileName = SLOWDOWN_OUTPUT;        
             PrintWriter pwSlowdown;
             pwSlowdown = new PrintWriter(this.p + "/" + fileName);
-            ArrayList<Double> threshold = new ArrayList<Double>();
-            threshold.add(1.01);
-            threshold.add(2.00);
-            threshold.add(5.00);
-            threshold.add(20.00);
-            threshold.add(50.00);
-            threshold.add(100.0);
-            threshold.add(1000.0);
 
             ArrayList<Integer> histgram = new ArrayList<Integer>();
-            histgram.addAll(countSlowdown(threshold));
+            histgram.addAll(countSlowdown(thresholdForSlowdown));
 
             for (int i = 0; i < histgram.size() - 1; ++i) {
-                pwSlowdown.println("<" + threshold.get(i) + "\t" + histgram.get(i));
+                pwSlowdown.println("<" + thresholdForSlowdown.get(i) + "\t" + histgram.get(i));
             }
-            pwSlowdown.println(">=" + threshold.get(histgram.size() - 1) + "\t" + histgram.get(histgram.size() - 1));
+            pwSlowdown.println(">=" + thresholdForSlowdown.get(histgram.size() - 1) + "\t" + histgram.get(histgram.size() - 1));
             pwSlowdown.close();
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
@@ -630,13 +624,15 @@ public class Simulator {
             int userId = job.getUserId();
             int groupId = job.getGroupId();
             
-            if (!foundUserId.get(userId)) {
-                foundUserId.put(userId, Boolean.TRUE);                
+            if (!foundUserId.containsKey(userId)) {
+                foundUserId.put(userId, Boolean.TRUE);
+                jobByUser.put(userId, new ArrayList<Job>());
             }
             jobByUser.get(userId).add(job);
             
-            if (!foundGroupId.get(groupId)) {
-                foundGroupId.put(groupId, Boolean.TRUE);                
+            if (!foundGroupId.containsKey(groupId)) {
+                foundGroupId.put(groupId, Boolean.TRUE); 
+                jobByGroup.put(groupId, new ArrayList<Job>());
             }
             jobByGroup.get(groupId).add(job);            
         }
@@ -661,6 +657,9 @@ public class Simulator {
             int cntSpecifiedMaxMemory = 0;
             
             ArrayList<Integer> slowdownHistgramEachUser = new ArrayList<Integer>();
+            for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
+                slowdownHistgramEachUser.add(0);
+            }
                         
             for (Job job: jobList) {
                 assert (int)userId == job.getUserId();
@@ -683,19 +682,21 @@ public class Simulator {
                 
                 double slowdown = job.getSlowdown();
                 boolean addedFlag = false;
-                for (int i = 0; i < threshold.size(); ++i) {
-                    if (slowdown < threshold.get(i)) {
-                        slowdownHistgramEachUser.put((Integer) i, slowdownHistgramEachUser.get(i) + 1);
+                for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
+                    if (slowdown < thresholdForSlowdown.get(i)) {
+                        slowdownHistgramEachUser.set((Integer) i, slowdownHistgramEachUser.get(i) + 1);
                         addedFlag = true;
                         break;
                     }                    
                 }
                 if (!addedFlag) {
                     int lastIndex = slowdownHistgramEachUser.size()-1;
-                    slowdownHistgramEachUser.put((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
+                    slowdownHistgramEachUser.add((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
                 }
             }
             
+            assert true;
+            System.out.println("point");
             // printByUser();
         }
         

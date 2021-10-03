@@ -8,6 +8,7 @@ package nodeconsciousscheduler;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -19,8 +20,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.PriorityQueue;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.Constants.CONFIGURATION_FILE;
 import static nodeconsciousscheduler.Constants.DATASET_DIRECTORY;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import nodeconsciousscheduler.ScheduleAlgorithm;
@@ -43,7 +46,7 @@ public class NodeConsciousScheduler {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (args.length == 3){
             fname = args[0];
             sche = ScheduleAlgorithm.valueOf(args[1]);
@@ -73,6 +76,7 @@ public class NodeConsciousScheduler {
 */
         ArrayList<NodeInfo> allNodesInfo = new ArrayList<NodeInfo>();
         allNodesInfo = readResourceSettings(fname);
+        SimulatorConfiguration simConf = readSimulatorConfiguration(CONFIGURATION_FILE);
 
         // Workload Trace Setting
         /*        
@@ -95,7 +99,7 @@ public class NodeConsciousScheduler {
         
         //ScheduleAlgorithm sche = EasyBackfilling;
         //sim = new Simulator(jobList, allNodesInfo, FCFS);
-        sim = new Simulator(jobList, allNodesInfo, sche);
+        sim = new Simulator(jobList, allNodesInfo, sche, simConf);
         sim.run();
         sim.makeResults();
 /*        
@@ -116,11 +120,6 @@ public class NodeConsciousScheduler {
     }
 
     private static ArrayList<NodeInfo> readResourceSettings(String data_set) {
-        String fname = "configuration.properties";
-
-        String dir = "./" + fname;
-        Path p = Paths.get(dir);       
- 
         LinkedList lines = new LinkedList();
         Input r = new Input();
 
@@ -258,5 +257,24 @@ public class NodeConsciousScheduler {
         }
         return jobList;
         
+    }
+
+    private static SimulatorConfiguration readSimulatorConfiguration(String fname) throws IOException {
+        String dir = "./" + fname;
+        Path p = Paths.get(dir); 
+        Properties configurations = new Properties();
+        FileInputStream in = null;
+        try {
+            in = new FileInputStream(dir);
+            configurations.load(in);
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        String slowdownThreshold = configurations.getProperty("SLOWDOWN_THRESHOLD");
+        String[] slowdownThresholds = slowdownThreshold.replace("\"","").split(",");
+        
+        return new SimulatorConfiguration(slowdownThresholds);
+
     }
 }

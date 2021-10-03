@@ -18,6 +18,7 @@ public class Constants {
     static int UNSTARTED = -1;
     static int BLANK_JOBID = -1;
     static int NOTSPECIFIED = -1;
+    static String CONFIGURATION_FILE = "configuration.properties";
     static String RESULT_DIRECTORY = "result";
     static String DATASET_DIRECTORY = "data-set";
     static String FINISH_ORDER_JOB_OUTPUT = "test.out";
