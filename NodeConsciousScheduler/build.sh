@@ -15,7 +15,8 @@ build() {
     exit
   fi
 
-  javac -sourcepath ${SRC}/${PKG}/*.java -d ${TGT}
+  rm ${TGT}/${PKG}/*.class
+  javac -sourcepath ${SRC}/${PKG} ${SRC}/${PKG}/*.java -d ${TGT}
   RET=$?
 
   echo -n "Building is " 
