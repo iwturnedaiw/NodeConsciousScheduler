@@ -663,8 +663,15 @@ public class Simulator {
             PrintWriter pw;
             pw = new PrintWriter(this.p + "/" + fileName);
             
-            pw.println("userId\tnumJob\trunningTime\trunningTime(ave.)\twaitTime\twaitTime(ave.)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
-                     + "CpuTime\tCpuTime(ave.)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio");
+            pw.print("userId\tnumJob\trunningTime\trunningTime(ave.)\twaitTime\twaitTime(ave.)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
+                     + "CpuTime\tCpuTime(ave.)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio\t");
+
+            int sdSize = thresholdForSlowdown.size();
+            for (int i = 0; i < sdSize -1 ; ++i) {
+                pw.print("<" + thresholdForSlowdown.get(i) + "\t");                
+            }
+            pw.println(">=" + thresholdForSlowdown.get(sdSize-1));
+            
             
             for (int i = 0; i < resultEachUser.size() ; ++i) {
                 UserResult result = resultEachUser.get(i);
@@ -685,11 +692,17 @@ public class Simulator {
                 double averagedMemoryFootprint = result.getAveragedMemoryFootprint();
                 double averagedWaitTime = result.getAveragedWaitTime();
                 double largeJobRatio = result.getLargeJobRatio();
-
-
-                pw.println(userId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" +
+                
+                pw.print(userId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" +
                            numNode + "\t" + averagedNumNode + "\t" + numCore + "\t" + averagedNumCore + "\t" + cpuTime + "\t" + averagedCpuTime + "\t" + 
-                           memoryFootprint + "\t" + averagedMemoryFootprint + "\t" + largeJobRatio);
+                           memoryFootprint + "\t" + averagedMemoryFootprint + "\t" + largeJobRatio + "\t");
+                
+                ArrayList<Integer> slowdowns = result.getSlowdowns();
+                int size = slowdowns.size();                
+                for (int j = 0; j < size - 1; ++j) {
+                    pw.print(slowdowns.get(j) + "\t");
+                }
+                pw.println(slowdowns.get(size - 1));                
             }
             
             pw.close();
@@ -754,7 +767,7 @@ public class Simulator {
                 }
                 if (!addedFlag) {
                     int lastIndex = slowdownHistgramEachUser.size()-1;
-                    slowdownHistgramEachUser.add((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
+                    slowdownHistgramEachUser.set((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
                 }
             }
             double averagedNumNode = (double)accumulatedNumNode/numJob;
@@ -827,7 +840,7 @@ public class Simulator {
                 }
                 if (!addedFlag) {
                     int lastIndex = slowdownHistgramEachUser.size()-1;
-                    slowdownHistgramEachUser.add((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
+                    slowdownHistgramEachUser.set((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
                 }
             }
             double averagedNumNode = (double)accumulatedNumNode/numJob;
@@ -853,8 +866,16 @@ public class Simulator {
             PrintWriter pw;
             pw = new PrintWriter(this.p + "/" + fileName);
             
-            pw.println("groupId\tnumJob\trunningTime\trunningTime(ave.)\twaitTime\twaitTime(ave.)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
-                     + "CpuTime\tCpuTime(ave.)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio");
+            pw.print("groupId\tnumJob\trunningTime\trunningTime(ave.)\twaitTime\twaitTime(ave.)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
+                     + "CpuTime\tCpuTime(ave.)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio\t");
+
+            int sdSize = thresholdForSlowdown.size();
+            for (int i = 0; i < sdSize -1 ; ++i) {
+                pw.print("<" + thresholdForSlowdown.get(i) + "\t");                
+            }
+            pw.println(">=" + thresholdForSlowdown.get(sdSize-1));
+            
+            
             
             for (int i = 0; i < resultEachGroup.size() ; ++i) {
                 GroupResult result = resultEachGroup.get(i);
@@ -877,9 +898,16 @@ public class Simulator {
                 double largeJobRatio = result.getLargeJobRatio();
 
 
-                pw.println(groupId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" +
+                pw.print(groupId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" +
                            numNode + "\t" + averagedNumNode + "\t" + numCore + "\t" + averagedNumCore + "\t" + cpuTime + "\t" + averagedCpuTime + "\t" + 
-                           memoryFootprint + "\t" + averagedMemoryFootprint + "\t" + largeJobRatio);
+                           memoryFootprint + "\t" + averagedMemoryFootprint + "\t" + largeJobRatio + "\t");
+
+                ArrayList<Integer> slowdowns = result.getSlowdowns();
+                int size = slowdowns.size();                
+                for (int j = 0; j < size - 1; ++j) {
+                    pw.print(slowdowns.get(j) + "\t");
+                }
+                pw.println(slowdowns.get(size - 1));                
             }
             
             pw.close();
