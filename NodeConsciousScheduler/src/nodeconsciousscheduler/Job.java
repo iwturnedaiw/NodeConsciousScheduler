@@ -36,6 +36,7 @@ public class Job implements Comparable<Job> {
     private int waitTime;
     private int numNodes;
     private double slowdown;
+    private double slowdownByOriginalRunningTime;
     private ArrayList<UsingNode> usingNodesList;
     private Set<Integer> coexistingJobs;
     private int userId;
@@ -303,6 +304,15 @@ public class Job implements Comparable<Job> {
     public void setMaxMemory(int maxMemory) {
         this.maxMemory = maxMemory;
     }
+
+    public double getSlowdownByOriginalRunningTime() {
+        return slowdownByOriginalRunningTime;
+    }
+
+    public void setSlowdownByOriginalRunningTime(double slowdownByOriginalRunningTime) {
+        this.slowdownByOriginalRunningTime = slowdownByOriginalRunningTime;
+    }
+    
     
     
 }

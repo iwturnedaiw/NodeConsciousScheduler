@@ -25,6 +25,7 @@ public class Constants {
     static String FOR_VISUALIZATION_OUTPUT = "for_visualization.out";
     static String UTILIZATION_RATIO_OUTPUT = "utilization.out";
     static String SLOWDOWN_OUTPUT = "slowdown.out";
+    static String SLOWDOWN_OC_OUTPUT = "slowdown_oc.out";
     static String RESULT_EACH_USER = "each_user_result.out";
     static String RESULT_EACH_GROUP = "each_group_result.out";    
     
