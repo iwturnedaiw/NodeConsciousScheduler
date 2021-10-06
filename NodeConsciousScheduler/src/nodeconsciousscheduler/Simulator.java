@@ -800,7 +800,7 @@ public class Simulator {
                     slowdownHistgramEachUser.set((Integer) lastIndex, slowdownHistgramEachUser.get(lastIndex) + 1);
                 }
 
-                double slowdownOC = job.getSlowdown();
+                double slowdownOC = job.getSlowdownByOriginalRunningTime();
                 boolean addedFlagOC = false;
                 for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
                     if (slowdownOC < thresholdForSlowdown.get(i)) {
