@@ -292,7 +292,7 @@ public class Simulator {
 
     private Collection<? extends Integer> countSlowdown(ArrayList<Double> threshold, boolean OCFlag) {
         ArrayList<Integer> result = new ArrayList<Integer>();
-        for (int i = 0; i < threshold.size(); ++i) result.add((Integer) 0);
+        for (int i = 0; i <= threshold.size(); ++i) result.add((Integer) 0);
         
         for (int i = 0; i < completedJobList.size(); ++i) {
             double slowdown;
@@ -309,7 +309,7 @@ public class Simulator {
                 }
             }
             if (slowdown >= threshold.get(threshold.size()-1)) {
-                result.set(threshold.size()-1, result.get(threshold.size()-1) + 1);
+                result.set(threshold.size(), result.get(threshold.size()) + 1);
             }
         }
         return result;
@@ -329,11 +329,16 @@ public class Simulator {
 
             ArrayList<Integer> histgram = new ArrayList<Integer>();
             histgram.addAll(countSlowdown(thresholdForSlowdown, OCFlag));
+            
+            for (int i = 0; i < histgram.size() -1; ++i) {
+                histgram.set(i+1, histgram.get(i) + histgram.get(i+1));
+            }
+            int jobnum = histgram.get(histgram.size()-1);
 
             for (int i = 0; i < histgram.size() - 1; ++i) {
-                pwSlowdown.println("<" + thresholdForSlowdown.get(i) + "\t" + histgram.get(i));
+                pwSlowdown.println("<" + thresholdForSlowdown.get(i) + "\t" + (double)histgram.get(i)/jobnum);
             }
-            pwSlowdown.println(">=" + thresholdForSlowdown.get(histgram.size() - 1) + "\t" + histgram.get(histgram.size() - 1));
+            pwSlowdown.println(">=" + thresholdForSlowdown.get(thresholdForSlowdown.size() - 1) + "\t" + (double)histgram.get(histgram.size() - 1)/jobnum);
             pwSlowdown.close();
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
@@ -685,12 +690,12 @@ public class Simulator {
                      + "CpuTime\tCpuTime(ave.)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio\t");
 
             int sdSize = thresholdForSlowdown.size();
-            for (int i = 0; i < sdSize -1 ; ++i) {
+            for (int i = 0; i < sdSize ; ++i) {
                 pw.print("<" + thresholdForSlowdown.get(i) + "\t");                
             }
             pw.print(">=" + thresholdForSlowdown.get(sdSize-1) + "\t");
             
-            for (int i = 0; i < sdSize -1 ; ++i) {
+            for (int i = 0; i < sdSize ; ++i) {
                 pw.print("<" + thresholdForSlowdown.get(i) + "(OC)\t");                
             }
             pw.println(">=" + thresholdForSlowdown.get(sdSize-1) + "(OC)");
@@ -720,18 +725,26 @@ public class Simulator {
                            memoryFootprint + "\t" + averagedMemoryFootprint + "\t" + largeJobRatio + "\t");
                 
                 ArrayList<Integer> slowdowns = result.getSlowdowns();
-                int size = slowdowns.size();                
+                int size = slowdowns.size();
                 for (int j = 0; j < size - 1; ++j) {
-                    pw.print(slowdowns.get(j) + "\t");
+                    slowdowns.set(j+1, slowdowns.get(j) + slowdowns.get(j+1));
                 }
-                pw.print(slowdowns.get(size - 1) + "\t");                
+                for (int j = 0; j < size - 1; ++j) {
+                    pw.print((double)slowdowns.get(j)/numJob + "\t");
+                }
+                pw.print((double)slowdowns.get(size - 1)/numJob + "\t");                
 
                 ArrayList<Integer> slowdownsOC = result.getSlowdownsOC();
                 int sizeOC = slowdownsOC.size();                
                 for (int j = 0; j < sizeOC - 1; ++j) {
-                    pw.print(slowdownsOC.get(j) + "\t");
+                    pw.print((double)slowdownsOC.get(j)/numJob + "\t");
                 }
-                pw.println(slowdownsOC.get(sizeOC - 1));                            
+
+                for (int j = 0; j < size - 1; ++j) {
+                    slowdownsOC.set(j+1, slowdownsOC.get(j) + slowdownsOC.get(j+1));
+                }
+                
+                pw.println((double)slowdownsOC.get(sizeOC - 1)/numJob);                            
             }            
             pw.close();
         } catch (FileNotFoundException ex) {
@@ -756,7 +769,7 @@ public class Simulator {
             
             ArrayList<Integer> slowdownHistgramEachUser = new ArrayList<Integer>();
             ArrayList<Integer> slowdownOCHistgramEachUser = new ArrayList<Integer>();            
-            for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
+            for (int i = 0; i <= thresholdForSlowdown.size(); ++i) {
                 slowdownHistgramEachUser.add(0);
                 slowdownOCHistgramEachUser.add(0);          
             }
@@ -846,7 +859,7 @@ public class Simulator {
             
             ArrayList<Integer> slowdownHistgramEachUser = new ArrayList<Integer>();
             ArrayList<Integer> slowdownOCHistgramEachUser = new ArrayList<Integer>();            
-            for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
+            for (int i = 0; i <= thresholdForSlowdown.size(); ++i) {
                 slowdownHistgramEachUser.add(0);
                 slowdownOCHistgramEachUser.add(0);
             }
@@ -930,12 +943,12 @@ public class Simulator {
                      + "CpuTime\tCpuTime(ave.)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio\t");
 
             int sdSize = thresholdForSlowdown.size();
-            for (int i = 0; i < sdSize -1 ; ++i) {
+            for (int i = 0; i < sdSize ; ++i) {
                 pw.print("<" + thresholdForSlowdown.get(i) + "\t");                
             }
             pw.print(">=" + thresholdForSlowdown.get(sdSize-1) + "\t");
             
-            for (int i = 0; i < sdSize -1 ; ++i) {
+            for (int i = 0; i < sdSize ; ++i) {
                 pw.print("<" + thresholdForSlowdown.get(i) + "(OC)\t");                
             }
             pw.println(">=" + thresholdForSlowdown.get(sdSize-1) + "(OC)");            
@@ -969,16 +982,24 @@ public class Simulator {
                 ArrayList<Integer> slowdowns = result.getSlowdowns();
                 int size = slowdowns.size();                
                 for (int j = 0; j < size - 1; ++j) {
-                    pw.print(slowdowns.get(j) + "\t");
+                    slowdowns.set(j+1, slowdowns.get(j) + slowdowns.get(j+1));
                 }
-                pw.print(slowdowns.get(size - 1) + "\t");                
+                for (int j = 0; j < size - 1; ++j) {
+                    pw.print((double)slowdowns.get(j)/numJob + "\t");
+                }
+                pw.print((double)slowdowns.get(size - 1)/numJob + "\t");                
 
                 ArrayList<Integer> slowdownsOC = result.getSlowdownsOC();
                 int sizeOC = slowdownsOC.size();                
                 for (int j = 0; j < sizeOC - 1; ++j) {
-                    pw.print(slowdownsOC.get(j) + "\t");
+                    pw.print((double)slowdownsOC.get(j)/numJob + "\t");
                 }
-                pw.println(slowdownsOC.get(sizeOC - 1));                            
+
+                for (int j = 0; j < size - 1; ++j) {
+                    slowdownsOC.set(j+1, slowdownsOC.get(j) + slowdownsOC.get(j+1));
+                }
+                
+                pw.println((double)slowdownsOC.get(sizeOC - 1)/numJob);                            
             }
             
             pw.close();
