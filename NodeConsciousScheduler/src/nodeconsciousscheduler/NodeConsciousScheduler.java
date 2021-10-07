@@ -273,8 +273,9 @@ public class NodeConsciousScheduler {
 
         String slowdownThreshold = configurations.getProperty("SLOWDOWN_THRESHOLD");
         String[] slowdownThresholds = slowdownThreshold.replace("\"","").split(",");
+        boolean outputMinuteTimeseries = Boolean.parseBoolean(configurations.getProperty("OUTPUT_MINUTE_TIMESERIES"));
         
-        return new SimulatorConfiguration(slowdownThresholds);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries);
 
     }
 }

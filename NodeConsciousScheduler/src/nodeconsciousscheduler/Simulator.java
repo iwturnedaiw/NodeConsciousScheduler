@@ -78,6 +78,7 @@ public class Simulator {
     private PrintWriter pwForVis;
     private Path p;
     ArrayList<Double> thresholdForSlowdown;
+    private boolean outputMinuteBoolean;
 
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
@@ -88,6 +89,7 @@ public class Simulator {
         this.executingJobList = new ArrayList<Job>();
         this.completedJobList = new ArrayList<Job>();
         this.thresholdForSlowdown = simConf.getThresholdForSlowdown();
+        this.outputMinuteBoolean = simConf.isOutputMinuteTimeseries();
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -271,21 +273,27 @@ public class Simulator {
         outputUtilizationRatio();
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_DAY_OUTPUT, DAY_IN_SECOND, false);
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_HOUR_OUTPUT, HOUR_IN_SECOND, false);
-        outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT, MINUTE_IN_SECOND, false);
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_DAY_OUTPUT, DAY_IN_SECOND, true);
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT, HOUR_IN_SECOND, true);
-        outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
+
         outputSlowdown(false);
         outputSlowdown(true);
         outputResultEachUserAndGroup();
 
         outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_DAY_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
         outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_HOUR_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
-        outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+
         
         outputWaitingAndNewArrivalJob(WAITING_JOB_PER_DAY_OUTPUT, ARRIVAL_JOB_PER_DAY_OUTPUT, START_JOB_PER_DAY_OUTPUT, CUMULATIVE_STARTED_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
         outputWaitingAndNewArrivalJob(WAITING_JOB_PER_HOUR_OUTPUT, ARRIVAL_JOB_PER_HOUR_OUTPUT, START_JOB_PER_HOUR_OUTPUT, CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
-        outputWaitingAndNewArrivalJob(WAITING_JOB_PER_MINUTE_OUTPUT, ARRIVAL_JOB_PER_MINUTE_OUTPUT, START_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+
+        
+        if (outputMinuteBoolean) {
+            outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT, MINUTE_IN_SECOND, false);
+            outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
+            outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+            outputWaitingAndNewArrivalJob(WAITING_JOB_PER_MINUTE_OUTPUT, ARRIVAL_JOB_PER_MINUTE_OUTPUT, START_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+        }
         
         return;
     }
