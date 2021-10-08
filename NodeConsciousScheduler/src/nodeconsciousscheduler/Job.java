@@ -265,12 +265,6 @@ public class Job implements Comparable<Job> {
     
     @Override
     public int compareTo(Job o) {
-        if (this.submitTime < o.submitTime) {
-            return -1;
-        }
-        if (this.submitTime > o.submitTime) {
-            return 1;
-        }
         if (this.startTime < o.startTime) {
             return -1;
         }

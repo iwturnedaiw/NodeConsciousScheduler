@@ -19,6 +19,9 @@ class PairIntegers {
     private ArrayList<Integer> numCumulativeStartJobs;
     private ArrayList<Integer> numNewFinishedJobs;
     private ArrayList<Integer> numCumulativeFinishedJobs;
+    private ArrayList<Long> numCumulativeWaitingJobResources;
+    private ArrayList<Long> numCumulativeStartedJobResources;
+    private ArrayList<Long> numCumulativeFinishedJobResources;
     
     PairIntegers(){}
 
@@ -69,9 +72,28 @@ class PairIntegers {
     public void setNumCumulativeFinishedJobs(ArrayList<Integer> numCumulativeFinishedJobs) {
         this.numCumulativeFinishedJobs = numCumulativeFinishedJobs;
     }
-    
-    
-    
-    
-    
+
+    public ArrayList<Long> getNumCumulativeWaitingJobResources() {
+        return numCumulativeWaitingJobResources;
+    }
+
+    public ArrayList<Long> getNumCumulativeStartedJobResources() {
+        return numCumulativeStartedJobResources;
+    }
+
+    public ArrayList<Long> getNumCumulativeFinishedJobResources() {
+        return numCumulativeFinishedJobResources;
+    }
+
+    public void setNumCumulativeWaitingJobResources(ArrayList<Long> numCumulativeWaitingJobResources) {
+        this.numCumulativeWaitingJobResources = numCumulativeWaitingJobResources;
+    }
+
+    public void setNumCumulativeStartedJobResources(ArrayList<Long> numCumulativeStartedJobResources) {
+        this.numCumulativeStartedJobResources = numCumulativeStartedJobResources;
+    }
+
+    public void setNumCumulativeFinishedJobResources(ArrayList<Long> numCumulativeFinishedJobResources) {
+        this.numCumulativeFinishedJobResources = numCumulativeFinishedJobResources;
+    }
 }

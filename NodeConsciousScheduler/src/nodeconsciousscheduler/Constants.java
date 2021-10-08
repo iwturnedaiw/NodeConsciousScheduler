@@ -61,7 +61,13 @@ public class Constants {
     static String CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT = "cumulative_started_job_hour.out";
     static String CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT = "cumulative_started_job_minute.out";    
     
-    
+    static String WAITING_RESOURCES_PER_DAY_OUTPUT = "waiting_resources_day.out";
+    static String WAITING_RESOURCES_PER_HOUR_OUTPUT = "waiting_resources_hour.out";
+    static String WAITING_RESOURCES_PER_MINUTE_OUTPUT = "waiting_resources_minute.out";
+
+    static String EXECUTING_RESOURCES_PER_DAY_OUTPUT = "executing_resources_day.out";
+    static String EXECUTING_RESOURCES_PER_HOUR_OUTPUT = "executing_resources_hour.out";
+    static String EXECUTING_RESOURCES_PER_MINUTE_OUTPUT = "executing_resources_minute.out";
     
     static int DAY_IN_SECOND = 60 * 60 * 24;
     static int HOUR_IN_SECOND = 60 * 60;

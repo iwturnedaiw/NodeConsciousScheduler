@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import static java.lang.Math.min;
 import static java.lang.StrictMath.max;
+import static java.lang.StrictMath.max;
+import static java.lang.StrictMath.max;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +37,9 @@ import static nodeconsciousscheduler.Constants.CUMULATIVE_STARTED_JOB_PER_DAY_OU
 import static nodeconsciousscheduler.Constants.CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.DAY_IN_SECOND;
+import static nodeconsciousscheduler.Constants.EXECUTING_RESOURCES_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.EXECUTING_RESOURCES_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.EXECUTING_RESOURCES_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.FINISHED_JOB_PER_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.FINISHED_JOB_PER_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.FINISHED_JOB_PER_MINUTE_OUTPUT;
@@ -61,6 +66,9 @@ import static nodeconsciousscheduler.Constants.UTILIZATION_RATIO_OUTPUT;
 import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_MINUTE_OUTPUT;
+import static nodeconsciousscheduler.Constants.WAITING_RESOURCES_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.WAITING_RESOURCES_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.WAITING_RESOURCES_PER_MINUTE_OUTPUT;
 
 /**
  *
@@ -280,19 +288,13 @@ public class Simulator {
         outputSlowdown(true);
         outputResultEachUserAndGroup();
 
-        outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_DAY_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
-        outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_HOUR_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
-
-        
-        outputWaitingAndNewArrivalJob(WAITING_JOB_PER_DAY_OUTPUT, ARRIVAL_JOB_PER_DAY_OUTPUT, START_JOB_PER_DAY_OUTPUT, CUMULATIVE_STARTED_JOB_PER_DAY_OUTPUT, DAY_IN_SECOND);
-        outputWaitingAndNewArrivalJob(WAITING_JOB_PER_HOUR_OUTPUT, ARRIVAL_JOB_PER_HOUR_OUTPUT, START_JOB_PER_HOUR_OUTPUT, CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
-
+        outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_DAY_OUTPUT, ARRIVAL_JOB_PER_DAY_OUTPUT, START_JOB_PER_DAY_OUTPUT, CUMULATIVE_STARTED_JOB_PER_DAY_OUTPUT, FINISHED_JOB_PER_DAY_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT, WAITING_RESOURCES_PER_DAY_OUTPUT, EXECUTING_RESOURCES_PER_DAY_OUTPUT, DAY_IN_SECOND);
+        outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_HOUR_OUTPUT, ARRIVAL_JOB_PER_HOUR_OUTPUT, START_JOB_PER_HOUR_OUTPUT, CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT, FINISHED_JOB_PER_HOUR_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT, WAITING_RESOURCES_PER_HOUR_OUTPUT, EXECUTING_RESOURCES_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
         
         if (outputMinuteBoolean) {
             outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT, MINUTE_IN_SECOND, false);
             outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
-            outputFinishedAndCumulativeFinishedJob(FINISHED_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
-            outputWaitingAndNewArrivalJob(WAITING_JOB_PER_MINUTE_OUTPUT, ARRIVAL_JOB_PER_MINUTE_OUTPUT, START_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+            outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_MINUTE_OUTPUT, ARRIVAL_JOB_PER_MINUTE_OUTPUT, START_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT, FINISHED_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT, WAITING_RESOURCES_PER_MINUTE_OUTPUT, EXECUTING_RESOURCES_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
         }
         
         return;
@@ -508,7 +510,7 @@ public class Simulator {
             
             if (result.size() != 0) {
                 for (int i = 0; i < result.size() - 1; ++i) {
-                    //pwUtilizationRatio.println(i + "\t" + resultWaiting.get(i));
+                    //pwUtilizationRatio.println(idxWaiting + "\t" + resultWaiting.get(idxWaiting));
                     pwUtilizationRatio.print(i);
                     ArrayList<Double> ret = result.get(i);
                     double totalUtilizationRatio = 0.0;
@@ -563,9 +565,9 @@ public class Simulator {
         return result;
     }
 
-    private void outputWaitingAndNewArrivalJob(String fileNameWaiting, String fileNameArrival, String fileNameStart, String fileNameCumulativeStart, int MODE) {
+    private void outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(String fileNameWaiting, String fileNameArrival, String fileNameStart, String fileNameCumulativeStart, String fileNameFinished, String fileNameCumulativeFinished, String fileNameWaitingRscs, String fileNameExecutingRscs, int MODE) {
             PairIntegers pairResult = new PairIntegers();
-            pairResult = calcWaitingAndNewArrivalJob(MODE);
+            pairResult = calcWaitingAndNewArrivalJobAndStartJob(MODE);
 
             ArrayList<Integer> resultWaiting = pairResult.getNumWaitingJobs();
             printTimeSeriesToFile(fileNameWaiting, resultWaiting);
@@ -578,59 +580,111 @@ public class Simulator {
 
             ArrayList<Integer> resultCumulativeStart = pairResult.getNumCumulativeStartJobs();
             printTimeSeriesToFile(fileNameCumulativeStart, resultCumulativeStart);
+
+            ArrayList<Integer> resultFinished = pairResult.getNumNewFinishedJobs();
+            printTimeSeriesToFile(fileNameFinished, resultFinished);
             
+            ArrayList<Integer> resultCumulativeFinished = pairResult.getNumCumulativeFinishedJobs();
+            printTimeSeriesToFile(fileNameCumulativeFinished, resultCumulativeFinished);
+
+            ArrayList<Long> resultCumulativeWaitingRscs = pairResult.getNumCumulativeWaitingJobResources();
+            ArrayList<Long> resultCumulativeStartedRscs = pairResult.getNumCumulativeStartedJobResources();
+            ArrayList<Long> resultCumulativeFinishedRscs = pairResult.getNumCumulativeFinishedJobResources();
+            printTimeSeriesToFile(fileNameWaitingRscs, resultCumulativeWaitingRscs, resultCumulativeStartedRscs);
+            printTimeSeriesToFile(fileNameExecutingRscs, resultCumulativeStartedRscs, resultCumulativeFinishedRscs);
     }
 
-    private PairIntegers calcWaitingAndNewArrivalJob(int THRESHOLD) {
+    private PairIntegers calcWaitingAndNewArrivalJobAndStartJob(int THRESHOLD) {
         ArrayList<Integer> resultWaiting = new ArrayList<Integer>();
         ArrayList<Integer> resultArrival = new ArrayList<Integer>();
         ArrayList<Integer> resultStart = new ArrayList<Integer>();
         ArrayList<Integer> resultCumulativeStart = new ArrayList<Integer>();
+        ArrayList<Integer> resultFinished = new ArrayList<Integer>();
+        ArrayList<Integer> resultCumulativeFinished = new ArrayList<Integer>();
+        
+        
+        ArrayList<Long> resultCumulativeStartRscs = new ArrayList<Long>();
+        ArrayList<Long> resultCumulativeWaitingRscs = new ArrayList<Long>();
+        ArrayList<Long> resultCumulativeFinishedRscs = new ArrayList<Long>();
+        
         PairIntegers resultPair = new PairIntegers();
         resultPair.setNumNewArrivalJobs(resultArrival);
         resultPair.setNumWaitingJobs(resultWaiting);
         resultPair.setNumNewStartJobs(resultStart);
         resultPair.setNumCumulativeStartJobs(resultCumulativeStart);
-        ArrayList<Job> completedJobList = (ArrayList<Job>) this.completedJobList.clone();
-        int i = 0;
-        int previousI = 0;
+        resultPair.setNumNewFinishedJobs(resultFinished);
+        resultPair.setNumCumulativeFinishedJobs(resultCumulativeFinished);       
+        resultPair.setNumCumulativeStartedJobResources(resultCumulativeStartRscs);
+        resultPair.setNumCumulativeWaitingJobResources(resultCumulativeWaitingRscs);
+        resultPair.setNumCumulativeFinishedJobResources(resultCumulativeFinishedRscs);        
+                
+        ArrayList<Job> completedJobListStartOrder = (ArrayList<Job>) this.completedJobList.clone();
+        Collections.sort(completedJobListStartOrder);
+        ArrayList<Job> completedJobListSubmitOrder = (ArrayList<Job>) this.completedJobList.clone();
+        Collections.sort(completedJobListSubmitOrder);
+        ArrayList<Job> completedJobListFinishedOrder = (ArrayList<Job>) this.completedJobList.clone();
+        
+        int idxWaiting = 0;
+        int idxStart = 0;
+        int idxFinished = 0;
         int threshold = 0;
         int numWaitingJob = 0;
         int numNewArrivalJobPerTHRESHOLD = 0;
         int numCumulativeStartedJobs = 0;
+        int numCumulativeFinishedJobs = 0;
+        long startedJobRscs = 0;
+        long waitingJobRscs = 0;
+        long finishedJobRscs = 0;
         
 
-        Collections.sort(completedJobList);
-        
         for (;;) {
-            while (i != completedJobList.size() && completedJobList.get(i).getSubmitTime()<= threshold) {
+            numNewArrivalJobPerTHRESHOLD = 0;            
+            while (idxWaiting != completedJobListSubmitOrder.size() && completedJobListSubmitOrder.get(idxWaiting).getSubmitTime()<= threshold) {
+                Job job = completedJobListSubmitOrder.get(idxWaiting);
                 ++numNewArrivalJobPerTHRESHOLD;
                 ++numWaitingJob;
-                ++i;
+                ++idxWaiting;
+                waitingJobRscs += job.getRequiredCoresPerNode() * job.getRequiredNodes();
             }
             
             int numStartedJob = 0;
-            while (completedJobList.get(previousI).getStartTime()<= threshold) {
+            while (idxStart != completedJobListStartOrder.size() && completedJobListStartOrder.get(idxStart).getStartTime()<= threshold) {
+                Job job = completedJobListStartOrder.get(idxStart);
                 ++numStartedJob;
-                ++previousI;
-                if (previousI == completedJobList.size()) break;
+                ++idxStart;
+                startedJobRscs += job.getRequiredCoresPerNode() * job.getRequiredNodes();
             }
 
+            int numFinishedJob = 0;
+            while (completedJobListFinishedOrder.get(idxFinished).getFinishedTime()<= threshold) {
+                Job job = completedJobListFinishedOrder.get(idxFinished);
+                ++numFinishedJob;
+                ++idxFinished;
+                finishedJobRscs += job.getRequiredCoresPerNode() * job.getRequiredNodes();
+                if (idxFinished == completedJobListStartOrder.size()) break;
+            }
+            
             numWaitingJob -= numStartedJob;
             numCumulativeStartedJobs += numStartedJob;
+            numCumulativeFinishedJobs += numFinishedJob;
             
             resultWaiting.add(numWaitingJob);
             resultArrival.add(numNewArrivalJobPerTHRESHOLD);
             resultStart.add(numStartedJob);
+            resultFinished.add(numFinishedJob);
             resultCumulativeStart.add(numCumulativeStartedJobs);
+            resultCumulativeFinished.add(numCumulativeFinishedJobs);
+            resultCumulativeWaitingRscs.add(waitingJobRscs);
+            resultCumulativeStartRscs.add(startedJobRscs);
+            resultCumulativeFinishedRscs.add(finishedJobRscs);            
             threshold +=  THRESHOLD;
-            numNewArrivalJobPerTHRESHOLD = 0;
-            if (previousI == completedJobList.size()) break;
+
+            if (idxFinished == completedJobListFinishedOrder.size()) break;
         }
         return resultPair;
     }
 
-    private void printTimeSeriesToFile(String fileName, ArrayList<Integer> resultTimeSeries) {
+    private <T> void printTimeSeriesToFile(String fileName, ArrayList<T> resultTimeSeries) {
         try {
             PrintWriter pw;
             pw = new PrintWriter(this.p + "/" + fileName);
@@ -1015,5 +1069,18 @@ public class Simulator {
             Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
         }
     }    
+
+    private void printTimeSeriesToFile(String fileNameRequireRscs, ArrayList<Long> resultRscs1, ArrayList<Long> resultRscs2) {
+        ArrayList<Double> resultReduced = new ArrayList<Double>();
+        long systemRscs = NodeConsciousScheduler.numNodes*NodeConsciousScheduler.numCores;
+        for (int i = 0; i < resultRscs1.size(); ++i) {
+            Long value1 = resultRscs1.get(i);
+            Long value2  = resultRscs2.get(i);
+            long value = value1 - value2;
+            double vadd = (double)value/systemRscs;
+            resultReduced.add(vadd);
+        }
+        printTimeSeriesToFile(fileNameRequireRscs, resultReduced);
+    }
     
 }
