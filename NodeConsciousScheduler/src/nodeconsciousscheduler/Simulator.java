@@ -217,7 +217,7 @@ public class Simulator {
         String fileNameForVis = FOR_VISUALIZATION_OUTPUT;
         try {
             this.pw = new PrintWriter(this.p + "/" + fileName);
-            pw.println("JobID\tuserId\tgroupId\tarrivalTime\twaitTime\tstartTime\tfinishedTime\trunnningTime\tslowdown\tslowdownOC\tnum cores\tnum nodes\tnode num(tcore num)");
+            pw.println("JobID\tuserId\tgroupId\tarrivalTime\twaitTime\tstartTime\tfinishedTime\trunnningTime\tslowdown\tslowdownOC\tspecifiedRequiredTime\tnum cores\tnum nodes\tnode num(tcore num)");
             this.pwForVis = new PrintWriter(this.p + "/" + fileNameForVis);
 
         } catch (FileNotFoundException ex) {
@@ -242,9 +242,10 @@ public class Simulator {
         job.setSlowdownByOriginalRunningTime(slowdownOC);
         int numCores = job.getRequiredCores();
         int numNodes = job.getRequiredNodes();
+        int specifiedRequiredTime = job.getRequiredTime();
         
         pw.print(jobId + "\t" + userId + "\t" + groupId + "\t" + arrivalTime + "\t" + waitTime + "\t" + startTime + "\t" + finishedTime + "\t" + runningTime + "\t"
-                + slowdown + "\t" + slowdownOC + "\t" + numCores + "\t" + numNodes + "\t");
+                + slowdown + "\t" + slowdownOC + "\t" + specifiedRequiredTime + "\t" + numCores + "\t" + numNodes + "\t");
         
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
         Collections.sort(usingNodesList);
