@@ -314,12 +314,12 @@ public class Simulator {
             }
             
             for (int j = 0; j < threshold.size(); ++j) {
-                if (slowdown < threshold.get(j)) {
+                if (slowdown <= threshold.get(j)) {
                     result.set(j, result.get(j) + 1);
                     break;
                 }
             }
-            if (slowdown >= threshold.get(threshold.size()-1)) {
+            if (slowdown > threshold.get(threshold.size()-1)) {
                 result.set(threshold.size(), result.get(threshold.size()) + 1);
             }
         }
@@ -347,9 +347,9 @@ public class Simulator {
             int jobnum = histgram.get(histgram.size()-1);
 
             for (int i = 0; i < histgram.size() - 1; ++i) {
-                pwSlowdown.println("<" + thresholdForSlowdown.get(i) + "\t" + (double)histgram.get(i)/jobnum);
+                pwSlowdown.println("<=" + thresholdForSlowdown.get(i) + "\t" + (double)histgram.get(i)/jobnum);
             }
-            pwSlowdown.println(">=" + thresholdForSlowdown.get(thresholdForSlowdown.size() - 1) + "\t" + (double)histgram.get(histgram.size() - 1)/jobnum);
+            pwSlowdown.println(">" + thresholdForSlowdown.get(thresholdForSlowdown.size() - 1) + "\t" + (double)histgram.get(histgram.size() - 1)/jobnum);
             pwSlowdown.close();
         } catch (FileNotFoundException ex) {
             Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
@@ -754,14 +754,14 @@ public class Simulator {
 
             int sdSize = thresholdForSlowdown.size();
             for (int i = 0; i < sdSize ; ++i) {
-                pw.print("<" + thresholdForSlowdown.get(i) + "\t");                
+                pw.print("<=" + thresholdForSlowdown.get(i) + "\t");                
             }
-            pw.print(">=" + thresholdForSlowdown.get(sdSize-1) + "\t");
+            pw.print(">" + thresholdForSlowdown.get(sdSize-1) + "\t");
             
             for (int i = 0; i < sdSize ; ++i) {
-                pw.print("<" + thresholdForSlowdown.get(i) + "(OC)\t");                
+                pw.print("<=" + thresholdForSlowdown.get(i) + "(OC)\t");                
             }
-            pw.println(">=" + thresholdForSlowdown.get(sdSize-1) + "(OC)");
+            pw.println(">" + thresholdForSlowdown.get(sdSize-1) + "(OC)");
             
             for (int i = 0; i < resultEachUser.size() ; ++i) {
                 UserResult result = resultEachUser.get(i);
@@ -865,7 +865,7 @@ public class Simulator {
                 double slowdown = job.getSlowdown();
                 boolean addedFlag = false;
                 for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
-                    if (slowdown < thresholdForSlowdown.get(i)) {
+                    if (slowdown <= thresholdForSlowdown.get(i)) {
                         slowdownHistgramEachUser.set((Integer) i, slowdownHistgramEachUser.get(i) + 1);
                         addedFlag = true;
                         break;
@@ -879,7 +879,7 @@ public class Simulator {
                 double slowdownOC = job.getSlowdownByOriginalRunningTime();
                 boolean addedFlagOC = false;
                 for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
-                    if (slowdownOC < thresholdForSlowdown.get(i)) {
+                    if (slowdownOC <= thresholdForSlowdown.get(i)) {
                         slowdownOCHistgramEachUser.set((Integer) i, slowdownOCHistgramEachUser.get(i) + 1);
                         addedFlagOC = true;
                         break;
@@ -954,7 +954,7 @@ public class Simulator {
                 double slowdown = job.getSlowdown();
                 boolean addedFlag = false;
                 for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
-                    if (slowdown < thresholdForSlowdown.get(i)) {
+                    if (slowdown <= thresholdForSlowdown.get(i)) {
                         slowdownHistgramEachUser.set((Integer) i, slowdownHistgramEachUser.get(i) + 1);
                         addedFlag = true;
                         break;
@@ -968,7 +968,7 @@ public class Simulator {
                 double slowdownOC = job.getSlowdown();
                 boolean addedFlagOC = false;
                 for (int i = 0; i < thresholdForSlowdown.size(); ++i) {
-                    if (slowdownOC < thresholdForSlowdown.get(i)) {
+                    if (slowdownOC <= thresholdForSlowdown.get(i)) {
                         slowdownOCHistgramEachUser.set((Integer) i, slowdownOCHistgramEachUser.get(i) + 1);
                         addedFlagOC = true;
                         break;
@@ -1007,14 +1007,14 @@ public class Simulator {
 
             int sdSize = thresholdForSlowdown.size();
             for (int i = 0; i < sdSize ; ++i) {
-                pw.print("<" + thresholdForSlowdown.get(i) + "\t");                
+                pw.print("<=" + thresholdForSlowdown.get(i) + "\t");                
             }
-            pw.print(">=" + thresholdForSlowdown.get(sdSize-1) + "\t");
+            pw.print(">" + thresholdForSlowdown.get(sdSize-1) + "\t");
             
             for (int i = 0; i < sdSize ; ++i) {
-                pw.print("<" + thresholdForSlowdown.get(i) + "(OC)\t");                
+                pw.print("<=" + thresholdForSlowdown.get(i) + "(OC)\t");                
             }
-            pw.println(">=" + thresholdForSlowdown.get(sdSize-1) + "(OC)");            
+            pw.println(">" + thresholdForSlowdown.get(sdSize-1) + "(OC)");            
             
             
             for (int i = 0; i < resultEachGroup.size() ; ++i) {
