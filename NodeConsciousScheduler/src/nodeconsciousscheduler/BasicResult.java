@@ -21,7 +21,7 @@ class BasicResult {
     protected double averagedNumCore;
     protected int accumulatedTime;
     protected double averagedTime;
-    protected int accumulatedCpuTime;
+    protected long accumulatedCpuTime;
     protected double averagedCpuTime;
     protected int accumulatedMemoryFootprint;
     protected int numJobsSetMemory;
@@ -31,7 +31,10 @@ class BasicResult {
     protected double largeJobRatio;
     protected ArrayList<Integer> slowdowns;
     protected ArrayList<Integer> slowdownsOC;
-
+    protected int maxRunningTime;
+    protected int maxWaitTime;
+    protected int maxCpuTime;
+    
     public int getGroupId() {
         return groupId;
     }
@@ -64,7 +67,7 @@ class BasicResult {
         return averagedTime;
     }
 
-    public int getAccumulatedCpuTime() {
+    public long getAccumulatedCpuTime() {
         return accumulatedCpuTime;
     }
 
@@ -104,8 +107,17 @@ class BasicResult {
         return slowdownsOC;
     }
 
-    
+    public int getMaxRunningTime() {
+        return maxRunningTime;
+    }
 
-    
-    
+    public int getMaxWaitTime() {
+        return maxWaitTime;
+    }
+
+    public int getMaxCpuTime() {
+        return maxCpuTime;
+    }
+
+        
 }
