@@ -34,6 +34,7 @@ class BasicResult {
     protected int maxRunningTime;
     protected int maxWaitTime;
     protected int maxCpuTime;
+    protected int maxTurnAroundTime;
     
     public int getGroupId() {
         return groupId;
@@ -119,5 +120,8 @@ class BasicResult {
         return maxCpuTime;
     }
 
-        
+    public int getMaxTurnAroundTime() {
+        return maxTurnAroundTime;
+    }
+
 }

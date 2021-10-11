@@ -749,7 +749,7 @@ public class Simulator {
             PrintWriter pw;
             pw = new PrintWriter(this.p + "/" + fileName);
             
-            pw.print("userId\tnumJob\trunningTime\trunningTime(ave.)\trunningTime(max)\twaitTime\twaitTime(ave.)\twaitTime(max)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
+            pw.print("userId\tnumJob\trunningTime\trunningTime(ave.)\trunningTime(max)\twaitTime\twaitTime(ave.)\twaitTime(max)\tturnAroundTime(max)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
                      + "CpuTime\tCpuTime(ave.)\tCpuTime(max)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio\t");
 
             int sdSize = thresholdForSlowdown.size();
@@ -785,8 +785,9 @@ public class Simulator {
                 int maxRunningTime = result.getMaxRunningTime();
                 int maxWaitTime = result.getMaxWaitTime();
                 int maxCpuTime = result.getMaxCpuTime();
+                int maxTurnAroundTime = result.getMaxTurnAroundTime();
                 
-                pw.print(userId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + maxRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" + maxWaitTime + "\t" +
+                pw.print(userId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + maxRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" + maxWaitTime + "\t" + maxTurnAroundTime + "\t" +
                            numNode + "\t" + averagedNumNode + "\t" + numCore + "\t" + averagedNumCore + "\t" + cpuTime + "\t" + averagedCpuTime + "\t" + maxCpuTime + "\t" + 
                            memoryFootprint + "\t" + averagedMemoryFootprint + "\t" + largeJobRatio + "\t");
                 
@@ -833,6 +834,7 @@ public class Simulator {
             int maxRunningTime = 0;
             int maxWaitTime = 0;
             int maxCpuTime = 0;                    
+            int maxTurnAroundTime = 0;
             
             ArrayList<Integer> slowdownHistgramEachUser = new ArrayList<Integer>();
             ArrayList<Integer> slowdownOCHistgramEachUser = new ArrayList<Integer>();            
@@ -850,6 +852,7 @@ public class Simulator {
                 int numNode = job.getRequiredNodes();
                 int numCorePerNode = job.getRequiredCoresPerNode();
                 int cpuTime = numNode * numCorePerNode * runningTime;
+                int turnAroundTime = runningTime + waitTime;
                 
                 accumulatedRunningTime += runningTime;
                 accumulatedWaitTime += waitTime;
@@ -860,6 +863,7 @@ public class Simulator {
                 maxRunningTime = max(maxRunningTime, runningTime);
                 maxWaitTime = max(maxWaitTime, waitTime);
                 maxCpuTime = max(maxCpuTime, cpuTime);
+                maxTurnAroundTime = max(maxTurnAroundTime, turnAroundTime);
                 
                 if (checkLargeJob(runningTime, numNode, numCorePerNode, cpuTime)) {
                     ++cntLargeJob;
@@ -911,7 +915,7 @@ public class Simulator {
             resultEach.add(new UserResult(userId, numJob, accumulatedNumNode, averagedNumNode, accumulatedNumCore, averagedNumCore, 
                                               accumulatedRunningTime, averagedRunningTime, accumulatedCpuTime, averagedCpuTime, 
                                               accumulatedMaxMemory, cntSpecifiedMaxMemory, averagedMemoryFootprint, 
-                                              accumulatedWaitTime, averagedWaitTime, largeJobRatio, slowdownHistgramEachUser, slowdownOCHistgramEachUser, maxRunningTime, maxWaitTime, maxCpuTime));
+                                              accumulatedWaitTime, averagedWaitTime, largeJobRatio, slowdownHistgramEachUser, slowdownOCHistgramEachUser, maxRunningTime, maxWaitTime, maxCpuTime, maxTurnAroundTime));
         }        
     }
 
@@ -930,7 +934,8 @@ public class Simulator {
             int cntLargeJob = 0;
             int maxRunningTime = 0;
             int maxWaitTime = 0;
-            int maxCpuTime = 0;                                
+            int maxCpuTime = 0;
+            int maxTurnAroundTime = 0;            
             
             ArrayList<Integer> slowdownHistgramEachUser = new ArrayList<Integer>();
             ArrayList<Integer> slowdownOCHistgramEachUser = new ArrayList<Integer>();            
@@ -947,6 +952,7 @@ public class Simulator {
                 int numNode = job.getRequiredNodes();
                 int numCorePerNode = job.getRequiredCoresPerNode();
                 int cpuTime = numNode * numCorePerNode * runningTime;
+                int turnAroundTime = runningTime + waitTime;
                 
                 accumulatedRunningTime += runningTime;
                 accumulatedWaitTime += waitTime;
@@ -957,6 +963,7 @@ public class Simulator {
                 maxRunningTime = max(maxRunningTime, runningTime);
                 maxWaitTime = max(maxWaitTime, waitTime);
                 maxCpuTime = max(maxCpuTime, cpuTime);
+                maxTurnAroundTime = max(maxTurnAroundTime, turnAroundTime);
                 
                 if (checkLargeJob(runningTime, numNode, numCorePerNode, cpuTime)) {
                     ++cntLargeJob;
@@ -1008,7 +1015,7 @@ public class Simulator {
             resultEach.add(new GroupResult(groupId, numJob, accumulatedNumNode, averagedNumNode, accumulatedNumCore, averagedNumCore, 
                                               accumulatedRunningTime, averagedRunningTime, accumulatedCpuTime, averagedCpuTime, 
                                               accumulatedMaxMemory, cntSpecifiedMaxMemory, averagedMemoryFootprint, 
-                                              accumulatedWaitTime, averagedWaitTime, largeJobRatio, slowdownHistgramEachUser, slowdownOCHistgramEachUser, maxRunningTime, maxWaitTime, maxCpuTime));           
+                                              accumulatedWaitTime, averagedWaitTime, largeJobRatio, slowdownHistgramEachUser, slowdownOCHistgramEachUser, maxRunningTime, maxWaitTime, maxCpuTime, maxTurnAroundTime));           
         }
         
     }    
@@ -1019,7 +1026,7 @@ public class Simulator {
             PrintWriter pw;
             pw = new PrintWriter(this.p + "/" + fileName);
             
-            pw.print("groupId\tnumJob\trunningTime\trunningTime(ave.)\trunningTime(max)\twaitTime\twaitTime(ave.)\twaitTime(max)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
+            pw.print("groupId\tnumJob\trunningTime\trunningTime(ave.)\trunningTime(max)\twaitTime\twaitTime(ave.)\twaitTime(max)\tturnAroundTime(max)\tnumNode\tnumNode(ave.)\tnumCore\tnumCore(ave.)\t"
                      + "CpuTime\tCpuTime(ave.)\tCpuTime(max)\tMemoryFootprint\tMemoryFootprint(ave)\tlargeJobRatio\t");
 
             int sdSize = thresholdForSlowdown.size();
@@ -1056,9 +1063,10 @@ public class Simulator {
                 int maxRunningTime = result.getMaxRunningTime();
                 int maxWaitTime = result.getMaxWaitTime();
                 int maxCpuTime = result.getMaxCpuTime();
+                int maxTurnAroundTime = result.getMaxTurnAroundTime();
 
 
-                pw.print(groupId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + maxRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" + maxWaitTime + "\t" +
+                pw.print(groupId + "\t" + numJob + "\t" + runningTime + "\t" + averagedRunningTime + "\t" + maxRunningTime + "\t" + waitTime + "\t" + averagedWaitTime + "\t" + maxWaitTime + "\t" + maxTurnAroundTime + "\t" +
                            numNode + "\t" + averagedNumNode + "\t" + numCore + "\t" + averagedNumCore + "\t" + cpuTime + "\t" + averagedCpuTime + "\t" + maxCpuTime + "\t" + 
                            memoryFootprint + "\t" + averagedMemoryFootprint + "\t" + largeJobRatio + "\t");
 
