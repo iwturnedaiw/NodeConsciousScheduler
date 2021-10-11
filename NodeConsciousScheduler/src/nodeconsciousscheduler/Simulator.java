@@ -803,13 +803,11 @@ public class Simulator {
                 ArrayList<Integer> slowdownsOC = result.getSlowdownsOC();
                 int sizeOC = slowdownsOC.size();                
                 for (int j = 0; j < sizeOC - 1; ++j) {
+                    slowdownsOC.set(j+1, slowdownsOC.get(j) + slowdownsOC.get(j+1));
+                }                
+                for (int j = 0; j < sizeOC - 1; ++j) {
                     pw.print((double)slowdownsOC.get(j)/numJob + "\t");
                 }
-
-                for (int j = 0; j < size - 1; ++j) {
-                    slowdownsOC.set(j+1, slowdownsOC.get(j) + slowdownsOC.get(j+1));
-                }
-                
                 pw.println((double)slowdownsOC.get(sizeOC - 1)/numJob);                            
             }            
             pw.close();
@@ -1077,13 +1075,11 @@ public class Simulator {
                 ArrayList<Integer> slowdownsOC = result.getSlowdownsOC();
                 int sizeOC = slowdownsOC.size();                
                 for (int j = 0; j < sizeOC - 1; ++j) {
-                    pw.print((double)slowdownsOC.get(j)/numJob + "\t");
-                }
-
-                for (int j = 0; j < size - 1; ++j) {
                     slowdownsOC.set(j+1, slowdownsOC.get(j) + slowdownsOC.get(j+1));
                 }
-                
+                for (int j = 0; j < sizeOC - 1; ++j) {
+                    pw.print((double)slowdownsOC.get(j)/numJob + "\t");
+                }
                 pw.println((double)slowdownsOC.get(sizeOC - 1)/numJob);                            
             }
             
