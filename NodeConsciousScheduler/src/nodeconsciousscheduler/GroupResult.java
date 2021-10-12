@@ -17,7 +17,7 @@ class GroupResult extends BasicResult {
     GroupResult(int groupId, int numJobs, int accumulatedNumNode, double averagedNumNode, int accumulatedNumCore, double averagedNumCore, int accumulatedTime, 
                 double averagedTime, int accumulatedCpuTime, double averagedCpuTime, int accumulatedMemoryFootprint, 
                 int numJobsSetMemory, double averagedMemoryFootprint, int accumulatedWaitTime, double averagedWaitTime, 
-                double largeJobRatio, ArrayList<Integer> slowdowns, ArrayList<Integer> slowdownsOC, int maxRunningTime, int maxWaitTime, int maxCpuTime, int maxTurnAroundTime) {
+                double largeJobRatio, ArrayList<Integer> slowdowns, ArrayList<Integer> slowdownsOC, int maxRunningTime, int maxWaitTime, int maxCpuTime, int maxTurnAroundTime, double maxSlowdown, double maxSlowdownOC) {
         this.groupId = groupId;
         this.numJobs = numJobs;
         this.accumulatedNumNode = accumulatedNumNode;
@@ -40,5 +40,7 @@ class GroupResult extends BasicResult {
         this.maxWaitTime = maxWaitTime;
         this.maxCpuTime = maxCpuTime;
         this.maxTurnAroundTime = maxTurnAroundTime;
+        this.maxSlowdown = maxSlowdown;
+        this.maxSlowdownOC = maxSlowdownOC;
     }    
 }

@@ -19,7 +19,7 @@ class UserResult extends BasicResult{
     UserResult(int userId, int numJobs, int accumulatedNumNode, double averagedNumNode, int accumulatedNumCore, double averagedNumCore, int accumulatedTime, 
                 double averagedTime, long accumulatedCpuTime, double averagedCpuTime, int accumulatedMemoryFootprint, 
                 int numJobsSetMemory, double averagedMemoryFootprint, int accumulatedWaitTime, double averagedWaitTime, 
-                double largeJobRatio, ArrayList<Integer> slowdowns, ArrayList<Integer> slowdownsOC, int maxRunningTime, int maxWaitTime, int maxCpuTime, int maxTurnAroundTime) {
+                double largeJobRatio, ArrayList<Integer> slowdowns, ArrayList<Integer> slowdownsOC, int maxRunningTime, int maxWaitTime, int maxCpuTime, int maxTurnAroundTime, double maxSlowdown, double maxSlowdownOC) {
         this.userId = userId;
         this.numJobs = numJobs;
         this.accumulatedNumNode = accumulatedNumNode;
@@ -42,6 +42,8 @@ class UserResult extends BasicResult{
         this.maxWaitTime = maxWaitTime;
         this.maxCpuTime = maxCpuTime;
         this.maxTurnAroundTime = maxTurnAroundTime;
+        this.maxSlowdown = maxSlowdown;
+        this.maxSlowdownOC = maxSlowdownOC;
     }
 
     public int getUserId() {

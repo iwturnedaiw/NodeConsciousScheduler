@@ -35,6 +35,8 @@ class BasicResult {
     protected int maxWaitTime;
     protected int maxCpuTime;
     protected int maxTurnAroundTime;
+    protected double maxSlowdown;
+    protected double maxSlowdownOC;
     
     public int getGroupId() {
         return groupId;
@@ -122,6 +124,14 @@ class BasicResult {
 
     public int getMaxTurnAroundTime() {
         return maxTurnAroundTime;
+    }
+
+    public double getMaxSlowdown() {
+        return maxSlowdown;
+    }
+
+    public double getMaxSlowdownOC() {
+        return maxSlowdownOC;
     }
 
 }
