@@ -29,7 +29,7 @@ M="2 3 4 5 6 7 8"
 #ALGORITHM="FCFS EasyBackfilling FCFSOC EasyBackfillingOC"
 #ALGORITHM="FCFSOC EasyBackfillingOC"
 #ALGORITHM="EasyBackfillingOC"
-#ALGORITHM="FCFS EasyBackfilling EasyBackfillingOC"
+#ALGORITHM="FCFS EasyBackfilling"
 ALGORITHM="FCFSOC EasyBackfillingOC"
 #ALGORITHM="FCFS FCFSOC"
 #ALGORITHM=EasyBackfillingOC
@@ -76,11 +76,12 @@ test() {
           ${SH} ./${RUN_SCRIPT} ${tp} ${algorithm} ${node} ${core} ${m} > /dev/null 2>&1
           RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_M${m} | head -n 1`
           RESULT_FILE+=/${FILENAME}
-          if [ ${OC_FLAG} -eq 1 ]; then
-            MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}
-          else
-            MASTER_FILE=./${MASTER}/${algorithm}/${tp}/${c}/${FILENAME}
-          fi
+#          if [ ${OC_FLAG} -eq 1 ]; then
+#          MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}
+#          else
+#            MASTER_FILE=./${MASTER}/${algorithm}/${tp}/${c}/${FILENAME}
+#          fi
+          MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}
           ${PYTHON} ${PYTHON_SCRIPT} ${MASTER_FILE} ${RESULT_FILE} ${core}
           RET=$?
           echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${c}\t"
@@ -117,11 +118,12 @@ test() {
             #RESULT_FILE=`ls ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_M${m}/${FILE_NAME}`
             RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_M${m} | head -n 1`
             RESULT_FILE+=/${FILENAME}
-            if [ ${OC_FLAG} -eq 1 ]; then
-              MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}
-            else
-              MASTER_FILE=./${MASTER}/${algorithm}/${tp}/${c}/${FILENAME}
-            fi
+#            if [ ${OC_FLAG} -eq 1 ]; then
+#            MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}
+#            else
+#              MASTER_FILE=./${MASTER}/${algorithm}/${tp}/${c}/${FILENAME}
+#            fi
+            MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}
             ${PYTHON} ${PYTHON_SCRIPT} ${MASTER_FILE} ${RESULT_FILE} ${core}
             RET=$?
             echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${c}\t"
@@ -139,4 +141,4 @@ test() {
 
 
 
-test | tee -a ${LOG}
+test 2>&1 | tee -a ${LOG}

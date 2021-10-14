@@ -3,6 +3,8 @@ import csv
 import re
 import sys
 
+COL_NUM_NODENUM=13
+
 def file_open(file_name):
     
     with open(file_name, encoding='utf-8', newline='') as f:
@@ -23,7 +25,7 @@ def compare(master, input, num_core):
         r_input = input[r]
         for c in range(len(r_master)):
           #print(r_master[c])
-          if c < 9:
+          if c < COL_NUM_NODENUM:
             #print(r_master[c])
             #print(i_master[c])
             if r_master[c] != r_input[c]:
@@ -31,7 +33,7 @@ def compare(master, input, num_core):
               print("<", r_master)
               print(">", r_input)
               ret = False
-          elif c >= 9 and r != 0 and r_master[c] != '':
+          elif c >= COL_NUM_NODENUM and r != 0 and r_master[c] != '':
             node_num_master  = parse(r_master[c], num_core)
             node_num_input = parse(r_input[c], num_core)
             if node_num_master != node_num_input:
