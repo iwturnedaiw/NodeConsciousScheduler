@@ -94,7 +94,8 @@ class FCFS extends Scheduler {
         
         /* Working Variable */
         ArrayList<VacantNode> vacantNodes = new ArrayList<VacantNode>();
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+//        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores, NodeConsciousScheduler.memory));
         
         /* This is used for counting executable nodes */
         ArrayList<Integer> vacantNodeCount = new ArrayList<Integer>();
@@ -105,6 +106,9 @@ class FCFS extends Scheduler {
         //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
         //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
         int requiredCoresPerNode = job.getRequiredCoresPerNode();
+        long requiredMemoryPerNode = job.getMaxMemory();
+
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
         
         int alongTimeSlices = 0;
         for (int i = 0; i < timeSlices.size(); ++i) {
@@ -113,14 +117,23 @@ class FCFS extends Scheduler {
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     int freeCores = ts.getAvailableCores().get(j);
+                    long freeMemory = ts.getAvailableMemory().get(j);
                     VacantNode node = vacantNodes.get(j);
                     
                     assert node.getNodeNo() == j;
 
                     freeCores = min(freeCores, node.getFreeCores());
                     node.setFreeCores(freeCores);
+                    
+                    freeMemory = min(freeMemory, node.getFreeMemory());
 
-                    if (freeCores >= requiredCoresPerNode ) {
+                    boolean addFlag = false;
+                    addFlag = (freeCores >= requiredCoresPerNode);                    
+                    if (scheduleUsingMemory) {
+                        addFlag &= (freeMemory >= requiredMemoryPerNode);
+                    }
+                    
+                    if (addFlag) {
                         int cnt = vacantNodeCount.get(j);
                         vacantNodeCount.set(j, ++cnt);
                     }

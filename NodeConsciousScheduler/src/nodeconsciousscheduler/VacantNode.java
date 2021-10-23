@@ -11,20 +11,29 @@ package nodeconsciousscheduler;
  * @author sminami
  */
 class VacantNode implements Comparable<VacantNode>{
-    int nodeNo;
-    int freeCores;
-    int OCStateLevel;
+    private int nodeNo;
+    private int freeCores;
+    private int OCStateLevel;
+    private long freeMemory;
     
     VacantNode() {
         this.nodeNo = -1;
         this.freeCores = 0;
         this.OCStateLevel = 1;
+        this.freeMemory = 0;
     }
     
     VacantNode(int nodeNo, int freeCores) {
         this.nodeNo = nodeNo;
         this.freeCores = freeCores;
-        this.OCStateLevel = 1;        
+        this.OCStateLevel = 1;
+    }
+    
+    VacantNode(int nodeNo, int freeCores, long freeMemory) {
+        this.nodeNo = nodeNo;
+        this.freeCores = freeCores;
+        this.OCStateLevel = 1;
+        this.freeMemory = freeMemory;
     }
     
     @Override
@@ -62,5 +71,11 @@ class VacantNode implements Comparable<VacantNode>{
         this.OCStateLevel = OCStateLevel;
     }
 
-    
+    public long getFreeMemory() {
+        return freeMemory;
+    }
+
+    public void setFreeMemory(long freeMemory) {
+        this.freeMemory = freeMemory;
+    }
 }

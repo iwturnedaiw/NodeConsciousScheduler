@@ -15,12 +15,13 @@ import static nodeconsciousscheduler.Constants.TS_ENDTIME;
  * @author sminami
  */
 class TimeSlice implements Cloneable {
-    int startTime;
-    int endTime;
-    int duration;
-    ArrayList<Integer> availableCores;
-    int ppn;
-    int numNode;
+    private int startTime;
+    private int endTime;
+    private int duration;
+    private ArrayList<Integer> availableCores;
+    private int ppn;
+    private int numNode;
+    private ArrayList<Long> availableMemory;
     
     TimeSlice() {
         this.startTime = 0;
@@ -29,8 +30,10 @@ class TimeSlice implements Cloneable {
         this.numNode = NodeConsciousScheduler.numNodes;
         this.ppn = NodeConsciousScheduler.numCores;
         availableCores = new ArrayList<Integer>();
+        availableMemory = new ArrayList<Long>();
         for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
             availableCores.add(NodeConsciousScheduler.numCores);
+            availableMemory.add(NodeConsciousScheduler.memory);
         }
     }
 
@@ -43,6 +46,7 @@ class TimeSlice implements Cloneable {
         availableCores = new ArrayList<Integer>();
         for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
             availableCores.add(NodeConsciousScheduler.numCores);
+            availableMemory.add(NodeConsciousScheduler.memory);            
         }
     }
     
@@ -70,6 +74,12 @@ class TimeSlice implements Cloneable {
         return numNode;
     }
 
+    public ArrayList<Long> getAvailableMemory() {
+        return availableMemory;
+    }
+
+    
+    
     LinkedList<TimeSlice> split(int currentTime) {
         TimeSlice first = this.clone();
         first.endTime = currentTime;
@@ -109,13 +119,20 @@ class TimeSlice implements Cloneable {
         for (int i = 0; i < usingNodesList.size(); ++i) {
                 UsingNode usingNode = usingNodesList.get(i);
                 int nodeNo = usingNode.getNodeNum();
+                
                 int usingCores = usingNode.getNumUsingCores();
-
                 ArrayList<Integer> nodes = this.getAvailableCores();
                 int numFreeCores = nodes.get(nodeNo);
                 numFreeCores += usingCores;
+                assert numFreeCores <= NodeConsciousScheduler.numCores;
                 nodes.set(nodeNo, numFreeCores);
                 
+                long mpn = job.getMaxMemory();
+                ArrayList<Long> memories = this.getAvailableMemory();
+                long freeMemory = memories.get(nodeNo);
+                freeMemory += mpn;
+                assert freeMemory <= NodeConsciousScheduler.memory;                
+                memories.set(nodeNo, freeMemory);
         }
 
     }

@@ -300,6 +300,8 @@ public abstract class Scheduler {
         int addedPpn = job.getRequiredCores()/job.getRequiredNodes();
         double expectedEndTimeDouble = startTime + (job.getRequiredTime()-job.getCpuTimeForNow())*job.getOCStateLevel();
         int expectedEndTime = (int) ceil(expectedEndTimeDouble);
+        long addedMpn = job.getMaxMemory();
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
         /* TODO: The case requiredCores ist not dividable  */
         if (job.getRequiredCores()%job.getRequiredNodes() != 0) {
             ++addedPpn;
@@ -314,11 +316,19 @@ public abstract class Scheduler {
             //if (startTime <= ts.getEndTime() && ts.getStartTime() <= expectedEndTime) {
             if (startTime <= ts.getEndTime() && ts.getStartTime() < expectedEndTime) {
                 ArrayList<Integer> cores = ts.getAvailableCores();
+                ArrayList<Long> memories = ts.getAvailableMemory();
                 for (int j = 0; j < assignNodesNo.size(); ++j) {
                     int nodeNo = assignNodesNo.get(j);
                     int core = cores.get(nodeNo);
                     core -= addedPpn;
                     cores.set(nodeNo, core);
+                    
+                    if (scheduleUsingMemory) {
+                        long memory = memories.get(nodeNo);
+                        memory -= addedMpn;
+                        assert memory >= 0;
+                        memories.set(nodeNo, memory);
+                    }
                 }
             }
 //            ts.printTsInfo();
@@ -335,6 +345,7 @@ public abstract class Scheduler {
             int coreCnt = addedPpn;
             int numOccupiedCores = node.getNumOccupiedCores() + addedPpn;
             int numFreeCores = node.getNumFreeCores() - addedPpn;
+            
             ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
             Collections.sort(occupiedCores);
             for (int j = 0; j < numCores; ++j) {
@@ -357,6 +368,15 @@ public abstract class Scheduler {
             node.setNumOccupiedCores(numOccupiedCores);
             node.setNumFreeCores(numFreeCores);
             node.getExecutingJobIds().add(jobId);
+            if (scheduleUsingMemory) {
+                long memoryCnt = addedMpn;
+                long occupiedMemory = node.getOccupiedMemory() + addedMpn;
+                long freeMemory = node.getFreeMemory() - addedMpn;
+                assert occupiedMemory <= node.getMemorySize();
+                assert freeMemory >= 0;
+                node.setOccupiedMemory(occupiedMemory);
+                node.setFreeMemory(freeMemory);
+            }
             
         }
         
@@ -366,7 +386,7 @@ public abstract class Scheduler {
 
         for (int i = 0; i < assignNodesNo.size(); ++i) {
             int nodeNo = assignNodesNo.get(i);
-            ArrayList<Integer> coreNum = new ArrayList<Integer>();
+            ArrayList<Integer> coreNums = new ArrayList<Integer>();
             
             NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeNo);
             ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
@@ -377,13 +397,13 @@ public abstract class Scheduler {
                 for (int k = 0; k < jobList.size(); ++k) {
                     int usingJobId = jobList.get(k);
                     if (usingJobId == jobId) {
-                        coreNum.add(coreId);
+                        coreNums.add(coreId);
                     }
                 }
-                // Collections.sort(coreNum);
+                // Collections.sort(coreNums);
             }
             
-            UsingNode node = new UsingNode(nodeNo, addedPpn, coreNum);
+            UsingNode node = new UsingNode(nodeNo, addedPpn, coreNums);
             nodes.add(node);
         }
     }

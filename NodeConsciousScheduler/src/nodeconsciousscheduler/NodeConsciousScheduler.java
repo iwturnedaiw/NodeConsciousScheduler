@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.CONFIGURATION_FILE;
 import static nodeconsciousscheduler.Constants.DATASET_DIRECTORY;
+import static nodeconsciousscheduler.Constants.UNSPECIFIED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import nodeconsciousscheduler.ScheduleAlgorithm;
 import static nodeconsciousscheduler.ScheduleAlgorithm.*;
@@ -39,6 +40,7 @@ public class NodeConsciousScheduler {
     static Simulator sim;
     static int numNodes;
     static int numCores;
+    static long memory;
     static int M = 2;
     static String fname = "gen01.swf";
     static ScheduleAlgorithm sche = EasyBackfilling;
@@ -148,12 +150,14 @@ public class NodeConsciousScheduler {
         int numCores = Integer.parseInt(values[3]);
         NodeConsciousScheduler.numCores = numCores;
         NodeConsciousScheduler.numNodes = numNodes;
+        NodeConsciousScheduler.memory = ram;
         int peRating = Integer.parseInt(values[4]);
         String name = values[1];
 
         ArrayList<NodeInfo> nodeInfoList = new ArrayList<NodeInfo>();
         for (int i = 0; i < numNodes; ++i){
-            NodeInfo nodeInfo = new NodeInfo(i, numCores);
+//            NodeInfo nodeInfo = new NodeInfo(i, numCores);
+            NodeInfo nodeInfo = new NodeInfo(i, numCores, NodeConsciousScheduler.memory);
             nodeInfoList.add(nodeInfo);
         }            
 
@@ -194,6 +198,11 @@ public class NodeConsciousScheduler {
             int userId = Integer.parseInt(values[11]);
             int groupId = Integer.parseInt(values[12]);
             int maxMemory = Integer.parseInt(values[9]);
+            if (maxMemory == UNSPECIFIED) {
+                maxMemory = 0;
+                // TODO: set appropriate parameter?
+            }
+            
             int requiredCores = 0;
             try {
                 requiredCores = Integer.parseInt(values[4]);
@@ -274,8 +283,9 @@ public class NodeConsciousScheduler {
         String slowdownThreshold = configurations.getProperty("SLOWDOWN_THRESHOLD");
         String[] slowdownThresholds = slowdownThreshold.replace("\"","").split(",");
         boolean outputMinuteTimeseries = Boolean.parseBoolean(configurations.getProperty("OUTPUT_MINUTE_TIMESERIES"));
+        boolean scheduleUsingMemory = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_MEMORY"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory);
 
     }
 }

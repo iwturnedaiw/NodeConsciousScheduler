@@ -114,17 +114,28 @@ class End implements EventHandler {
             NodeInfo nodeInfo = AllNodeInfo.get(nodeNo);
             int numFreeCores = nodeInfo.getNumFreeCores();
             int numOccupiedCores = nodeInfo.getNumOccupiedCores();
+            long freeMemory = nodeInfo.getFreeMemory();
+            long occupiedMemory = nodeInfo.getOccupiedMemory();
             assert nodeInfo.getExecutingJobIds().contains(jobId);
 
             int numUsingCores = usingNode.getNumUsingCores();
+            long mpn = job.getMaxMemory();
             
-            /* Number of free/occupied Cores*/
+            /* Number of free/occupied Cores */
             numFreeCores += numUsingCores;
             assert numFreeCores <= nodeInfo.getNumCores();
             assert numFreeCores >= -(NodeConsciousScheduler.M-1)*nodeInfo.getNumCores();
             nodeInfo.setNumFreeCores(numFreeCores);
             numOccupiedCores -= numUsingCores;
             nodeInfo.setNumOccupiedCores(numOccupiedCores);
+
+            /* Number of free/occupied Memory */
+            freeMemory += mpn;
+            assert freeMemory <= nodeInfo.getMemorySize();
+            assert freeMemory >= 0;
+            occupiedMemory -= mpn;
+            assert occupiedMemory <= nodeInfo.getMemorySize();
+            assert occupiedMemory >= 0;
             
             /* Each core */
             ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();

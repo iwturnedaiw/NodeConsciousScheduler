@@ -15,7 +15,7 @@ import java.util.ArrayList;
 class GroupResult extends BasicResult {
 
     GroupResult(int groupId, int numJobs, int accumulatedNumNode, double averagedNumNode, int accumulatedNumCore, double averagedNumCore, int accumulatedTime, 
-                double averagedTime, int accumulatedCpuTime, double averagedCpuTime, int accumulatedMemoryFootprint, 
+                double averagedTime, int accumulatedCpuTime, double averagedCpuTime, long accumulatedMemoryFootprint, 
                 int numJobsSetMemory, double averagedMemoryFootprint, int accumulatedWaitTime, double averagedWaitTime, 
                 double largeJobRatio, ArrayList<Integer> slowdowns, ArrayList<Integer> slowdownsOC, int maxRunningTime, int maxWaitTime, int maxCpuTime, int maxTurnAroundTime, double maxSlowdown, double maxSlowdownOC) {
         this.groupId = groupId;

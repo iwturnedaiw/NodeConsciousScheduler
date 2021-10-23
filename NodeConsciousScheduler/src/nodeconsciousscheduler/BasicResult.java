@@ -23,7 +23,7 @@ class BasicResult {
     protected double averagedTime;
     protected long accumulatedCpuTime;
     protected double averagedCpuTime;
-    protected int accumulatedMemoryFootprint;
+    protected long accumulatedMemoryFootprint;
     protected int numJobsSetMemory;
     protected double averagedMemoryFootprint;
     protected int accumulatedWaitTime;
@@ -78,7 +78,7 @@ class BasicResult {
         return averagedCpuTime;
     }
 
-    public int getAccumulatedMemoryFootprint() {
+    public long getAccumulatedMemoryFootprint() {
         return accumulatedMemoryFootprint;
     }
 

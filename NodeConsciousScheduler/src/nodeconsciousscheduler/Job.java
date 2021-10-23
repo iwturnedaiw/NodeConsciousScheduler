@@ -41,7 +41,7 @@ public class Job implements Comparable<Job> {
     private Set<Integer> coexistingJobs;
     private int userId;
     private int groupId;
-    private int maxMemory;
+    private long maxMemory;
     
 
     Job() {}
@@ -291,11 +291,11 @@ public class Job implements Comparable<Job> {
         this.groupId = groupId;
     }   
 
-    public int getMaxMemory() {
+    public long getMaxMemory() {
         return maxMemory;
     }
 
-    public void setMaxMemory(int maxMemory) {
+    public void setMaxMemory(long maxMemory) {
         this.maxMemory = maxMemory;
     }
 

@@ -551,7 +551,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     }
 
                     // 2. restTime -= duration/multiplicity
-                    int restTime = jobRestTimeEachNode.get(j) - ts.duration/tentativeMultiplicityForBackfillJob;
+                    int restTime = jobRestTimeEachNode.get(j) - ts.getDuration()/tentativeMultiplicityForBackfillJob;
                     jobRestTimeEachNode.set(j, restTime);
                     if (restTime <= 0) {                   
                         nodes.add(node);

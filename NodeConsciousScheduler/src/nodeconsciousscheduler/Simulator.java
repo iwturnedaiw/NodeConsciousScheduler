@@ -87,6 +87,7 @@ public class Simulator {
     private Path p;
     ArrayList<Double> thresholdForSlowdown;
     private boolean outputMinuteBoolean;
+    private boolean scheduleUsingMemory;
 
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
@@ -98,6 +99,7 @@ public class Simulator {
         this.completedJobList = new ArrayList<Job>();
         this.thresholdForSlowdown = simConf.getThresholdForSlowdown();
         this.outputMinuteBoolean = simConf.isOutputMinuteTimeseries();
+        this.scheduleUsingMemory = simConf.isScheduleUsingMemory();
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -773,7 +775,7 @@ public class Simulator {
                 int numNode = result.getAccumulatedNumNode();
                 int numCore = result.getAccumulatedNumCore();
                 long cpuTime = result.getAccumulatedCpuTime();
-                int memoryFootprint = result.getAccumulatedMemoryFootprint();
+                long memoryFootprint = result.getAccumulatedMemoryFootprint();
                 int cntSpecifiedMaxMemory = result.getNumJobsSetMemory();
                 double averagedNumNode = result.getAccumulatedNumNode();
                 double averagedNumCore = result.getAccumulatedNumCore();
@@ -830,7 +832,7 @@ public class Simulator {
             int accumulatedNumNode = 0;
             int accumulatedNumCore = 0;
             long accumulatedCpuTime = 0;
-            int accumulatedMaxMemory = 0;
+            long accumulatedMaxMemory = 0;
             int cntSpecifiedMaxMemory = 0;
             int cntLargeJob = 0;
             int maxRunningTime = 0;
@@ -873,7 +875,7 @@ public class Simulator {
                     ++cntLargeJob;
                 }
                 
-                int maxMemory = job.getMaxMemory();
+                long maxMemory = job.getMaxMemory();
                 if (maxMemory > 0) {
                     accumulatedMaxMemory += maxMemory;
                     ++cntSpecifiedMaxMemory;
@@ -935,7 +937,7 @@ public class Simulator {
             int accumulatedNumNode = 0;
             int accumulatedNumCore = 0;
             int accumulatedCpuTime = 0;
-            int accumulatedMaxMemory = 0;
+            long accumulatedMaxMemory = 0;
             int cntSpecifiedMaxMemory = 0;
             int cntLargeJob = 0;
             int maxRunningTime = 0;
@@ -977,7 +979,7 @@ public class Simulator {
                     ++cntLargeJob;
                 }
                 
-                int maxMemory = job.getMaxMemory();
+                long maxMemory = job.getMaxMemory();
                 if (maxMemory > 0) {
                     accumulatedMaxMemory += maxMemory;
                     ++cntSpecifiedMaxMemory;
@@ -1061,7 +1063,7 @@ public class Simulator {
                 int numNode = result.getAccumulatedNumNode();
                 int numCore = result.getAccumulatedNumCore();
                 long cpuTime = result.getAccumulatedCpuTime();
-                int memoryFootprint = result.getAccumulatedMemoryFootprint();
+                long memoryFootprint = result.getAccumulatedMemoryFootprint();
                 int cntSpecifiedMaxMemory = result.getNumJobsSetMemory();
                 double averagedNumNode = result.getAccumulatedNumNode();
                 double averagedNumCore = result.getAccumulatedNumCore();
@@ -1120,5 +1122,10 @@ public class Simulator {
         }
         printTimeSeriesToFile(fileNameRequireRscs, resultReduced);
     }
+
+    public boolean isScheduleUsingMemory() {
+        return scheduleUsingMemory;
+    }
+    
     
 }
