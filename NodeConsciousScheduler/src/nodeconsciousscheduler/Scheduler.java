@@ -307,6 +307,7 @@ public abstract class Scheduler {
             ++addedPpn;
             System.out.println("Not dividable, Job ID = " + job.getJobId());
         }
+        int jobId = job.getJobId();
 
         
         /* Timesleces' setting */
@@ -335,7 +336,6 @@ public abstract class Scheduler {
         }
         
         /* NodeInfo Setting */
-        int jobId = job.getJobId();
         for (int i = 0; i < assignNodesNo.size(); ++i) {
             int nodeNo = assignNodesNo.get(i);
            

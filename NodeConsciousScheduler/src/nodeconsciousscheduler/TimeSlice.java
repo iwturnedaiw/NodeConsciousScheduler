@@ -104,6 +104,7 @@ class TimeSlice implements Cloneable {
             // Object型で返ってくるのでキャストが必要
             clonedItem = (TimeSlice)super.clone();
             clonedItem.availableCores = (ArrayList<Integer>) this.getAvailableCores().clone();
+            clonedItem.availableMemory = (ArrayList<Long>) this.getAvailableMemory().clone();
         } catch (CloneNotSupportedException e) {
             e.printStackTrace();
         }
