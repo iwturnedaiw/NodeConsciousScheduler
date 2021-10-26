@@ -880,6 +880,11 @@ public abstract class Scheduler {
     protected void measureCurrentExecutingTime(int currentTime, Job victimJob, int OCStateLevel) {
         int currentOCStateLevel = victimJob.getOCStateLevel();
 
+        int startTime = victimJob.getStartTime();
+        if (startTime == UNSTARTED) {
+            return;
+        }
+        
         int jobId = victimJob.getJobId();
         // System.out.println("JobId: " + migratingJobId);
         /* measure current progress */
