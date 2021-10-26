@@ -287,7 +287,8 @@ public class FCFSOC extends FCFS {
         
         /* Working Variable */
         ArrayList<VacantNode> vacantNodes = new ArrayList<VacantNode>();
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+        //for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores, NodeConsciousScheduler.memory));
         
         /* This is used for counting executable nodes */
         ArrayList<Integer> vacantNodeCount = new ArrayList<Integer>();
@@ -298,7 +299,10 @@ public class FCFSOC extends FCFS {
         //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
         //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
         int requiredCoresPerNode = job.getRequiredCoresPerNode();
+        long requiredMemoryPerNode = job.getMaxMemory();        
 
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
+        
         int jobId = job.getJobId();
         int M = NodeConsciousScheduler.M;
         int alongTimeSlices = 0;
@@ -308,6 +312,7 @@ public class FCFSOC extends FCFS {
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     int freeCores = ts.getAvailableCores().get(j);
+                    long freeMemory = ts.getAvailableMemory().get(j);
                     int numCore = ts.getPpn();
                     
                     assert freeCores >= -(M-1)*numCore;
@@ -318,12 +323,19 @@ public class FCFSOC extends FCFS {
                     assert node.getNodeNo() == j;
 
                     freeCores = min(freeCores, node.getFreeCores());
-                    node.setFreeCores(freeCores);
-
                     assert freeCores >= -(M-1)*numCore;
                     assert freeCores <= numCore;                    
-//                    if (freeCores >= requiredCoresPerNode ) {
-                    if (freeCores - requiredCoresPerNode >= -(M-1)*numCore) {
+                    node.setFreeCores(freeCores);
+
+                    freeMemory = min(freeMemory, node.getFreeMemory());
+
+                    boolean addFlag = false;
+                    addFlag = (freeCores - requiredCoresPerNode >= -(M-1)*numCore);
+                    if (scheduleUsingMemory) {
+                        addFlag &= (freeMemory >= requiredMemoryPerNode);
+                    }
+                    
+                    if (addFlag) {
                         int cnt = vacantNodeCount.get(j);
                         vacantNodeCount.set(j, ++cnt);
                     }

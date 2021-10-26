@@ -1021,9 +1021,12 @@ public abstract class Scheduler {
     
     protected void refiilFreeCoresInTimeSlices(int currentTime, int timeSliceIndex, Job victimJob, LinkedList<TimeSlice> timeSlices) {
         ArrayList<UsingNode> usingNodes = victimJob.getUsingNodesList();
-
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
+        long addedMpn = victimJob.getMaxMemory();
+        
         for (int i = 0; i <= timeSliceIndex; ++i) {
             TimeSlice ts = timeSlices.get(i);
+            ArrayList<Long> memories = ts.getAvailableMemory();
             assert currentTime <= ts.getStartTime();
             ArrayList<Integer> availableCores = ts.getAvailableCores();
             for (int j = 0; j < usingNodes.size(); ++j) {
@@ -1033,8 +1036,17 @@ public abstract class Scheduler {
 
                 int freeCore = availableCores.get(nodeId);
                 freeCore += releaseCore;
-                availableCores.set(nodeId, freeCore);
                 assert freeCore <= NodeConsciousScheduler.numCores;
+                availableCores.set(nodeId, freeCore);
+
+                if (scheduleUsingMemory) {
+                    long memory = memories.get(nodeId);
+                    memory += addedMpn;
+                    assert memory <= NodeConsciousScheduler.memory;
+                    memories.set(nodeId, memory);
+                }
+                
+                
             }
         }
     }
@@ -1045,13 +1057,16 @@ public abstract class Scheduler {
 
     protected void reallocateOccupiedCoresInTimeSlices(int currentTime, int newExpectedEndTime, Job victimJob, LinkedList<TimeSlice> timeSlices) {
         ArrayList<UsingNode> usingNodes = victimJob.getUsingNodesList();
-
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
+        long addedMpn = victimJob.getMaxMemory();
+        
         for (int i = 0; i < timeSlices.size(); ++i) {
             TimeSlice ts = timeSlices.get(i);
             assert currentTime <= ts.getStartTime();
             assert ts.getStartTime() < newExpectedEndTime;
 
             ArrayList<Integer> availableCores = ts.getAvailableCores();
+            ArrayList<Long> memories = ts.getAvailableMemory();
             for (int j = 0; j < usingNodes.size(); ++j) {
                 UsingNode usingNode = usingNodes.get(j);
                 int nodeId = usingNode.getNodeNum();
@@ -1059,10 +1074,16 @@ public abstract class Scheduler {
 
                 int freeCore = availableCores.get(nodeId);
                 freeCore -= occupiedCore;
-                availableCores.set(nodeId, freeCore);
-
                 assert freeCore <= NodeConsciousScheduler.numCores;
                 assert freeCore >= -(NodeConsciousScheduler.M - 1) * NodeConsciousScheduler.numCores;
+                availableCores.set(nodeId, freeCore);
+
+                if (scheduleUsingMemory) {
+                    long memory = memories.get(nodeId);
+                    memory -= addedMpn;
+                    assert memory >= 0;
+                    memories.set(nodeId, memory);
+                }
             }
             if (ts.getEndTime() == newExpectedEndTime) {
                 break;
