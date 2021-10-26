@@ -116,6 +116,8 @@ class TimeSlice implements Cloneable {
         int expectedEndTime = job.getSpecifiedExecuteTime();
         
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
+        
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
 
         for (int i = 0; i < usingNodesList.size(); ++i) {
                 UsingNode usingNode = usingNodesList.get(i);
@@ -128,12 +130,14 @@ class TimeSlice implements Cloneable {
                 assert numFreeCores <= NodeConsciousScheduler.numCores;
                 nodes.set(nodeNo, numFreeCores);
                 
-                long mpn = job.getMaxMemory();
-                ArrayList<Long> memories = this.getAvailableMemory();
-                long freeMemory = memories.get(nodeNo);
-                freeMemory += mpn;
-                assert freeMemory <= NodeConsciousScheduler.memory;                
-                memories.set(nodeNo, freeMemory);
+                if (scheduleUsingMemory) {
+                    long mpn = job.getMaxMemory();
+                    ArrayList<Long> memories = this.getAvailableMemory();
+                    long freeMemory = memories.get(nodeNo);
+                    freeMemory += mpn;
+                    assert freeMemory <= NodeConsciousScheduler.memory;
+                    memories.set(nodeNo, freeMemory);
+                }
         }
 
     }

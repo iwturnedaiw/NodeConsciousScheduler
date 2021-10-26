@@ -106,6 +106,8 @@ class End implements EventHandler {
     private void freeResources(Job job) {
         int jobId = job.getJobId();
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
+        
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
 
         ArrayList<NodeInfo> AllNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
         for (int i = 0; i < usingNodesList.size(); ++i) {
@@ -114,8 +116,6 @@ class End implements EventHandler {
             NodeInfo nodeInfo = AllNodeInfo.get(nodeNo);
             int numFreeCores = nodeInfo.getNumFreeCores();
             int numOccupiedCores = nodeInfo.getNumOccupiedCores();
-            long freeMemory = nodeInfo.getFreeMemory();
-            long occupiedMemory = nodeInfo.getOccupiedMemory();
             assert nodeInfo.getExecutingJobIds().contains(jobId);
 
             int numUsingCores = usingNode.getNumUsingCores();
@@ -130,12 +130,18 @@ class End implements EventHandler {
             nodeInfo.setNumOccupiedCores(numOccupiedCores);
 
             /* Number of free/occupied Memory */
-            freeMemory += mpn;
-            assert freeMemory <= nodeInfo.getMemorySize();
-            assert freeMemory >= 0;
-            occupiedMemory -= mpn;
-            assert occupiedMemory <= nodeInfo.getMemorySize();
-            assert occupiedMemory >= 0;
+            if (scheduleUsingMemory) {
+                long freeMemory = nodeInfo.getFreeMemory();
+                long occupiedMemory = nodeInfo.getOccupiedMemory();
+                freeMemory += mpn;
+                assert freeMemory <= nodeInfo.getMemorySize();
+                assert freeMemory >= 0;
+                occupiedMemory -= mpn;
+                assert occupiedMemory <= nodeInfo.getMemorySize();
+                assert occupiedMemory >= 0;
+                nodeInfo.setFreeMemory(freeMemory);
+                nodeInfo.setOccupiedMemory(occupiedMemory);
+            }
             
             /* Each core */
             ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
