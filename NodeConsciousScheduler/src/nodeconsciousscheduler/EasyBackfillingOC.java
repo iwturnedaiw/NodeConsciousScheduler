@@ -278,7 +278,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 
                 if (!backfillFlag) continue;
 
-                System.out.println("Succeed Backfill Job: " + backfillJob.getJobId() + ", at " + currentTime);
+                System.out.println("Succeed Backfill Job: " + backfillJobId + ", at " + currentTime);
                 
                 Iterator itr = waitingQueue.iterator();
                 while (itr.hasNext()) {
@@ -460,8 +460,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
         
         /* Working Variable */
         ArrayList<VacantNode> vacantNodes = new ArrayList<VacantNode>();
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
-
+        //for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores, NodeConsciousScheduler.memory));
+        
         /* This is used for counting executable nodes */
         ArrayList<Integer> vacantNodeCount = new ArrayList<Integer>();
         for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodeCount.add(0);
@@ -471,6 +472,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
         //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
         //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
         int requiredCoresPerNode = job.getRequiredCoresPerNode();
+        long requiredMemoryPerNode = job.getMaxMemory();        
+
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
         
         int requiredNodes = job.getRequiredNodes();
 
@@ -480,7 +484,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
 //        int expectedEndTime = UNUPDATED;
         int alongTimeSlices = 0;
         ArrayList<Integer> jobRestTimeEachNode = new ArrayList<Integer>();
-
+        int M = NodeConsciousScheduler.M;
+        
         if (!backfillFlag) {
             for (int i = 0; i < timeSlices.size(); ++i) {
                 TimeSlice ts = timeSlices.get(i);
@@ -491,16 +496,26 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     ++alongTimeSlices;
                     for (int j = 0; j < ts.getNumNode(); ++j) {
                         int freeCores = ts.getAvailableCores().get(j);
+                        long freeMemory = ts.getAvailableMemory().get(j);
                         VacantNode node = vacantNodes.get(j);
+                        int numCore = ts.getPpn();
 
                         assert node.getNodeNo() == j;
 
                         freeCores = min(freeCores, node.getFreeCores());
+                        assert freeCores >= -(M-1)*numCore;
+                        assert freeCores <= numCore;                    
                         node.setFreeCores(freeCores);
 
-                        int numCore = ts.getPpn();
-//                    if (freeCores >= requiredCoresPerNode ) {
-                        if (freeCores - requiredCoresPerNode >= -(NodeConsciousScheduler.M - 1) * numCore) {
+                        freeMemory = min(freeMemory, node.getFreeMemory());
+
+                        boolean addFlag = false;
+                        addFlag = (freeCores - requiredCoresPerNode >= -(M-1)*numCore);
+                        if (scheduleUsingMemory) {
+                            addFlag &= (freeMemory >= requiredMemoryPerNode);
+                        }                        
+
+                        if (addFlag) {
                             int cnt = vacantNodeCount.get(j);
                             vacantNodeCount.set(j, ++cnt);
                         }
@@ -517,6 +532,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
             }            
             TimeSlice lastTs = timeSlices.get(timeSlices.size()-1);
 
+            // 0. Check memory hard-limit
             // 1. Calculate estimated multiplicity for each node.
             // 2. S += duration/multiplicity
             // 3. If ts.endTime > firstJobEndTime before S reaches actualTime, it nodes is fails            
@@ -537,11 +553,21 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                     int freeCores = ts.getAvailableCores().get(j);
                     VacantNode node = vacantNodes.get(j);
+                    int numCore = ts.getPpn();
 
                     assert node.getNodeNo() == j;
 
                     freeCores = min(freeCores, node.getFreeCores());
+                    assert freeCores >= -(M-1)*numCore;
+                    assert freeCores <= numCore;                    
                     node.setFreeCores(freeCores);
+
+                    // 0. Check memory hard-limit
+                    long freeMemory = ts.getAvailableMemory().get(j);
+                    if (freeMemory < requiredMemoryPerNode) {
+                        checkFlag[j] = false;
+                        continue;
+                    }
                     
                     // 1. Calculate estimated multiplicity for each node.
                     int tentativeMultiplicityForBackfillJob = caculateTentativeMultiplicity(freeCores, requiredCoresPerNode);
