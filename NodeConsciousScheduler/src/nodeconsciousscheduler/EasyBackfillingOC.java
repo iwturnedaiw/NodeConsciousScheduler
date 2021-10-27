@@ -18,6 +18,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 import static nodeconsciousscheduler.Constants.CANNOT_START;
+import static nodeconsciousscheduler.Constants.UNSTARTED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 
 /**
@@ -239,7 +240,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
             Job backfillJob = tailWaitingQueue.poll();
             int backfillJobId = backfillJob.getJobId();
 
-            canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, startTimeFirstJob);
+            canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, startTimeFirstJob, assignTmpNodesNo);
 
             if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
                 // TO CONSIDER:
@@ -452,8 +453,25 @@ public class EasyBackfillingOC extends EasyBackfilling {
         return result;
     }
     
-    @Override
+    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, Job job) {
+        return canExecutableNodesAt(currentTime, this.timeSlices, job, false, UNSTARTED);
+    }
+    
     protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job, boolean backfillFlag, int firstJobStartTime) {
+       return canExecutableNodesAt(currentTime, timeSlices, job, backfillFlag, firstJobStartTime, new ArrayList<Integer>());
+    }
+    
+    
+    protected ArrayList<VacantNode> canExecutableNodesOnBackfilling(int currentTime, LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, Job backfillJob, int firstJobStartTime, ArrayList<Integer> tmpAssignNodesNo) {
+        ArrayList<VacantNode> canExecuteNodesEasyBackfiling = new ArrayList<VacantNode>();
+        
+        canExecuteNodesEasyBackfiling = canExecutableNodesAt(currentTime, tmpTimeSlices, backfillJob, true, firstJobStartTime, tmpAssignNodesNo);
+        
+        return canExecuteNodesEasyBackfiling;
+
+    }
+    
+    protected ArrayList<VacantNode> canExecutableNodesAt(int currentTime, LinkedList<TimeSlice> timeSlices, Job job, boolean backfillFlag, int firstJobStartTime, ArrayList<Integer> tmpAssignNodesNo) {
         /* Return variable
            This have the node no. with # of free core.
         */
@@ -540,7 +558,13 @@ public class EasyBackfillingOC extends EasyBackfilling {
             for (int i = 0; i < timeSlices.size(); ++i) {                
                 TimeSlice ts = timeSlices.get(i);
                 // 3. If ts.endTime > firstJobEndTime before S reaches actualTime, it nodes is fails
-                if (ts.getEndTime() > firstJobStartTime) break;
+                if (ts.getEndTime() > firstJobStartTime) {
+                    for (int j = 0; j < ts.getNumNode(); ++j) {
+                        if (tmpAssignNodesNo.contains((Integer)j)) {
+                            checkFlag[j] = false;
+                        }
+                    }
+                }
                 boolean continueFlag = false;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     continueFlag |= checkFlag[j];
