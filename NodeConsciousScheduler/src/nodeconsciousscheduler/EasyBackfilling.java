@@ -211,7 +211,8 @@ class EasyBackfilling extends Scheduler {
         
         /* Working Variable */
         ArrayList<VacantNode> vacantNodes = new ArrayList<VacantNode>();
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+        //for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores, NodeConsciousScheduler.memory));
         
         /* This is used for counting executable nodes */
         ArrayList<Integer> vacantNodeCount = new ArrayList<Integer>();
@@ -222,6 +223,9 @@ class EasyBackfilling extends Scheduler {
         //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
         //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
         int requiredCoresPerNode = job.getRequiredCoresPerNode();
+        long requiredMemoryPerNode = job.getMaxMemory();
+
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
         
         int jobId = job.getJobId();
         int startTime = currentTime;
@@ -237,14 +241,24 @@ class EasyBackfilling extends Scheduler {
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     int freeCores = ts.getAvailableCores().get(j);
+                    long freeMemory = ts.getAvailableMemory().get(j);
                     VacantNode node = vacantNodes.get(j);
                     
                     assert node.getNodeNo() == j;
 
                     freeCores = min(freeCores, node.getFreeCores());
                     node.setFreeCores(freeCores);
+                                    
+                    freeMemory = min(freeMemory, node.getFreeMemory());
 
-                    if (freeCores >= requiredCoresPerNode ) {
+                    boolean addFlag = false;
+                    addFlag = (freeCores >= requiredCoresPerNode);                    
+                    
+                    if (scheduleUsingMemory) {
+                        addFlag &= (freeMemory >= requiredMemoryPerNode);
+                    }
+                    
+                    if (addFlag ) {
                         int cnt = vacantNodeCount.get(j);
                         vacantNodeCount.set(j, ++cnt);
                     }
@@ -289,7 +303,10 @@ class EasyBackfilling extends Scheduler {
     protected void assignFirstJobTemporally(LinkedList<TimeSlice> tmpTimeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, int startTime, Job firstJob, ArrayList<VacantNode> canExecuteTmpNodes) {
         int addedPpn = firstJob.getRequiredCores()/firstJob.getRequiredNodes();
         int expectedEndTime = startTime + firstJob.getRequiredTime();
+        long addedMpn = firstJob.getMaxMemory();
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
 
+        
         /* TODO: The case requiredCores ist not dividable  */
         if (firstJob.getRequiredCores()%firstJob.getRequiredNodes() != 0) {
             ++addedPpn;
@@ -307,11 +324,19 @@ class EasyBackfilling extends Scheduler {
 //            ts.printTsInfo();
             if (startTime < ts.getEndTime() && ts.getStartTime() < expectedEndTime) {
                 ArrayList<Integer> cores = ts.getAvailableCores();
+                ArrayList<Long> memories = ts.getAvailableMemory();
                 for (int j = 0; j < tmpAssignNodesNo.size(); ++j) {
                     int nodeNo = tmpAssignNodesNo.get(j);
                     int core = cores.get(nodeNo);
                     core -= addedPpn;
                     cores.set(nodeNo, core);
+                    
+                    if (scheduleUsingMemory) {
+                        long memory = memories.get(nodeNo);
+                        memory -= addedMpn;
+                        assert memory >= 0;
+                        memories.set(nodeNo, memory);
+                    }
                 }
             }
 //            ts.printTsInfo();
