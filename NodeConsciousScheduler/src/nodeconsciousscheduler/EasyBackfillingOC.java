@@ -290,7 +290,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 }
 
 
-                backfillJob.setStartTime(startTime);
+                //backfillJob.setStartTime(startTime);
 
                 makeTimeslices(startTime);
                 makeTimeslices(startTime, tmpTimeSlices);
@@ -298,6 +298,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 if (OCStateLevelForBackfillJob == 1) {
                     int expectedEndTime = startTime + backfillJob.getRequiredTime();
                     makeTimeslices(expectedEndTime);
+                    makeTimeslices(expectedEndTime, tmpTimeSlices);
                     backfillJob.setSpecifiedExecuteTime(expectedEndTime);
 
                     backfillJob.setOCStateLevel(OCStateLevelForBackfillJob);
@@ -539,8 +540,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
             for (int i = 0; i < timeSlices.size(); ++i) {                
                 TimeSlice ts = timeSlices.get(i);
                 // 3. If ts.endTime > firstJobEndTime before S reaches actualTime, it nodes is fails
-                //if (ts.startTime >= firstJobStartTime) break;
-                // This part is unneeded.
+                if (ts.getEndTime() > firstJobStartTime) break;
                 boolean continueFlag = false;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     continueFlag |= checkFlag[j];
