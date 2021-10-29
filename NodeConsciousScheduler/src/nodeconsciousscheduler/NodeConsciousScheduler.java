@@ -172,6 +172,11 @@ public class NodeConsciousScheduler {
         
         String[] values = null;
         String line = "";
+        
+        int ignoreCnt = 0;
+        int notSpecifiedActural = 0;
+        int zeroCpuCnt = 0;
+        int memoryUnspecifiedCnt = 0;
 
 
         int firstJobSubmitTime = UNUPDATED;
@@ -197,9 +202,18 @@ public class NodeConsciousScheduler {
             int jobId = Integer.parseInt(values[0]);
             int userId = Integer.parseInt(values[11]);
             int groupId = Integer.parseInt(values[12]);
-            int maxMemory = Integer.parseInt(values[9]);
-            if (maxMemory == UNSPECIFIED) {
-                maxMemory = 0;
+            int requiredMemory = Integer.parseInt(values[9]);
+            int actualMemory = Integer.parseInt(values[6]);
+            // required memory is unspecified
+            if (requiredMemory == UNSPECIFIED) {
+                requiredMemory = actualMemory;
+                memoryUnspecifiedCnt++;
+                // TODO: set appropriate parameter?
+            }
+
+            // required and actual memory is unspecified
+            if (requiredMemory == UNSPECIFIED) {
+                continue;
                 // TODO: set appropriate parameter?
             }
             
@@ -219,11 +233,26 @@ public class NodeConsciousScheduler {
             submitTime = submitTime - firstJobSubmitTime;
             assert submitTime >= 0;
             int actualExecuteTime = Integer.parseInt(values[3]);
+            // actual time is unspecified
             if (actualExecuteTime == Constants.NOTSPECIFIED) {
                 actualExecuteTime = Integer.parseInt(values[5]);
+                notSpecifiedActural++;
+            }
+ 
+            // actual and required time is unspecified            
+            if (actualExecuteTime == Constants.NOTSPECIFIED) {
+                ignoreCnt++;
+                continue;
+            }
+
+            // actual time is zero            
+            if (actualExecuteTime == 0) {
+                zeroCpuCnt++;
+                actualExecuteTime = 1;
             }
             int specifiedExecuteTime = Integer.parseInt(values[8]);
             
+            // actual time is greater than required time
             if (specifiedExecuteTime < actualExecuteTime) {
                 specifiedExecuteTime = actualExecuteTime;
             }
@@ -260,10 +289,17 @@ public class NodeConsciousScheduler {
             // TODO
             // Decide the accurate num of node for non-specified data
             
-            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, maxMemory);
+            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory);
             jobList.add(job);
             
         }
+        /*
+        System.out.println("not specified cpuTime count: " + notSpecifiedActural);
+        System.out.println("cpuTime = -1 count: " + ignoreCnt);
+        System.out.println("cpuTime = 0 count: " + zeroCpuCnt);
+        System.out.println("memory = -1 count: " + memoryUnspecifiedCnt);
+        System.exit(1);
+        */
         return jobList;
         
     }
