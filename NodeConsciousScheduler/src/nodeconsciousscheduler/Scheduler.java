@@ -225,7 +225,7 @@ public abstract class Scheduler {
         }
         for (int i = 0; i < temporallyScheduledJobList.size(); ++i) {
             Job job = temporallyScheduledJobList.get(i);
-            totalOccupiedCores += job.getRequiredCores();
+            totalOccupiedCores += job.getRequiredCoresPerNode() * job.getRequiredNodes();
         }
         totalFreeCores = NodeConsciousScheduler.numCores*NodeConsciousScheduler.numNodes - totalOccupiedCores;
         
