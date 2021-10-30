@@ -221,7 +221,7 @@ public abstract class Scheduler {
         int totalOccupiedCores = 0;
         for (int i = 0; i < executingJobList.size(); ++i) {
             Job job = executingJobList.get(i);
-            totalOccupiedCores += job.getRequiredCores();
+            totalOccupiedCores += job.getRequiredCoresPerNode() * job.getRequiredNodes();
         }
         for (int i = 0; i < temporallyScheduledJobList.size(); ++i) {
             Job job = temporallyScheduledJobList.get(i);
