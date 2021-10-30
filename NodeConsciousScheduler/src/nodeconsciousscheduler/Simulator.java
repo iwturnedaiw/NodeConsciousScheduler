@@ -207,7 +207,12 @@ public class Simulator {
 
         String fname[] = NodeConsciousScheduler.fname.split(".swf");
         
-        dir += "/" + date + "_" + fname[0] + "_" + this.scheAlgo + "_n" + NodeConsciousScheduler.numNodes + "c" + NodeConsciousScheduler.numCores + "_M" + NodeConsciousScheduler.M;
+        String memoryInfo = "OFF";
+        if (this.scheduleUsingMemory) {
+            memoryInfo = "ON";
+        }
+        
+        dir += "/" + date + "_" + fname[0] + "_" + this.scheAlgo + "_n" + NodeConsciousScheduler.numNodes + "c" + NodeConsciousScheduler.numCores + "_MEM_" + memoryInfo + "_M" + NodeConsciousScheduler.M;
         Path p = Paths.get(dir);
         return p;
     }

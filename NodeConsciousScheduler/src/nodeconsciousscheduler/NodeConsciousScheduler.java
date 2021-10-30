@@ -216,20 +216,25 @@ public class NodeConsciousScheduler {
                 // TODO: set appropriate parameter?
             }
 
-            if (ignoreIncompleteMemoryData) {
-                // required and actual memory is unspecified
-                if (requiredMemory == UNSPECIFIED) {
-                    ++canNotExecuteDueMemory;
-                    continue;
-                    // TODO: set appropriate parameter?
-                }
 
-                // required memory is zero
-                if (requiredMemory == 0) {
-                    ++canNotExecuteDueMemory;
+            // required and actual memory is unspecified
+            if (requiredMemory == UNSPECIFIED) {
+                ++canNotExecuteDueMemory;
+                if (ignoreIncompleteMemoryData) {
+                    continue;
+                }
+                requiredMemory = 0;
+                // TODO: set appropriate parameter?
+            }
+
+            // required memory is zero
+            if (requiredMemory == 0) {
+                ++canNotExecuteDueMemory;
+                if (ignoreIncompleteMemoryData) {
                     continue;
                 }
             }
+            
             
             int requiredCores = 0;
             try {
