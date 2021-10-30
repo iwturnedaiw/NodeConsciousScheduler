@@ -10,7 +10,7 @@ export CLASSPATH=./build/classes
 
 
 run() {
-  if [ ${#} -ne 5 ]; then
+  if [ ${#} -ne 6 ] || [ ${#} -ne 5 ]; then
     echo "Please specify the arguments"
     exit
   fi
@@ -21,13 +21,18 @@ run() {
   node=${3}
   core=${4}
   m=${5}
+  memory=${6}
+  if [ ${#} -eq 4 ]; then
+    memory=104857600
+  fi
 
   case="n${node}c${core}"
  
   #echo -e "\t\t\tn${node} c${core}"
   sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
   sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
-  java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 2>&1
+  sed s/memory/${memory}/g -i ./${DATADIR}/${tp}.swf.machines
+  java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 
   wait
   RET=$?
   echo -ne "${tp}\t${algorithm}\tM=${m}\t${case}\t"
@@ -44,4 +49,4 @@ run() {
 
 
 
-run ${1} ${2} ${3} ${4} ${5} 2>&1 | tee -a ${LOG}
+run ${1} ${2} ${3} ${4} ${5} ${6} 2>&1 | tee -a ${LOG}
