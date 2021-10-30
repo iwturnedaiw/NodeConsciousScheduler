@@ -10,7 +10,7 @@ export CLASSPATH=./build/classes
 
 
 run() {
-  if [ ${#} -ne 6 ] || [ ${#} -ne 5 ]; then
+  if [ ${#} -lt 5 ] || [ ${#} -gt 6 ]; then
     echo "Please specify the arguments"
     exit
   fi
