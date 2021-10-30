@@ -81,6 +81,7 @@ public class NodeConsciousScheduler {
         allNodesInfo = readResourceSettings(fname);
         SimulatorConfiguration simConf = readSimulatorConfiguration(CONFIGURATION_FILE);
         boolean ignoreIncompleteMemoryData = simConf.isIgnoreIncompleteMemoryData();
+        boolean scheduleUsingMemory = simConf.isScheduleUsingMemory();
 
         // Workload Trace Setting
         /*        
@@ -96,7 +97,7 @@ public class NodeConsciousScheduler {
         */      
         ArrayList<Job> jobList = new ArrayList<Job>();
         try {
-            jobList = readSWFFile(fname, ignoreIncompleteMemoryData);
+            jobList = readSWFFile(fname, ignoreIncompleteMemoryData, scheduleUsingMemory);
         } catch (IOException ex) {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -166,7 +167,7 @@ public class NodeConsciousScheduler {
         return nodeInfoList;
     }
 
-    private static ArrayList<Job> readSWFFile(String fname, boolean ignoreIncompleteMemoryData) throws IOException {
+    private static ArrayList<Job> readSWFFile(String fname, boolean ignoreIncompleteMemoryData, boolean scheduleUsingMemory) throws IOException {
         System.out.println("Opening job file at: " + DATASET_DIRECTORY + "/" + fname);
         BufferedReader br = null;
         Input in = new Input();
@@ -180,8 +181,10 @@ public class NodeConsciousScheduler {
         int notSpecifiedActural = 0;
         int zeroCpuCnt = 0;
         int canNotExecuteDueMemory = 0;
+        int canNotExecuteDueMemoryUpperLimit = 0;
         int memoryUnspecifiedCnt = 0;
         int canNotExecuteCountDueCpuResources = 0;
+        int coreZeroCnt = 0;
 
 
         int firstJobSubmitTime = UNUPDATED;
@@ -245,6 +248,11 @@ public class NodeConsciousScheduler {
                 //numCPU = 1;
             }
             
+            if (requiredCores == 0 || requiredCores == UNSPECIFIED) {
+                coreZeroCnt++;
+                continue;
+            }
+            
             int submitTime = Integer.parseInt(values[1]);
             if (firstJobSubmitTime == UNUPDATED) {
                 firstJobSubmitTime = submitTime;
@@ -277,7 +285,6 @@ public class NodeConsciousScheduler {
             }
 
             int requiredNodes = 1;
-            int ppn = -1;
 
             String properties = "";
             boolean nodeSpecifiedFlag = false;
@@ -295,6 +302,7 @@ public class NodeConsciousScheduler {
             }
 
             if (!nodeSpecifiedFlag) {
+/*
                 // Can execute single node
                 if (requiredCores <= NodeConsciousScheduler.numCores) {
                     requiredNodes = 1;
@@ -306,7 +314,7 @@ public class NodeConsciousScheduler {
                     } else {                    
                         if (requiredCores % 2 == 1)
                             ++requiredCores;
-                        int nodeNum = checkCanExecuteMultipleNodes(requiredCores);
+                        int nodeNum = checkCanExecuteMultipleNodes(requiredCores, requiredMemory, scheduleUsingMemory);
 
                         if (nodeNum >= 2) {
                             requiredNodes = nodeNum;
@@ -315,11 +323,23 @@ public class NodeConsciousScheduler {
                         }
                     }
                 }
+*/
+                int nodeNum = checkCanExecuteMultipleNodes(requiredCores, requiredMemory, scheduleUsingMemory);
+
+                if (nodeNum >= 1) {
+                    requiredNodes = nodeNum;
+                } else {
+                    ++canNotExecuteCountDueCpuResources;
+                }
             }
-            
+            /*
             if (!nodeSpecifiedFlag && requiredCores%NodeConsciousScheduler.numCores == 0) {
                 requiredNodes = requiredCores/NodeConsciousScheduler.numCores;
             }
+            */
+            
+            int ppn = requiredCores/requiredNodes;
+            if (requiredCores%requiredNodes != 0) ppn++;
 
             if (requiredNodes > NodeConsciousScheduler.numNodes) {
                 ++canNotExecuteCountDueCpuResources;
@@ -333,18 +353,22 @@ public class NodeConsciousScheduler {
             
             // TODO
             // Decide the accurate num of node for non-specified data
+                        
+            requiredMemory /= requiredNodes;
             
+            if (requiredMemory > NodeConsciousScheduler.memory) {
+                ++canNotExecuteDueMemoryUpperLimit;
+                continue;
+            }
+            boolean addFlag = checkJobProperty(submitTime, actualExecuteTime, specifiedExecuteTime, requiredNodes, ppn, scheduleUsingMemory, requiredMemory);
+            
+            if (!addFlag) {
+                continue;
+            }
             Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory);
             jobList.add(job);
             
         }
-        /*
-        System.out.println("not specified cpuTime count: " + notSpecifiedActural);
-        System.out.println("cpuTime = -1 count: " + canNotExecuteDueCpuTime);
-        System.out.println("cpuTime = 0 count: " + zeroCpuCnt);
-        System.out.println("memory = -1 count: " + memoryUnspecifiedCnt);
-        System.exit(1);     
-        */
         return jobList;
         
     }
@@ -371,18 +395,51 @@ public class NodeConsciousScheduler {
 
     }
 
-    private static int checkCanExecuteMultipleNodes(int requiredCores) {
+    private static int checkCanExecuteMultipleNodes(int requiredCores, int requiredMemeory, boolean scheduleUsingMemory) {
         int requiredNode = NodeConsciousScheduler.numNodes + 1;
-        for (int i = 2; i <= NodeConsciousScheduler.numNodes; ++i) {
-            int wRequiredCores = (requiredCores + i - 1)/i;
-            if (wRequiredCores <= NodeConsciousScheduler.numCores) {
-                requiredNode = min(requiredNode, i);
-                if (requiredCores % i == 0) {
-                    requiredNode = i;
-                    break;
+        
+        if (!scheduleUsingMemory){
+            for (int i = 1; i <= NodeConsciousScheduler.numNodes; ++i) {
+                int wRequiredCores = (requiredCores + i - 1) / i;
+                if (wRequiredCores <= NodeConsciousScheduler.numCores) {
+                    requiredNode = min(requiredNode, i);
+                    if (requiredCores % i == 0) {
+                        requiredNode = i;
+                        break;
+                    }
                 }
             }
+        } else {
+            for (int i = 1; i <= NodeConsciousScheduler.numNodes; ++i) {
+                int wRequiredCores = (requiredCores + i - 1) / i;
+                int wRequiredMemoryPerNode = (requiredMemeory)/i;
+                if (wRequiredMemoryPerNode > NodeConsciousScheduler.memory) {
+                    continue;
+                }
+                if (wRequiredCores <= NodeConsciousScheduler.numCores) {
+                    requiredNode = min(requiredNode, i);
+                    if (requiredCores % i == 0) {
+                        requiredNode = i;
+                        break;
+                    }
+                }
+            }            
         }
         return requiredNode;
+    }
+
+    private static boolean checkJobProperty(int submitTime, int actualExecuteTime, int specifiedExecuteTime, int requiredNodes, int ppn, boolean scheduleUsingMemory, int requiredMemory) {
+        boolean submitTimeFlag = (submitTime >= 0) && (submitTime < (2 << 29));
+        boolean actualFlag = (actualExecuteTime >= 0) && (specifiedExecuteTime >= 0) && (actualExecuteTime <= specifiedExecuteTime);
+        boolean cpuRscFlag = (requiredNodes <= NodeConsciousScheduler.numNodes) && (ppn <= NodeConsciousScheduler.numCores) && (requiredNodes * ppn <= NodeConsciousScheduler.numCores * NodeConsciousScheduler.numNodes); 
+        boolean memoryFlag = false;
+        if (!scheduleUsingMemory) {
+            memoryFlag = true;
+        } else {
+            memoryFlag = requiredMemory <= NodeConsciousScheduler.memory;
+        }
+                
+        return submitTimeFlag && actualFlag && cpuRscFlag && memoryFlag;
+
     }
 }
