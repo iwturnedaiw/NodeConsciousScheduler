@@ -12,6 +12,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import static java.lang.Math.min;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -79,6 +80,7 @@ public class NodeConsciousScheduler {
         ArrayList<NodeInfo> allNodesInfo = new ArrayList<NodeInfo>();
         allNodesInfo = readResourceSettings(fname);
         SimulatorConfiguration simConf = readSimulatorConfiguration(CONFIGURATION_FILE);
+        boolean ignoreIncompleteMemoryData = simConf.isIgnoreIncompleteMemoryData();
 
         // Workload Trace Setting
         /*        
@@ -94,7 +96,7 @@ public class NodeConsciousScheduler {
         */      
         ArrayList<Job> jobList = new ArrayList<Job>();
         try {
-            jobList = readSWFFile(fname);
+            jobList = readSWFFile(fname, ignoreIncompleteMemoryData);
         } catch (IOException ex) {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -164,7 +166,7 @@ public class NodeConsciousScheduler {
         return nodeInfoList;
     }
 
-    private static ArrayList<Job> readSWFFile(String fname) throws IOException {
+    private static ArrayList<Job> readSWFFile(String fname, boolean ignoreIncompleteMemoryData) throws IOException {
         System.out.println("Opening job file at: " + DATASET_DIRECTORY + "/" + fname);
         BufferedReader br = null;
         Input in = new Input();
@@ -173,10 +175,13 @@ public class NodeConsciousScheduler {
         String[] values = null;
         String line = "";
         
-        int ignoreCnt = 0;
+        
+        int canNotExecuteDueCpuTime = 0;
         int notSpecifiedActural = 0;
         int zeroCpuCnt = 0;
+        int canNotExecuteDueMemory = 0;
         int memoryUnspecifiedCnt = 0;
+        int canNotExecuteCountDueCpuResources = 0;
 
 
         int firstJobSubmitTime = UNUPDATED;
@@ -211,10 +216,19 @@ public class NodeConsciousScheduler {
                 // TODO: set appropriate parameter?
             }
 
-            // required and actual memory is unspecified
-            if (requiredMemory == UNSPECIFIED) {
-                continue;
-                // TODO: set appropriate parameter?
+            if (ignoreIncompleteMemoryData) {
+                // required and actual memory is unspecified
+                if (requiredMemory == UNSPECIFIED) {
+                    ++canNotExecuteDueMemory;
+                    continue;
+                    // TODO: set appropriate parameter?
+                }
+
+                // required memory is zero
+                if (requiredMemory == 0) {
+                    ++canNotExecuteDueMemory;
+                    continue;
+                }
             }
             
             int requiredCores = 0;
@@ -241,7 +255,7 @@ public class NodeConsciousScheduler {
  
             // actual and required time is unspecified            
             if (actualExecuteTime == Constants.NOTSPECIFIED) {
-                ignoreCnt++;
+                canNotExecuteDueCpuTime++;
                 continue;
             }
 
@@ -269,9 +283,33 @@ public class NodeConsciousScheduler {
                 requiredNodes = Integer.parseInt(req_nodes[0]);
                 nodeSpecifiedFlag = true;
             }
-            
-            if (requiredNodes > NodeConsciousScheduler.numNodes) {
+            // if required node is specified
+            if (nodeSpecifiedFlag && requiredNodes > NodeConsciousScheduler.numNodes) {
+                ++canNotExecuteCountDueCpuResources;
                 continue;
+            }
+
+            if (!nodeSpecifiedFlag) {
+                // Can execute single node
+                if (requiredCores <= NodeConsciousScheduler.numCores) {
+                    requiredNodes = 1;
+                } else if (requiredCores > NodeConsciousScheduler.numCores) {
+                    // Can execute multiple nodes using full core
+                    if (requiredCores % NodeConsciousScheduler.numCores == 0) {
+                        requiredNodes = requiredCores/NodeConsciousScheduler.numCores;
+                    // Check can execute multiple nodes
+                    } else {                    
+                        if (requiredCores % 2 == 1)
+                            ++requiredCores;
+                        int nodeNum = checkCanExecuteMultipleNodes(requiredCores);
+
+                        if (nodeNum >= 2) {
+                            requiredNodes = nodeNum;
+                        } else {
+                            ++canNotExecuteCountDueCpuResources;
+                        }
+                    }
+                }
             }
             
             if (!nodeSpecifiedFlag && requiredCores%NodeConsciousScheduler.numCores == 0) {
@@ -279,10 +317,12 @@ public class NodeConsciousScheduler {
             }
 
             if (requiredNodes > NodeConsciousScheduler.numNodes) {
+                ++canNotExecuteCountDueCpuResources;
                 continue;
             }
             
             if (requiredCores > requiredNodes * NodeConsciousScheduler.numCores) {
+                ++canNotExecuteCountDueCpuResources;
                 continue;
             }            
             
@@ -295,10 +335,10 @@ public class NodeConsciousScheduler {
         }
         /*
         System.out.println("not specified cpuTime count: " + notSpecifiedActural);
-        System.out.println("cpuTime = -1 count: " + ignoreCnt);
+        System.out.println("cpuTime = -1 count: " + canNotExecuteDueCpuTime);
         System.out.println("cpuTime = 0 count: " + zeroCpuCnt);
         System.out.println("memory = -1 count: " + memoryUnspecifiedCnt);
-        System.exit(1);
+        System.exit(1);     
         */
         return jobList;
         
@@ -320,8 +360,24 @@ public class NodeConsciousScheduler {
         String[] slowdownThresholds = slowdownThreshold.replace("\"","").split(",");
         boolean outputMinuteTimeseries = Boolean.parseBoolean(configurations.getProperty("OUTPUT_MINUTE_TIMESERIES"));
         boolean scheduleUsingMemory = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_MEMORY"));
+        boolean ignoreIncompleteMemoryData = Boolean.parseBoolean(configurations.getProperty("IGNORE_INCOMPLETE_MEMORY_DATA"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData);
 
+    }
+
+    private static int checkCanExecuteMultipleNodes(int requiredCores) {
+        int requiredNode = NodeConsciousScheduler.numNodes + 1;
+        for (int i = 2; i <= NodeConsciousScheduler.numNodes; ++i) {
+            int wRequiredCores = (requiredCores + i - 1)/i;
+            if (wRequiredCores <= NodeConsciousScheduler.numCores) {
+                requiredNode = min(requiredNode, i);
+                if (requiredCores % i == 0) {
+                    requiredNode = i;
+                    break;
+                }
+            }
+        }
+        return requiredNode;
     }
 }
