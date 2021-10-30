@@ -45,6 +45,8 @@ public class NodeConsciousScheduler {
     static int M = 2;
     static String fname = "gen01.swf";
     static ScheduleAlgorithm sche = EasyBackfilling;
+    static boolean ignoreIncompleteMemoryData = false;
+    static boolean memoryDataPerCore = false;
     
     /**
      * @param args the command line arguments
@@ -80,8 +82,9 @@ public class NodeConsciousScheduler {
         ArrayList<NodeInfo> allNodesInfo = new ArrayList<NodeInfo>();
         allNodesInfo = readResourceSettings(fname);
         SimulatorConfiguration simConf = readSimulatorConfiguration(CONFIGURATION_FILE);
-        boolean ignoreIncompleteMemoryData = simConf.isIgnoreIncompleteMemoryData();
+        ignoreIncompleteMemoryData = simConf.isIgnoreIncompleteMemoryData();
         boolean scheduleUsingMemory = simConf.isScheduleUsingMemory();
+        memoryDataPerCore = simConf.isMemoryDataPerCore();
 
         // Workload Trace Setting
         /*        
@@ -97,7 +100,7 @@ public class NodeConsciousScheduler {
         */      
         ArrayList<Job> jobList = new ArrayList<Job>();
         try {
-            jobList = readSWFFile(fname, ignoreIncompleteMemoryData, scheduleUsingMemory);
+            jobList = readSWFFile(fname, scheduleUsingMemory);
         } catch (IOException ex) {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -167,7 +170,8 @@ public class NodeConsciousScheduler {
         return nodeInfoList;
     }
 
-    private static ArrayList<Job> readSWFFile(String fname, boolean ignoreIncompleteMemoryData, boolean scheduleUsingMemory) throws IOException {
+    private static ArrayList<Job> readSWFFile(String fname, boolean scheduleUsingMemory) throws IOException {
+        boolean ignoreIncompleteMemoryData = NodeConsciousScheduler.ignoreIncompleteMemoryData;
         System.out.println("Opening job file at: " + DATASET_DIRECTORY + "/" + fname);
         BufferedReader br = null;
         Input in = new Input();
@@ -251,6 +255,10 @@ public class NodeConsciousScheduler {
             if (requiredCores == 0 || requiredCores == UNSPECIFIED) {
                 coreZeroCnt++;
                 continue;
+            }
+ 
+            if (NodeConsciousScheduler.memoryDataPerCore) {
+                requiredMemory = requiredMemory * requiredCores;
             }
             
             int submitTime = Integer.parseInt(values[1]);
@@ -390,8 +398,9 @@ public class NodeConsciousScheduler {
         boolean outputMinuteTimeseries = Boolean.parseBoolean(configurations.getProperty("OUTPUT_MINUTE_TIMESERIES"));
         boolean scheduleUsingMemory = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_MEMORY"));
         boolean ignoreIncompleteMemoryData = Boolean.parseBoolean(configurations.getProperty("IGNORE_INCOMPLETE_MEMORY_DATA"));
+        boolean memoryDataPerCore = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_CORE"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore);
 
     }
 
