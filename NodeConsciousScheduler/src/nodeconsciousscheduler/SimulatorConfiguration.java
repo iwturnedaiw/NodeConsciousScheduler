@@ -18,6 +18,7 @@ class SimulatorConfiguration {
     private boolean scheduleUsingMemory;
     private boolean ignoreIncompleteMemoryData;
     private boolean memoryDataPerCore;
+    private boolean outputResultsInDetail;
 
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries) {
         double previousValue = -1;
@@ -43,10 +44,11 @@ class SimulatorConfiguration {
     }
     
 
-    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean ignoreIncompleteMemoryData, boolean memoryDataPerCore) {
+    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean ignoreIncompleteMemoryData, boolean memoryDataPerCore, boolean outputResultsInDetail) {
         this.scheduleUsingMemory = scheduleUsingMemory;
         this.ignoreIncompleteMemoryData = ignoreIncompleteMemoryData;
         this.memoryDataPerCore = memoryDataPerCore;
+        this.outputResultsInDetail = outputResultsInDetail;
         double previousValue = -1;
         for (int i = 0; i < thresholdForSlowdown.length; ++i) {
             double value = Double.parseDouble(thresholdForSlowdown[i]);
@@ -75,6 +77,10 @@ class SimulatorConfiguration {
 
     public boolean isMemoryDataPerCore() {
         return memoryDataPerCore;
+    }
+
+    public boolean isOutputResults() {
+        return outputResultsInDetail;
     }
     
     

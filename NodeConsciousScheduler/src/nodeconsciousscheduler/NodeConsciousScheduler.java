@@ -47,6 +47,7 @@ public class NodeConsciousScheduler {
     static ScheduleAlgorithm sche = EasyBackfilling;
     static boolean ignoreIncompleteMemoryData = false;
     static boolean memoryDataPerCore = false;
+    static boolean outputResultsInDetail = true;
     
     /**
      * @param args the command line arguments
@@ -85,6 +86,7 @@ public class NodeConsciousScheduler {
         ignoreIncompleteMemoryData = simConf.isIgnoreIncompleteMemoryData();
         boolean scheduleUsingMemory = simConf.isScheduleUsingMemory();
         memoryDataPerCore = simConf.isMemoryDataPerCore();
+        outputResultsInDetail = simConf.isOutputResults();
 
         // Workload Trace Setting
         /*        
@@ -109,7 +111,7 @@ public class NodeConsciousScheduler {
         //sim = new Simulator(jobList, allNodesInfo, FCFS);
         sim = new Simulator(jobList, allNodesInfo, sche, simConf);
         sim.run();
-        sim.makeResults();
+        if (outputResultsInDetail) sim.makeResults();
 /*        
         PriorityQueue<Event> pq = new EventQueue();
         EventQueue evq = (EventQueue) pq;
@@ -189,6 +191,7 @@ public class NodeConsciousScheduler {
         int memoryUnspecifiedCnt = 0;
         int canNotExecuteCountDueCpuResources = 0;
         int coreZeroCnt = 0;
+        int addCheckSkip = 0;
 
 
         int firstJobSubmitTime = UNUPDATED;
@@ -338,6 +341,7 @@ public class NodeConsciousScheduler {
                     requiredNodes = nodeNum;
                 } else {
                     ++canNotExecuteCountDueCpuResources;
+                    checkCanExecuteMultipleNodes(requiredCores, requiredMemory, scheduleUsingMemory);
                 }
             }
             /*
@@ -366,11 +370,14 @@ public class NodeConsciousScheduler {
             
             if (requiredMemory > NodeConsciousScheduler.memory) {
                 ++canNotExecuteDueMemoryUpperLimit;
-                continue;
+                if (scheduleUsingMemory) {
+                    continue;
+                }
             }
             boolean addFlag = checkJobProperty(submitTime, actualExecuteTime, specifiedExecuteTime, requiredNodes, ppn, scheduleUsingMemory, requiredMemory);
             
             if (!addFlag) {
+                addCheckSkip++;
                 continue;
             }
             Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory);
@@ -399,8 +406,9 @@ public class NodeConsciousScheduler {
         boolean scheduleUsingMemory = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_MEMORY"));
         boolean ignoreIncompleteMemoryData = Boolean.parseBoolean(configurations.getProperty("IGNORE_INCOMPLETE_MEMORY_DATA"));
         boolean memoryDataPerCore = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_CORE"));
+        boolean outputResultsInDetail = Boolean.parseBoolean(configurations.getProperty("OUTPUT_RESULTS_IN_DETAIL"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore, outputResultsInDetail);
 
     }
 
