@@ -20,7 +20,8 @@ TP="gen01 gen02 gen03 short short1 hpc2n"
 #TP="hpc2n"
 #TP="short"
 #TP="gen03"
-M="2 3 4 5 6 7 8"
+#M="2 3 4 5 6 7 8"
+M="1 2 3 4 5 6 7 8"
 #M="1"
 #ALGORITHM=FCFS
 #ALGORITHM=FCFSOC
@@ -30,8 +31,11 @@ M="2 3 4 5 6 7 8"
 #ALGORITHM="FCFSOC EasyBackfillingOC"
 #ALGORITHM="EasyBackfillingOC"
 #ALGORITHM="FCFS EasyBackfilling"
+#ALGORITHM="FCFS"
+#ALGORITHM="FCFSOC"
 ALGORITHM="FCFSOC EasyBackfillingOC"
 #ALGORITHM="FCFS FCFSOC"
+#ALGORITHM="EasyBackfilling"
 #ALGORITHM=EasyBackfillingOC
 
 # path
@@ -74,7 +78,7 @@ test() {
           #RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
           #java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 2>&1
           ${SH} ./${RUN_SCRIPT} ${tp} ${algorithm} ${node} ${core} ${m} > /dev/null 2>&1
-          RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_M${m} | head -n 1`
+          RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_MEM_OFF_M${m} | head -n 1`
           RESULT_FILE+=/${FILENAME}
 #          if [ ${OC_FLAG} -eq 1 ]; then
 #          MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}
@@ -116,7 +120,7 @@ test() {
     #      fi
             #RESULT_FILE=`ls ./${RESULTDIR}/*_${tp}_${c}_M${m}/${FILENAME}`
             #RESULT_FILE=`ls ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_M${m}/${FILE_NAME}`
-            RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_M${m} | head -n 1`
+            RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${c}_MEM_OFF_M${m} | head -n 1`
             RESULT_FILE+=/${FILENAME}
 #            if [ ${OC_FLAG} -eq 1 ]; then
 #            MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${c}/${FILENAME}

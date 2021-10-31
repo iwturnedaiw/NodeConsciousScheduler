@@ -11,6 +11,7 @@ RESULTDIR=./result
 MASTER=./master
 FILENAME=./test.out
 TEMPLATE=template.machines
+TMPBASE=./tmpdir
 SH=bash
 PYTHON=python3
 export CLASSPATH=./build/classes
@@ -46,7 +47,7 @@ test() {
     core=${case#*c}
     node=${case%c*}
     node=${node#*n}
-    echo -e "\t\t\tn${node} c${core}"
+    echo -e "\t\t\t${algoritm}\tM=${m}\ttp=${tp}\t${c}\tGenerating..."
     sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
     sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
     #RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
@@ -54,19 +55,10 @@ test() {
     wait
     RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${case}_*_M${m} | head -n 1`
     RESULT_FILE+=/${FILENAME}
-    if [ ${OC_FLAG} -eq 1 ]; then
-      MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${case}/${FILENAME}
-    else
-      MASTER_FILE=./${MASTER}/${algorithm}/${tp}/${case}/${FILENAME}
-    fi
-    ${PYTHON} ${PYTHON_SCRIPT} ${MASTER_FILE} ${RESULT_FILE} ${core}
-    RET=$?
-    echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${case}\t"
-    if [ ${RET} -eq 0 ]; then
-      echo "OK"
-    else
-    echo "NG"
-    fi
+    TMPDIR=./${TMPBASE}/${algorithm}_M${m}/${tp}/${case}
+		mkdir -p ${TMPDIR}
+    cp -p ${RESULT_FILE} ${TMPDIR}
+    echo -e "\t\t\t${algoritm}\tM=${m}\ttp=${tp}\t${c}\tDone"
   done
 }
 
