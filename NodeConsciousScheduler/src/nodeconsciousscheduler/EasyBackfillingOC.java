@@ -594,6 +594,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
 
                     // 3. If ts.endTime > firstJobEndTime before S reaches actualTime, it nodes is fails
+/*
                     if (ts.getEndTime() > firstJobStartTime) {
                         boolean mayChangeFirstJobOCState = (((M*numCore - freeCores)/M) == ((M*numCore - freeCores + requiredCoresPerNode)/M));
                         if (tmpAssignNodesNo.contains((Integer)j) && mayChangeFirstJobOCState) {
@@ -609,6 +610,36 @@ public class EasyBackfillingOC extends EasyBackfilling {
                                 freeMemoryOnNodeK = min(freeMemoryOnNodeK, vacantNodes.get(k).getFreeMemory());
                                 boolean isMoreThanMemoryLimit = requiredMemoryPerNode > freeMemoryOnNodeK;                                
                                 if (tmpAssignNodesNo.contains((Integer)k) && (mayChangeFirstJobOCStateOnNodeK || isMoreThanMemoryLimit) && nodes.contains(vacantNodes.get(k))) {
+                                    nodes.remove(vacantNodes.get(k));
+                                }
+                            }
+                        }
+                    }
+*/
+                    // 3. If ts.endTime > firstJobEndTime before S reaches actualTime, it nodes is fails
+                    if (ts.getEndTime() > firstJobStartTime) {
+                        // If firstJob will use node j
+                        if (tmpAssignNodesNo.contains((Integer)j)) {
+                            int nowMultiplicityForFirstJob = caculateTentativeMultiplicity(freeCores, 0);
+                            boolean mayChangeFirstJobOCState = (nowMultiplicityForFirstJob != tentativeMultiplicityForBackfillJob);
+
+                            if (mayChangeFirstJobOCState) {
+                                checkFlag[j] = false;                        
+                                continue;
+                            }
+                        } else if (!tmpAssignNodesNo.contains((Integer)j)) {
+                            for (int k: tmpAssignNodesNo) {
+                                if (k == j) continue;
+                                int freeCoresOnNodeK = ts.getAvailableCores().get(k);
+                                freeCoresOnNodeK = min(freeCoresOnNodeK, vacantNodes.get(k).getFreeCores());
+                                
+                                int tentativeMultiplicityForBackfillJobOnNodeK = caculateTentativeMultiplicity(freeCoresOnNodeK, requiredCoresPerNode);
+                                int nowMultiplicityForFirstJob = caculateTentativeMultiplicity(freeCoresOnNodeK, 0);
+                                boolean mayChangeFirstJobOCStateOnNodeK = (tentativeMultiplicityForBackfillJobOnNodeK != nowMultiplicityForFirstJob);
+                                long freeMemoryOnNodeK = ts.getAvailableMemory().get(k);
+                                freeMemoryOnNodeK = min(freeMemoryOnNodeK, vacantNodes.get(k).getFreeMemory());
+                                boolean isMoreThanMemoryLimit = requiredMemoryPerNode > freeMemoryOnNodeK;                                
+                                if ((mayChangeFirstJobOCStateOnNodeK || isMoreThanMemoryLimit) && nodes.contains(vacantNodes.get(k))) {
                                     nodes.remove(vacantNodes.get(k));
                                 }
                             }
