@@ -47,6 +47,7 @@ public class NodeConsciousScheduler {
     static ScheduleAlgorithm sche = EasyBackfilling;
     static boolean ignoreIncompleteMemoryData = false;
     static boolean memoryDataPerCore = false;
+    static boolean memoryDataPerNode = false;
     static boolean outputResultsInDetail = true;
     
     /**
@@ -86,7 +87,13 @@ public class NodeConsciousScheduler {
         ignoreIncompleteMemoryData = simConf.isIgnoreIncompleteMemoryData();
         boolean scheduleUsingMemory = simConf.isScheduleUsingMemory();
         memoryDataPerCore = simConf.isMemoryDataPerCore();
+        memoryDataPerNode = simConf.isMemoryDataPerNode();
         outputResultsInDetail = simConf.isOutputResults();
+        
+        if (memoryDataPerCore & memoryDataPerNode) {
+            System.out.println("Configuration Error. Both MEMORY_DATA_PER_CORE and MEMORY_DATA_PER_NODE cannot be set true");
+            System.exit(1);
+        } 
 
         // Workload Trace Setting
         /*        
@@ -366,7 +373,9 @@ public class NodeConsciousScheduler {
             // TODO
             // Decide the accurate num of node for non-specified data
                         
-            requiredMemory /= requiredNodes;
+            if (!NodeConsciousScheduler.memoryDataPerNode) {
+                requiredMemory /= requiredNodes;
+            }
             
             if (requiredMemory > NodeConsciousScheduler.memory) {
                 ++canNotExecuteDueMemoryUpperLimit;
@@ -407,8 +416,9 @@ public class NodeConsciousScheduler {
         boolean ignoreIncompleteMemoryData = Boolean.parseBoolean(configurations.getProperty("IGNORE_INCOMPLETE_MEMORY_DATA"));
         boolean memoryDataPerCore = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_CORE"));
         boolean outputResultsInDetail = Boolean.parseBoolean(configurations.getProperty("OUTPUT_RESULTS_IN_DETAIL"));
+        boolean memoryDataPerNode = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_NODE"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore, outputResultsInDetail);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore, memoryDataPerNode, outputResultsInDetail);
 
     }
 
