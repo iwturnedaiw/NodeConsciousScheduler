@@ -49,6 +49,7 @@ public class NodeConsciousScheduler {
     static boolean memoryDataPerCore = false;
     static boolean memoryDataPerNode = false;
     static boolean outputResultsInDetail = true;
+    static boolean considerMemoryForNodeNum = false;
     
     /**
      * @param args the command line arguments
@@ -89,11 +90,17 @@ public class NodeConsciousScheduler {
         memoryDataPerCore = simConf.isMemoryDataPerCore();
         memoryDataPerNode = simConf.isMemoryDataPerNode();
         outputResultsInDetail = simConf.isOutputResults();
+        considerMemoryForNodeNum = simConf.isConsiderMemoryForNodeNum();
         
         if (memoryDataPerCore & memoryDataPerNode) {
             System.out.println("Configuration Error. Both MEMORY_DATA_PER_CORE and MEMORY_DATA_PER_NODE cannot be set true");
             System.exit(1);
         } 
+        
+        if (considerMemoryForNodeNum & scheduleUsingMemory) {
+            System.out.println("Configuration Error. Both SCHEDULE_USING_MEMORY and CONSIDER_MEMORY_FOR_JOB_NODENUM cannot be set true");
+            System.exit(1);            
+        }
 
         // Workload Trace Setting
         /*        
@@ -417,15 +424,16 @@ public class NodeConsciousScheduler {
         boolean memoryDataPerCore = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_CORE"));
         boolean outputResultsInDetail = Boolean.parseBoolean(configurations.getProperty("OUTPUT_RESULTS_IN_DETAIL"));
         boolean memoryDataPerNode = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_NODE"));
+        boolean considerMemoryForNodeNum = Boolean.parseBoolean(configurations.getProperty("CONSIDER_MEMORY_FOR_JOB_NODENUM"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore, memoryDataPerNode, outputResultsInDetail);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore, memoryDataPerNode, outputResultsInDetail, considerMemoryForNodeNum);
 
     }
 
     private static int checkCanExecuteMultipleNodes(int requiredCores, int requiredMemeory, boolean scheduleUsingMemory) {
         int requiredNode = NodeConsciousScheduler.numNodes + 1;
         
-        if (!scheduleUsingMemory){
+        if ((!scheduleUsingMemory && !considerMemoryForNodeNum)){
             for (int i = 1; i <= NodeConsciousScheduler.numNodes; ++i) {
                 int wRequiredCores = (requiredCores + i - 1) / i;
                 if (wRequiredCores <= NodeConsciousScheduler.numCores) {
