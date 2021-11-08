@@ -16,22 +16,7 @@ class SimulatorConfiguration {
     private ArrayList<Double> thresholdForSlowdown = new ArrayList<Double>();
     private boolean outputMinuteTimeseries;
     private boolean scheduleUsingMemory;
-    private boolean ignoreIncompleteMemoryData;
-    private boolean memoryDataPerCore;
-    private boolean memoryDataPerNode;
-    private boolean outputResultsInDetail;
-    private boolean considerMemoryForNodeNum;
 
-    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries) {
-        double previousValue = -1;
-        for (int i = 0; i < thresholdForSlowdown.length; ++i) {
-            double value = Double.parseDouble(thresholdForSlowdown[i]);
-            assert previousValue < value;
-            this.thresholdForSlowdown.add(value);
-            previousValue = value;
-        }
-        this.outputMinuteTimeseries = outputMinuteTimeseries;
-    }
 
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory) {
         this.scheduleUsingMemory = scheduleUsingMemory;
@@ -44,25 +29,7 @@ class SimulatorConfiguration {
         }
         this.outputMinuteTimeseries = outputMinuteTimeseries;
     }
-    
-
-    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean ignoreIncompleteMemoryData, boolean memoryDataPerCore, boolean memoryDataPerNode, boolean outputResultsInDetail, boolean considerMemoryForNodeNum) {
-        this.scheduleUsingMemory = scheduleUsingMemory;
-        this.ignoreIncompleteMemoryData = ignoreIncompleteMemoryData;
-        this.memoryDataPerCore = memoryDataPerCore;
-        this.memoryDataPerNode = memoryDataPerNode;
-        this.outputResultsInDetail = outputResultsInDetail;
-        this.considerMemoryForNodeNum = considerMemoryForNodeNum;
-        double previousValue = -1;
-        for (int i = 0; i < thresholdForSlowdown.length; ++i) {
-            double value = Double.parseDouble(thresholdForSlowdown[i]);
-            assert previousValue < value;
-            this.thresholdForSlowdown.add(value);
-            previousValue = value;
-        }
-        this.outputMinuteTimeseries = outputMinuteTimeseries;
-    }
-    
+        
     public ArrayList<Double> getThresholdForSlowdown() {
         return thresholdForSlowdown;
     }
@@ -75,25 +42,6 @@ class SimulatorConfiguration {
         return scheduleUsingMemory;
     }
 
-    public boolean isIgnoreIncompleteMemoryData() {
-        return ignoreIncompleteMemoryData;
-    }
-
-    public boolean isMemoryDataPerCore() {
-        return memoryDataPerCore;
-    }
-
-    public boolean isOutputResults() {
-        return outputResultsInDetail;
-    }
-
-    public boolean isMemoryDataPerNode() {
-        return memoryDataPerNode;
-    }
-
-    public boolean isConsiderMemoryForNodeNum() {
-        return considerMemoryForNodeNum;
-    }
     
     
 }

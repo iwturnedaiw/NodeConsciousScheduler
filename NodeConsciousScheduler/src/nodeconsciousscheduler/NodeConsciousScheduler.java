@@ -85,12 +85,7 @@ public class NodeConsciousScheduler {
         ArrayList<NodeInfo> allNodesInfo = new ArrayList<NodeInfo>();
         allNodesInfo = readResourceSettings(fname);
         SimulatorConfiguration simConf = readSimulatorConfiguration(CONFIGURATION_FILE);
-        ignoreIncompleteMemoryData = simConf.isIgnoreIncompleteMemoryData();
         boolean scheduleUsingMemory = simConf.isScheduleUsingMemory();
-        memoryDataPerCore = simConf.isMemoryDataPerCore();
-        memoryDataPerNode = simConf.isMemoryDataPerNode();
-        outputResultsInDetail = simConf.isOutputResults();
-        considerMemoryForNodeNum = simConf.isConsiderMemoryForNodeNum();
         
         if (memoryDataPerCore & memoryDataPerNode) {
             System.out.println("Configuration Error. Both MEMORY_DATA_PER_CORE and MEMORY_DATA_PER_NODE cannot be set true");
@@ -420,13 +415,13 @@ public class NodeConsciousScheduler {
         String[] slowdownThresholds = slowdownThreshold.replace("\"","").split(",");
         boolean outputMinuteTimeseries = Boolean.parseBoolean(configurations.getProperty("OUTPUT_MINUTE_TIMESERIES"));
         boolean scheduleUsingMemory = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_MEMORY"));
-        boolean ignoreIncompleteMemoryData = Boolean.parseBoolean(configurations.getProperty("IGNORE_INCOMPLETE_MEMORY_DATA"));
-        boolean memoryDataPerCore = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_CORE"));
-        boolean outputResultsInDetail = Boolean.parseBoolean(configurations.getProperty("OUTPUT_RESULTS_IN_DETAIL"));
-        boolean memoryDataPerNode = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_NODE"));
-        boolean considerMemoryForNodeNum = Boolean.parseBoolean(configurations.getProperty("CONSIDER_MEMORY_FOR_JOB_NODENUM"));
+        NodeConsciousScheduler.ignoreIncompleteMemoryData = Boolean.parseBoolean(configurations.getProperty("IGNORE_INCOMPLETE_MEMORY_DATA"));
+        NodeConsciousScheduler.memoryDataPerCore = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_CORE"));
+        NodeConsciousScheduler.outputResultsInDetail = Boolean.parseBoolean(configurations.getProperty("OUTPUT_RESULTS_IN_DETAIL"));
+        NodeConsciousScheduler.memoryDataPerNode = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_NODE"));
+        NodeConsciousScheduler.considerMemoryForNodeNum = Boolean.parseBoolean(configurations.getProperty("CONSIDER_MEMORY_FOR_JOB_NODENUM"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore, memoryDataPerNode, outputResultsInDetail, considerMemoryForNodeNum);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory);
 
     }
 
