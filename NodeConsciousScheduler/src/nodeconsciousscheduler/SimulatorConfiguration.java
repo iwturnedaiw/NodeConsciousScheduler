@@ -7,6 +7,8 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -16,6 +18,8 @@ class SimulatorConfiguration {
     private ArrayList<Double> thresholdForSlowdown = new ArrayList<Double>();
     private boolean outputMinuteTimeseries;
     private boolean scheduleUsingMemory;
+    private boolean considerJobMatching;
+    Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
 
 
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory) {
@@ -29,7 +33,20 @@ class SimulatorConfiguration {
         }
         this.outputMinuteTimeseries = outputMinuteTimeseries;
     }
-        
+
+    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean considerJobMatching) {
+        this.scheduleUsingMemory = scheduleUsingMemory;
+        this.considerJobMatching = considerJobMatching;
+        double previousValue = -1;
+        for (int i = 0; i < thresholdForSlowdown.length; ++i) {
+            double value = Double.parseDouble(thresholdForSlowdown[i]);
+            assert previousValue < value;
+            this.thresholdForSlowdown.add(value);
+            previousValue = value;
+        }
+        this.outputMinuteTimeseries = outputMinuteTimeseries;
+    }
+    
     public ArrayList<Double> getThresholdForSlowdown() {
         return thresholdForSlowdown;
     }
@@ -42,6 +59,15 @@ class SimulatorConfiguration {
         return scheduleUsingMemory;
     }
 
-    
-    
+    public boolean isConsiderJobMatching() {
+        return considerJobMatching;
+    }
+
+    public void setJobMatchingTable(Map<JobMatching, Double> jobMatchingTable) {
+        this.jobMatchingTable = jobMatchingTable;
+    }
+
+    public Map<JobMatching, Double> getJobMatchingTable() {
+        return jobMatchingTable;
+    }
 }

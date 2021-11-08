@@ -42,6 +42,7 @@ public class Job implements Comparable<Job> {
     private int userId;
     private int groupId;
     private long maxMemory;
+    private int matchingGroup;
     
 
     Job() {}
@@ -62,7 +63,7 @@ public class Job implements Comparable<Job> {
         this.OCStateLevel = 1;
     }
 
-    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes, int userId, int groupId, int maxMemory) {
+    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes, int userId, int groupId, int maxMemory, int matchingGroup) {
         this.jobId = jobId;
         this.submitTime = submitTime;
         this.actualExecuteTime = actualExecuteTime;
@@ -74,6 +75,7 @@ public class Job implements Comparable<Job> {
         this.userId = userId;
         this.groupId = groupId;
         this.maxMemory = maxMemory;
+        this.matchingGroup = matchingGroup;
         
         this.startTime = -1;
         this.finishedTime = 2 << 30;
@@ -306,7 +308,13 @@ public class Job implements Comparable<Job> {
     public void setSlowdownByOriginalRunningTime(double slowdownByOriginalRunningTime) {
         this.slowdownByOriginalRunningTime = slowdownByOriginalRunningTime;
     }
-    
-    
+
+    public int getMatchingGroup() {
+        return matchingGroup;
+    }
+
+    public void setMatchingGroup(int matchingGroup) {
+        this.matchingGroup = matchingGroup;
+    }
     
 }

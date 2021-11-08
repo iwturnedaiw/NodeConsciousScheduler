@@ -19,7 +19,9 @@ import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -50,6 +52,8 @@ public class NodeConsciousScheduler {
     static boolean memoryDataPerNode = false;
     static boolean outputResultsInDetail = true;
     static boolean considerMemoryForNodeNum = false;
+    static Map<Integer, Integer> matchingGroup;
+
     
     /**
      * @param args the command line arguments
@@ -86,6 +90,7 @@ public class NodeConsciousScheduler {
         allNodesInfo = readResourceSettings(fname);
         SimulatorConfiguration simConf = readSimulatorConfiguration(CONFIGURATION_FILE);
         boolean scheduleUsingMemory = simConf.isScheduleUsingMemory();
+        boolean considerJobMatching = simConf.isConsiderJobMatching();
         
         if (memoryDataPerCore & memoryDataPerNode) {
             System.out.println("Configuration Error. Both MEMORY_DATA_PER_CORE and MEMORY_DATA_PER_NODE cannot be set true");
@@ -96,7 +101,14 @@ public class NodeConsciousScheduler {
             System.out.println("Configuration Error. Both SCHEDULE_USING_MEMORY and CONSIDER_MEMORY_FOR_JOB_NODENUM cannot be set true");
             System.exit(1);            
         }
-
+        
+        Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
+        if (considerJobMatching) {
+            matchingGroup = readJobMatchingGroupTable(fname);
+            jobMatchingTable = readJobMatchingTable(fname);
+            simConf.setJobMatchingTable(jobMatchingTable);
+        }
+        
         // Workload Trace Setting
         /*        
         Job job0 = new Job(0, 1, 500, 1000, 40, 4);
@@ -111,7 +123,7 @@ public class NodeConsciousScheduler {
         */      
         ArrayList<Job> jobList = new ArrayList<Job>();
         try {
-            jobList = readSWFFile(fname, scheduleUsingMemory);
+            jobList = readSWFFile(fname, scheduleUsingMemory, considerJobMatching);
         } catch (IOException ex) {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -181,7 +193,7 @@ public class NodeConsciousScheduler {
         return nodeInfoList;
     }
 
-    private static ArrayList<Job> readSWFFile(String fname, boolean scheduleUsingMemory) throws IOException {
+    private static ArrayList<Job> readSWFFile(String fname, boolean scheduleUsingMemory, boolean considerJobMatching) throws IOException {
         boolean ignoreIncompleteMemoryData = NodeConsciousScheduler.ignoreIncompleteMemoryData;
         System.out.println("Opening job file at: " + DATASET_DIRECTORY + "/" + fname);
         BufferedReader br = null;
@@ -225,6 +237,10 @@ public class NodeConsciousScheduler {
 
             int jobId = Integer.parseInt(values[0]);
             int userId = Integer.parseInt(values[11]);
+            int matchingGroup = UNSPECIFIED;
+            if (considerJobMatching && NodeConsciousScheduler.matchingGroup.containsKey(userId)) {
+                matchingGroup  = NodeConsciousScheduler.matchingGroup.get((Integer) userId);
+            }
             int groupId = Integer.parseInt(values[12]);
             int requiredMemory = Integer.parseInt(values[9]);
             int actualMemory = Integer.parseInt(values[6]);
@@ -391,7 +407,7 @@ public class NodeConsciousScheduler {
                 addCheckSkip++;
                 continue;
             }
-            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory);
+            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory, matchingGroup);
             jobList.add(job);
             
         }
@@ -420,8 +436,9 @@ public class NodeConsciousScheduler {
         NodeConsciousScheduler.outputResultsInDetail = Boolean.parseBoolean(configurations.getProperty("OUTPUT_RESULTS_IN_DETAIL"));
         NodeConsciousScheduler.memoryDataPerNode = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_NODE"));
         NodeConsciousScheduler.considerMemoryForNodeNum = Boolean.parseBoolean(configurations.getProperty("CONSIDER_MEMORY_FOR_JOB_NODENUM"));
+        boolean considerJobMatching = Boolean.parseBoolean(configurations.getProperty("CONSIDER_JOB_MATCHING"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, considerJobMatching);
 
     }
 
@@ -471,5 +488,49 @@ public class NodeConsciousScheduler {
                 
         return submitTimeFlag && actualFlag && cpuRscFlag && memoryFlag;
 
+    }
+
+    private static Map<Integer, Integer> readJobMatchingGroupTable(String fname) throws IOException {
+        String fnameMatchingGroupTable = fname + ".matching_group";
+        System.out.println("Opening matching table file at: " + DATASET_DIRECTORY + "/" + fnameMatchingGroupTable);
+        BufferedReader br = null;
+        Input in = new Input();
+        br = in.openFile(new File(DATASET_DIRECTORY + "/" + fnameMatchingGroupTable));
+        
+        String[] values = null;
+        String line = "";
+        
+       Map<Integer, Integer> matchingGroupTable = new HashMap<Integer, Integer>();
+        while ((line = br.readLine()) != null) {
+            values = line.split("\\s+");
+            for (int i = 1; i < values.length; ++i) {
+                matchingGroupTable.put(Integer.parseInt(values[i]), Integer.parseInt(values[0]));
+            }
+
+        }
+        return matchingGroupTable;
+    }
+
+    private static Map<JobMatching, Double> readJobMatchingTable(String fname) throws IOException {
+        String fnameMatchingTable = fname + ".matching_table";
+        System.out.println("Opening matching table file at: " + DATASET_DIRECTORY + "/" + fnameMatchingTable);
+        BufferedReader br = null;
+        Input in = new Input();
+        br = in.openFile(new File(DATASET_DIRECTORY + "/" + fnameMatchingTable));
+        
+        String[] values = null;
+        String line = "";
+        
+       Map<JobMatching, Double> matchingTable = new HashMap<>();
+        while ((line = br.readLine()) != null) {
+            values = line.split("\\s+");
+            int victimJobId = Integer.parseInt(values[0]);
+            int opponentJobId = Integer.parseInt(values[1]);
+            double ratio = Double.parseDouble(values[2]);
+            matchingTable.put(new JobMatching(victimJobId, opponentJobId), ratio);
+        }
+        return matchingTable;
+        
+        
     }
 }

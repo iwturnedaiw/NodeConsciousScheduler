@@ -96,7 +96,9 @@ public class Simulator {
     ArrayList<Double> thresholdForSlowdown;
     private boolean outputMinuteBoolean;
     private boolean scheduleUsingMemory;
-
+    private boolean considerJobMatching;
+    Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
+    
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
         this.allNodesInfo = allNodesInfo;
@@ -108,6 +110,8 @@ public class Simulator {
         this.thresholdForSlowdown = simConf.getThresholdForSlowdown();
         this.outputMinuteBoolean = simConf.isOutputMinuteTimeseries();
         this.scheduleUsingMemory = simConf.isScheduleUsingMemory();
+        this.considerJobMatching = simConf.isConsiderJobMatching();
+        this.jobMatchingTable = simConf.getJobMatchingTable();
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -1165,5 +1169,12 @@ public class Simulator {
     public boolean isScheduleUsingMemory() {
         return scheduleUsingMemory;
     }
-    
+
+    public boolean isConsiderJobMatching() {
+        return considerJobMatching;
+    }
+
+    public Map<JobMatching, Double> getJobMatchingTable() {
+        return jobMatchingTable;
+    }
 }
