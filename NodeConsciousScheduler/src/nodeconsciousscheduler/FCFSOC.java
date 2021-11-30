@@ -328,6 +328,7 @@ public class FCFSOC extends FCFS {
                     node.setFreeCores(freeCores);
 
                     freeMemory = min(freeMemory, node.getFreeMemory());
+                    node.setFreeMemory(freeMemory);
 
                     boolean addFlag = false;
                     addFlag = (freeCores - requiredCoresPerNode >= -(M-1)*numCore);

@@ -250,6 +250,7 @@ class EasyBackfilling extends Scheduler {
                     node.setFreeCores(freeCores);
                                     
                     freeMemory = min(freeMemory, node.getFreeMemory());
+                    node.setFreeMemory(freeMemory);
 
                     boolean addFlag = false;
                     addFlag = (freeCores >= requiredCoresPerNode);                    

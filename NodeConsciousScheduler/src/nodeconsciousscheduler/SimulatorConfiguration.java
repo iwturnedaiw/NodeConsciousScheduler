@@ -21,6 +21,7 @@ class SimulatorConfiguration {
     private boolean memoryDataPerNode;
     private boolean outputResultsInDetail;
     private boolean considerMemoryForNodeNum;
+    private boolean crammingMemoryScheduling;
 
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries) {
         double previousValue = -1;
@@ -46,13 +47,14 @@ class SimulatorConfiguration {
     }
     
 
-    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean ignoreIncompleteMemoryData, boolean memoryDataPerCore, boolean memoryDataPerNode, boolean outputResultsInDetail, boolean considerMemoryForNodeNum) {
+    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean ignoreIncompleteMemoryData, boolean memoryDataPerCore, boolean memoryDataPerNode, boolean outputResultsInDetail, boolean considerMemoryForNodeNum, boolean crammingMemoryScheduling) {
         this.scheduleUsingMemory = scheduleUsingMemory;
         this.ignoreIncompleteMemoryData = ignoreIncompleteMemoryData;
         this.memoryDataPerCore = memoryDataPerCore;
         this.memoryDataPerNode = memoryDataPerNode;
         this.outputResultsInDetail = outputResultsInDetail;
         this.considerMemoryForNodeNum = considerMemoryForNodeNum;
+        this.crammingMemoryScheduling = crammingMemoryScheduling;
         double previousValue = -1;
         for (int i = 0; i < thresholdForSlowdown.length; ++i) {
             double value = Double.parseDouble(thresholdForSlowdown[i]);
@@ -93,6 +95,10 @@ class SimulatorConfiguration {
 
     public boolean isConsiderMemoryForNodeNum() {
         return considerMemoryForNodeNum;
+    }
+
+    public boolean isCrammingMemoryScheduling() {
+        return crammingMemoryScheduling;
     }
     
     

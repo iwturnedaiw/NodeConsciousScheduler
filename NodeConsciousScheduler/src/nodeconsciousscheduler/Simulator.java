@@ -96,6 +96,7 @@ public class Simulator {
     ArrayList<Double> thresholdForSlowdown;
     private boolean outputMinuteBoolean;
     private boolean scheduleUsingMemory;
+    private boolean crammingMemoryScheduling;
 
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
@@ -108,6 +109,7 @@ public class Simulator {
         this.thresholdForSlowdown = simConf.getThresholdForSlowdown();
         this.outputMinuteBoolean = simConf.isOutputMinuteTimeseries();
         this.scheduleUsingMemory = simConf.isScheduleUsingMemory();
+        this.crammingMemoryScheduling = simConf.isCrammingMemoryScheduling();
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -1165,5 +1167,11 @@ public class Simulator {
     public boolean isScheduleUsingMemory() {
         return scheduleUsingMemory;
     }
+
+    public boolean isCrammingMemoryScheduling() {
+        return crammingMemoryScheduling;
+    }
+    
+    
     
 }

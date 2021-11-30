@@ -527,6 +527,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         node.setFreeCores(freeCores);
 
                         freeMemory = min(freeMemory, node.getFreeMemory());
+                        node.setFreeMemory(freeMemory);
 
                         boolean addFlag = false;
                         addFlag = (freeCores - requiredCoresPerNode >= -(M-1)*numCore);
@@ -580,6 +581,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                     // 0. Check memory hard-limit
                     long freeMemory = ts.getAvailableMemory().get(j);
+                    node.setFreeMemory(freeMemory);
                     if (freeMemory < requiredMemoryPerNode) {
                         checkFlag[j] = false;
                         continue;

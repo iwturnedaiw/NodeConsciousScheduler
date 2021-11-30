@@ -425,8 +425,9 @@ public class NodeConsciousScheduler {
         boolean outputResultsInDetail = Boolean.parseBoolean(configurations.getProperty("OUTPUT_RESULTS_IN_DETAIL"));
         boolean memoryDataPerNode = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_NODE"));
         boolean considerMemoryForNodeNum = Boolean.parseBoolean(configurations.getProperty("CONSIDER_MEMORY_FOR_JOB_NODENUM"));
+        boolean crammingMemoryScheduling = Boolean.parseBoolean(configurations.getProperty("CRAMMING_MEMORY_SCHEDULING"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore, memoryDataPerNode, outputResultsInDetail, considerMemoryForNodeNum);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, ignoreIncompleteMemoryData, memoryDataPerCore, memoryDataPerNode, outputResultsInDetail, considerMemoryForNodeNum, crammingMemoryScheduling);
 
     }
 

@@ -44,6 +44,16 @@ class VacantNode implements Comparable<VacantNode>{
         if (this.freeCores > o.freeCores) {
             return -1;
         }
+        
+        if (NodeConsciousScheduler.sim.isCrammingMemoryScheduling()) {
+            if (this.freeMemory < o.freeMemory) {
+                return -1;
+            }
+            if (this.freeMemory > o.freeMemory) {
+                return 1;
+            }            
+        }
+        
         return 0;
     }
 
