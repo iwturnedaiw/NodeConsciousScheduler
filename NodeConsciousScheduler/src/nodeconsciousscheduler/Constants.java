@@ -38,6 +38,10 @@ public class Constants {
     static String INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT = "instant_utilization_ratio_OC_hour.out";
     static String INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT = "instant_utilization_ratio_OC_minute.out";
 
+    static String INSTANT_UTILIZATION_RATIO_MEMORY_DAY_OUTPUT = "instant_memory_utilization_ratio_day.out";
+    static String INSTANT_UTILIZATION_RATIO_MEMORY_HOUR_OUTPUT = "instant_memory_utilization_ratio_hour.out";
+    static String INSTANT_UTILIZATION_RATIO_MEMORY_MINUTE_OUTPUT = "instant_memory_utilization_ratio_minute.out";
+    
     static String CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT = "cumulative_finished_job_day.out";
     static String CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT = "cumulative_finished_job_hour.out";
     static String CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT = "cumulative_finished_job_minute.out";

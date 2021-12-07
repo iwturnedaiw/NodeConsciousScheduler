@@ -11,10 +11,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import static java.lang.Math.min;
 import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,6 +49,9 @@ import static nodeconsciousscheduler.Constants.FOR_VISUALIZATION_OUTPUT;
 import static nodeconsciousscheduler.Constants.HOUR_IN_SECOND;
 import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_MEMORY_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_MEMORY_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_MEMORY_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_OC_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT;
@@ -300,6 +299,11 @@ public class Simulator {
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_DAY_OUTPUT, DAY_IN_SECOND, true);
         outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_HOUR_OUTPUT, HOUR_IN_SECOND, true);
 
+        if (scheduleUsingMemory) {
+            outputInstatntMemoryUtilizationRatio(INSTANT_UTILIZATION_RATIO_MEMORY_DAY_OUTPUT, DAY_IN_SECOND);
+            outputInstatntMemoryUtilizationRatio(INSTANT_UTILIZATION_RATIO_MEMORY_HOUR_OUTPUT, HOUR_IN_SECOND);
+        }
+        
         outputSlowdown(false);
         outputSlowdown(true);
         outputResultEachUserAndGroup();
@@ -310,6 +314,7 @@ public class Simulator {
         if (outputMinuteBoolean) {
             outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT, MINUTE_IN_SECOND, false);
             outputInstatntUtilizationRatio(INSTANT_UTILIZATION_RATIO_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
+            outputInstatntMemoryUtilizationRatio(INSTANT_UTILIZATION_RATIO_MEMORY_MINUTE_OUTPUT, MINUTE_IN_SECOND);
             outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_MINUTE_OUTPUT, ARRIVAL_JOB_PER_MINUTE_OUTPUT, START_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT, FINISHED_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT, WAITING_RESOURCES_PER_MINUTE_OUTPUT, EXECUTING_RESOURCES_PER_MINUTE_OUTPUT, WAITING_MEMORY_RESOURCES_PER_MINUTE_OUTPUT, EXECUTING_MEMORY_RESOURCES_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
         }
         
@@ -1164,6 +1169,78 @@ public class Simulator {
 
     public boolean isScheduleUsingMemory() {
         return scheduleUsingMemory;
+    }
+
+    private void outputInstatntMemoryUtilizationRatio(String fileName, int MODE) {
+        try {
+            PrintWriter pwUtilizationRatio;
+            pwUtilizationRatio = new PrintWriter(this.p + "/" + fileName);
+
+            ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
+            result.addAll(calcInstantMemoryUtilizationRatio(MODE));
+            
+            for (int j = 0; j < NodeConsciousScheduler.numNodes; ++j) {
+                pwUtilizationRatio.print("\t" + j);
+            }
+            pwUtilizationRatio.println("\tAve.");
+            
+            
+            if (result.size() != 0) {
+                for (int i = 0; i < result.size() - 1; ++i) {
+                    //pwUtilizationRatio.println(idxWaiting + "\t" + resultWaiting.get(idxWaiting));
+                    pwUtilizationRatio.print(i);
+                    ArrayList<Double> ret = result.get(i);
+                    double totalUtilizationRatio = 0.0;
+                    for (int j = 0; j < ret.size(); ++j) {
+                        pwUtilizationRatio.print("\t" + ret.get(j));
+                        totalUtilizationRatio += ret.get(j);
+                    }
+                    pwUtilizationRatio.println("\t" + totalUtilizationRatio/NodeConsciousScheduler.numNodes);
+                }
+                pwUtilizationRatio.print(result.size() - 1);
+
+                double totalUtilizationRatio = 0.0;
+                ArrayList<Double> ret = result.get(result.size() - 1);
+                for (int j = 0; j < ret.size(); ++j) {
+                    pwUtilizationRatio.print("\t" + ret.get(j));
+                    totalUtilizationRatio += ret.get(j);
+                }
+                pwUtilizationRatio.println("\t" + totalUtilizationRatio / NodeConsciousScheduler.numNodes);                
+            }
+            pwUtilizationRatio.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
+        }        
+
+    }
+
+    private Collection<? extends ArrayList<Double>> calcInstantMemoryUtilizationRatio(int THRESHOLD) {
+        ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
+        LinkedList<TimeSlice> completedTimeSlices = this.sche.completedTimeSlices;
+        int i = 0;
+        int threshold = THRESHOLD;
+        result.add(calcMemoryUtilizationAtTs(completedTimeSlices.get(i)));
+        for (;;) {
+            while (completedTimeSlices.get(i).getEndTime() <= threshold) {
+                ++i;
+                if (i == completedTimeSlices.size()) break;
+            }
+            int idx = i == completedTimeSlices.size() ? i-1:i;
+            result.add(calcMemoryUtilizationAtTs(completedTimeSlices.get(idx)));
+            threshold +=  THRESHOLD;
+            if (i == completedTimeSlices.size()) break;
+        }
+        return result;        
+    }
+
+    private ArrayList<Double> calcMemoryUtilizationAtTs(TimeSlice ts) {
+        ArrayList<Double> result = new ArrayList<Double>(); 
+        ArrayList<Long> availableMemory = ts.getAvailableMemory();
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) {
+            long memory = NodeConsciousScheduler.memory - ts.getAvailableMemory().get(i);
+            result.add((double)memory/NodeConsciousScheduler.memory*100);
+        }
+        return result;
     }
     
 }
