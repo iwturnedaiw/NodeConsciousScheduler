@@ -6,6 +6,8 @@
 
 package nodeconsciousscheduler;
 
+import static nodeconsciousscheduler.Constants.UNUSED;
+
 
 
 /**
@@ -16,6 +18,7 @@ public class Event implements Comparable<Event> {
     private EventType eventType;
     private int occurrenceTime;
     private Job job;
+    private int deleteTargetTime = UNUSED;
     
     
     Event(EventType eventType, int occurrenceTime, Job job) {
@@ -25,6 +28,13 @@ public class Event implements Comparable<Event> {
         
     }
 
+    Event(EventType eventType, int occurrenceTime, Job job, int deleteTargetTime) {
+        this.eventType = eventType;
+        this.occurrenceTime = occurrenceTime;
+        this.job = job;
+        this.deleteTargetTime = deleteTargetTime;        
+    }
+    
     Event(int occurrenceTime, Job job) {
         this.occurrenceTime = occurrenceTime;
         this.job = job;
@@ -54,6 +64,14 @@ public class Event implements Comparable<Event> {
         return job;
     }
 
+    public int getDeleteTargetTime() {
+        return deleteTargetTime;
+    }
+
+    public void setDeleteTargetTime(int deleteTargetTime) {
+        this.deleteTargetTime = deleteTargetTime;
+    }
+    
     @Override
     public int compareTo(Event o) {
         if (this.occurrenceTime < o.occurrenceTime) {
@@ -62,8 +80,36 @@ public class Event implements Comparable<Event> {
         if (this.occurrenceTime > o.occurrenceTime) {
             return 1;
         }
-        return 0;
+        //if (this.eventType != EventType.END && this.eventType == o.eventType) {
+        if (this.eventType == o.eventType) {
+            return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());            
+        }
+        if (this.eventType == EventType.START) {
+            return -1;
+        }
+        if (o.eventType == EventType.START) {
+            return 1;
+        }        
+        if (this.eventType == EventType.END) {
+            return -1;
+        }
+        if (o.eventType == EventType.END) {
+            return 1;
+        }
+        if (this.eventType == EventType.DELETE_FROM_END) {
+            return -1;
+        }
+        if (o.eventType == EventType.DELETE_FROM_END) {
+            return 1;
+        }
+        if (this.eventType == EventType.DELETE_FROM_BEGINNING) {
+            return -1;
+        }
+        if (o.eventType == EventType.DELETE_FROM_BEGINNING) {
+            return 1;
+        }
+        
+        
+        return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());
     }
-    
-
 }

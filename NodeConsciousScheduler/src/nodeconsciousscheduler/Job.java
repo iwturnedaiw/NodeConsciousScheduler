@@ -7,25 +7,44 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+import static nodeconsciousscheduler.Constants.UNSTARTED;
 
 /**
  *
  * @author sminami
  */
-public class Job {
+public class Job implements Comparable<Job> {
     private int jobId;
     private int submitTime;
     private int actualExecuteTime;
+    private int specifiedExecuteTime;
+    private int endEventOccuranceTimeNow;
     private int requiredTime;
     private int requiredCores;
     private int requiredNodes;
+    private int requiredCoresPerNode;
     private int runningTimeDed;
     private int runningTimeOC;
+    private double cpuTimeForNow;
+    private int OCStateLevel;
     private int startTime;
+    private int previousMeasuredTime;
+    private int previousMigratingTime;
     private int finishedTime;
     private int waitTime;
     private int numNodes;
-    private ArrayList<UsingNodes> usingNodesList;
+    private double slowdown;
+    private double slowdownByOriginalRunningTime;
+    private ArrayList<UsingNode> usingNodesList;
+    private Set<Integer> coexistingJobs;
+    private int userId;
+    private int groupId;
+    private long maxMemory;
+    
+
+    Job() {}
     
     Job(int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes) {
         this.submitTime = submitTime;
@@ -34,22 +53,35 @@ public class Job {
         this.requiredCores = requiredCores;
         this.requiredNodes = requiredNodes;
         
-        this.startTime = -1;
+        this.startTime = UNSTARTED;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
+        this.cpuTimeForNow = 0.0;
+        this.usingNodesList = new ArrayList<UsingNode>();
+        this.coexistingJobs = new HashSet<Integer>();
+        this.OCStateLevel = 1;
     }
 
-    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes) {
+    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes, int userId, int groupId, int maxMemory) {
         this.jobId = jobId;
         this.submitTime = submitTime;
         this.actualExecuteTime = actualExecuteTime;
         this.requiredTime = requiredTime;
         this.requiredCores = requiredCores;
         this.requiredNodes = requiredNodes;
+        this.requiredCoresPerNode = requiredCores/requiredNodes;
+        if (requiredCores%requiredNodes != 0) ++this.requiredCoresPerNode;
+        this.userId = userId;
+        this.groupId = groupId;
+        this.maxMemory = maxMemory;
         
         this.startTime = -1;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
+        this.cpuTimeForNow = 0.0;
+        this.usingNodesList = new ArrayList<UsingNode>();
+        this.coexistingJobs = new HashSet<Integer>();
+        this.OCStateLevel = 1;
     }
     
     
@@ -81,6 +113,10 @@ public class Job {
         return startTime;
     }
 
+    public int getPreviousMeasuredTime() {
+        return previousMeasuredTime;
+    }
+    
     public int getFinishedTime() {
         return finishedTime;
     }
@@ -93,7 +129,7 @@ public class Job {
         return numNodes;
     }
 
-    public ArrayList<UsingNodes> getUsingNodesList() {
+    public ArrayList<UsingNode> getUsingNodesList() {
         return usingNodesList;
     }
 
@@ -105,6 +141,23 @@ public class Job {
         return requiredNodes;
     }
 
+    public double getCpuTimeForNow() {
+        return cpuTimeForNow;
+    }
+    
+    public int getOCStateLevel() {
+        return OCStateLevel;
+    }
+
+    public Set<Integer> getCoexistingJobs() {
+        return coexistingJobs;
+    }
+
+    public int getEndEventOccuranceTimeNow() {
+        return endEventOccuranceTimeNow;
+    }
+    
+    
     public void setJobId(int jobId) {
         this.jobId = jobId;
     }
@@ -141,6 +194,10 @@ public class Job {
         this.startTime = startTime;
     }
 
+    public void setPreviousMeasuredTime(int previousMeasuredTime) {
+        this.previousMeasuredTime = previousMeasuredTime;
+    }
+    
     public void setFinishedTime(int finishedTime) {
         this.finishedTime = finishedTime;
     }
@@ -153,13 +210,102 @@ public class Job {
         this.numNodes = numNodes;
     }
 
-    public void setUsingNodesList(ArrayList<UsingNodes> usingNodesList) {
+    public void setUsingNodesList(ArrayList<UsingNode> usingNodesList) {
         this.usingNodesList = usingNodesList;
+    }
+
+    public int getSpecifiedExecuteTime() {
+        return specifiedExecuteTime;
+    }
+
+    public void setSpecifiedExecuteTime(int specifiedExecuteTime) {
+        this.specifiedExecuteTime = specifiedExecuteTime;
+    }
+
+    public void setCpuTimeForNow(double cpuTimeForNow) {
+        this.cpuTimeForNow = cpuTimeForNow;
+    }
+    
+    public void setOCStateLevel(int OCStateLevel) {
+        this.OCStateLevel = OCStateLevel;
+    }    
+
+    public void setCoexistingJobs(Set<Integer> coexistingJobs) {
+        this.coexistingJobs = coexistingJobs;
+    }
+
+    public void setEndEventOccuranceTimeNow(int endEventOccuranceTimeNow) {
+        this.endEventOccuranceTimeNow = endEventOccuranceTimeNow;
+    }
+
+    public double getSlowdown() {
+        return slowdown;
+    }
+
+    public void setSlowdown(double slowdown) {
+        this.slowdown = slowdown;
+    }
+
+    public int getRequiredCoresPerNode() {
+        return requiredCoresPerNode;
+    }
+
+    public void setRequiredCoresPerNode(int requiredCoresPerNode) {
+        this.requiredCoresPerNode = requiredCoresPerNode;
+    }
+
+    public int getPreviousMigratingTime() {
+        return previousMigratingTime;
+    }
+
+    public void setPreviousMigratingTime(int previousMigratingTime) {
+        this.previousMigratingTime = previousMigratingTime;
     }
     
     
-    
-    
+    @Override
+    public int compareTo(Job o) {
+        if (this.startTime < o.startTime) {
+            return -1;
+        }
+        if (this.startTime > o.startTime) {
+            return 1;
+        }
+        
+        return 0;
+    }
+
+    public int getUserId() {
+        return userId;
+    }
+
+    public int getGroupId() {
+        return groupId;
+    }
+
+    public void setUserId(int userId) {
+        this.userId = userId;
+    }
+
+    public void setGroupId(int groupId) {
+        this.groupId = groupId;
+    }   
+
+    public long getMaxMemory() {
+        return maxMemory;
+    }
+
+    public void setMaxMemory(long maxMemory) {
+        this.maxMemory = maxMemory;
+    }
+
+    public double getSlowdownByOriginalRunningTime() {
+        return slowdownByOriginalRunningTime;
+    }
+
+    public void setSlowdownByOriginalRunningTime(double slowdownByOriginalRunningTime) {
+        this.slowdownByOriginalRunningTime = slowdownByOriginalRunningTime;
+    }
     
     
     

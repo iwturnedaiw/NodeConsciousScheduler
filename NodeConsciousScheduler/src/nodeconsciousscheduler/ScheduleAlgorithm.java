@@ -12,5 +12,8 @@ package nodeconsciousscheduler;
  */
 public enum ScheduleAlgorithm {
     FCFS,
-    Backfilling
+    ConservativeBackfiling,
+    EasyBackfilling,
+    FCFSOC,
+    EasyBackfillingOC
 }
