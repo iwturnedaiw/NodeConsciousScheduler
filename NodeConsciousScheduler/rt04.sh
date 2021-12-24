@@ -1,27 +1,41 @@
 #!/bin/bash
 
-LOG=./log/retest_`date +%Y%m%d%H%M`.log
+####################################################
+# rt04.sh conducts tests by checking for inconsistencies.
+# You specify the list to an argument.
+#
+# list format:
+#  ${ALGORITHM}  M=${M} ${TP} ${CASE} [OK|NG]
+#
+# usage:
+#  $ pwd
+#   ${INSTALLED_DIR}/NodeConsciousScheduler
+#  $ cat tp.list
+#  FCFSOC  M=1     gen03   n8c32   NG
+#  EasyBackfillingOC       M=1     gen03   n8c32   NG 
+#  $ bash rt04.sh tp.list
+#
+####################################################
 
+
+LOG=./log/rt04_`date +%Y%m%d%H%M`.log
 
 # path
 DATADIR=./data-set
-RUN_SCRIPT=run.sh
-PYTHON_SCRIPT=diff.py
 RESULTDIR=./result
 MASTER=./master
-FILENAME=./test.out
+RUN_SCRIPT=./tool/run_for_rt.sh
+PYTHON_SCRIPT=./tool/vis_oc_enabled.py
+FILENAME=./for_visualization.out
 TEMPLATE=template.machines
+export CLASSPATH=./build/classes
 SH=bash
 PYTHON=python3
-export CLASSPATH=./build/classes
+CURRENT_HOME=`pwd`
+TMP_DIR=${CURRENT_HOME}/exec_dir
 
 
 test() {
-  if [ ${#} -ne 1 ]; then
-    echo "Please specify the arguments"
-    exit
-  fi
-
   LIST_FILE=${1}
 
   cat ${LIST_FILE} | while read l
@@ -49,17 +63,13 @@ test() {
     echo -e "\t\t\tn${node} c${core}"
     sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
     sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
-    #RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
     ${SH} ./${RUN_SCRIPT} ${tp} ${algorithm} ${node} ${core} ${m} > /dev/null 2>&1
-    wait
     RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${case}_*_M${m} | head -n 1`
     RESULT_FILE+=/${FILENAME}
-    if [ ${OC_FLAG} -eq 1 ]; then
-      MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${case}/${FILENAME}
-    else
-      MASTER_FILE=./${MASTER}/${algorithm}/${tp}/${case}/${FILENAME}
-    fi
-    ${PYTHON} ${PYTHON_SCRIPT} ${MASTER_FILE} ${RESULT_FILE} ${core}
+    wait
+    mkdir ${TMP_DIR}
+    cd ${TMP_DIR}
+    ${PYTHON} ${CURRENT_HOME}/${PYTHON_SCRIPT} ${CURRENT_HOME}/${RESULT_FILE} ${node} ${core} ${m} > /dev/null
     RET=$?
     echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${case}\t"
     if [ ${RET} -eq 0 ]; then
@@ -67,11 +77,9 @@ test() {
     else
     echo "NG"
     fi
+    cd ${CURRENT_HOME}
+    rm -r ${TMP_DIR}
   done
 }
 
-
-
-
-
-test ${1} | tee -a ${LOG}
+test ${1} 2>&1 | tee -a ${LOG}

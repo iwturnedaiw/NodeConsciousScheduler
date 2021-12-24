@@ -5,7 +5,7 @@ LOG=./log/retest_`date +%Y%m%d%H%M`.log
 
 # path
 DATADIR=./data-set
-RUN_SCRIPT=run.sh
+RUN_SCRIPT=run_for_rt.sh
 PYTHON_SCRIPT=diff.py
 RESULTDIR=./result
 MASTER=./master

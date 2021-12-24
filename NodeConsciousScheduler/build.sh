@@ -1,4 +1,17 @@
 #!/bin/bash
+
+####################################################
+# build.sh conducts build this app, nodeconsciousscheduler
+#
+# usage:
+#  $ pwd
+#   ${INSTALLED_DIR}/NodeConsciousScheduler
+#  $ bash build.sh
+#
+# requirement:
+#  Confirmed working with openjdk 11.0.11., maybe it works more than it.
+#  
+####################################################
 LOG=./log/build_`date +%Y%m%d%H%M`.log
 PKG=nodeconsciousscheduler
 SRC=./src
