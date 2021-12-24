@@ -1,20 +1,45 @@
 #!/bin/bash
 
-LOG=./log/revistest_`date +%Y%m%d%H%M`.log
+####################################################
+# rt02.sh conducts tests comparing master data
+# which is located at ./master
+# You specify the list to an argument.
+#
+# list format:
+#  ${ALGORITHM}  M=${M} ${TP} ${CASE} [OK|NG]
+#
+# usage:
+#  $ pwd
+#   ${INSTALLED_DIR}/NodeConsciousScheduler
+#  $ cat tp.list
+#  FCFSOC  M=1     gen03   n8c32   NG
+#  EasyBackfillingOC       M=1     gen03   n8c32   NG 
+#  $ bash rt02.sh tp.list
+#
+####################################################
+
+LOG=./log/rt02_`date +%Y%m%d%H%M`.log
+
 
 # path
 DATADIR=./data-set
+RUN_SCRIPT=./tool/run_for_rt.sh
+PYTHON_SCRIPT=./tool/diff.py
 RESULTDIR=./result
 MASTER=./master
-#FILENAME=./test.out
-FILENAME=./for_visualization.out
+FILENAME=./test.out
 TEMPLATE=template.machines
+SH=bash
+PYTHON=python3
 export CLASSPATH=./build/classes
-CURRENT_HOME=`pwd`
-TMP_DIR=${CURRENT_HOME}/exec_dir
 
 
 test() {
+  if [ ${#} -ne 1 ]; then
+    echo "Please specify the arguments"
+    exit
+  fi
+
   LIST_FILE=${1}
 
   cat ${LIST_FILE} | while read l
@@ -42,17 +67,17 @@ test() {
     echo -e "\t\t\tn${node} c${core}"
     sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
     sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
-    RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
-    java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 2>&1
+    #RESULT_FILE=./${RESULTDIR}/`date +%Y%m%d%H%M`/${FILENAME}
+    ${SH} ./${RUN_SCRIPT} ${tp} ${algorithm} ${node} ${core} ${m} > /dev/null 2>&1
     wait
+    RESULT_FILE=`ls -td ./${RESULTDIR}/*_${tp}_${algorithm}_${case}_*_M${m} | head -n 1`
+    RESULT_FILE+=/${FILENAME}
     if [ ${OC_FLAG} -eq 1 ]; then
       MASTER_FILE=./${MASTER}/${algorithm}_M${m}/${tp}/${case}/${FILENAME}
     else
       MASTER_FILE=./${MASTER}/${algorithm}/${tp}/${case}/${FILENAME}
     fi
-    mkdir ${TMP_DIR}
-    cd ${TMP_DIR}
-    python3 ${CURRENT_HOME}/vis_oc_enabled.py ${CURRENT_HOME}/${RESULT_FILE} ${node} ${core} ${m} > /dev/null
+    ${PYTHON} ${PYTHON_SCRIPT} ${MASTER_FILE} ${RESULT_FILE} ${core}
     RET=$?
     echo -ne "\t\t\t\t${algorithm}\tM=${m}\t${tp}\t${case}\t"
     if [ ${RET} -eq 0 ]; then
@@ -60,9 +85,11 @@ test() {
     else
     echo "NG"
     fi
-    cd ${CURRENT_HOME}
-    rm -r ${TMP_DIR}
   done
 }
 
-test ${1} 2>&1 | tee -a ${LOG}
+
+
+
+
+test ${1} | tee -a ${LOG}

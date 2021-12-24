@@ -1,6 +1,22 @@
 #! /bin/bash
 
-LOG=./log/runcheck_`date +%Y%m%d%H%M`.log
+####################################################
+# rt00.sh conducts testing if the simulator
+# terminates normally 
+# You set the folloing environment variables:
+#  CASE
+#  TP
+#  M
+#  ALGORITHM
+#
+# usage:
+#  $ pwd
+#   ${INSTALLED_DIR}/NodeConsciousScheduler
+#  $ bash rt00.sh
+#
+####################################################
+
+LOG=./log/rt00_`date +%Y%m%d%H%M`.log
 
 # configuration
 #CASE="n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n1c256 n1c512"
@@ -10,14 +26,14 @@ CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 
 #CASE="n8c32" # for OC
 #CASE="n2c16"
 #CASE="n1c512"
-TP="gen01 gen02 gen03 short short1 hpc2n"
+#TP="gen01 gen02 gen03 short short1 hpc2n"
 #TP="gen01 gen02 gen03"
 #TP="short short1"
 #TP="gen01 gen02"
 #TP="short1"
 #TP="gen03"
 #TP="short short1"
-#TP="short"
+TP="hpc2n"
 #M=5
 M="2 3 4 5 6 7 8"
 #M=4
@@ -28,10 +44,9 @@ ALGORITHM=EasyBackfillingOC
 
 # path
 DATADIR=./data-set
-RUN_SCRIPT=run.sh
+RUN_SCRIPT=./tool/run_for_rt.sh
 RESULTDIR=./result
 MASTER=./master
-FILENAME=./test.out
 TEMPLATE=template.machines
 SH=bash
 export CLASSPATH=./build/classes

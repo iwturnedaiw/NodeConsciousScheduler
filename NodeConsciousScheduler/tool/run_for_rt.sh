@@ -1,26 +1,5 @@
 #!/bin/bash
 
-####################################################
-# run.sh is the run driver.
-# You set the folloing arguments:
-#  TP
-#  ALGORITHM
-#  NODE
-#  CORE
-#  M
-#
-# usage:
-#  $ pwd
-#   ${INSTALLED_DIR}/NodeConsciousScheduler
-#  $ bash run.sh ${TP} ${ALGORITHM} ${NODE} ${CORE} ${M}
-#  For example:
-#  $ bash run.sh gen01 FCFSOC 4 8 2
-#
-# return value:
-#  0 (normal termination)
-#  1 (otherwise)
-####################################################
-
 LOG=./log/run_`date +%Y%m%d%H%M`.log
 CURRENT_DIR=`pwd`
 
