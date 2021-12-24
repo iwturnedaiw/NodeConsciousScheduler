@@ -28,6 +28,7 @@ public class Job implements Comparable<Job> {
     private int runningTimeDed;
     private int runningTimeOC;
     private double cpuTimeForNow;
+    private double cpuTimeOnlyConsiderMultiplicity;
     private int OCStateLevel;
     private int startTime;
     private int previousMeasuredTime;
@@ -43,6 +44,7 @@ public class Job implements Comparable<Job> {
     private int groupId;
     private long maxMemory;
     private int matchingGroup;
+    private double currentRatio;
     
 
     Job() {}
@@ -76,11 +78,13 @@ public class Job implements Comparable<Job> {
         this.groupId = groupId;
         this.maxMemory = maxMemory;
         this.matchingGroup = matchingGroup;
+        this.currentRatio = 1.0;
         
         this.startTime = -1;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
         this.cpuTimeForNow = 0.0;
+        this.cpuTimeOnlyConsiderMultiplicity = 0.0;
         this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
@@ -316,5 +320,22 @@ public class Job implements Comparable<Job> {
     public void setMatchingGroup(int matchingGroup) {
         this.matchingGroup = matchingGroup;
     }
+
+    public double getCurrentRatio() {
+        return currentRatio;
+    }
+
+    public void setCurrentRatio(double currentRatio) {
+        this.currentRatio = currentRatio;
+    }
+
+    public double getCpuTimeOnlyConsiderMultiplicity() {
+        return cpuTimeOnlyConsiderMultiplicity;
+    }
+
+    public void setCpuTimeOnlyConsiderMultiplicity(double cpuTimeOnlyConsiderMultiplicity) {
+        this.cpuTimeOnlyConsiderMultiplicity = cpuTimeOnlyConsiderMultiplicity;
+    }
+    
     
 }

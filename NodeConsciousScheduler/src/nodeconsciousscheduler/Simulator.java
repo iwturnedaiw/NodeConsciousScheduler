@@ -84,6 +84,7 @@ import static nodeconsciousscheduler.Constants.WAITING_RESOURCES_PER_MINUTE_OUTP
  */
 public class Simulator {
     private ArrayList<Job> jobList;
+    private Map<Integer, Job> jobMap = new HashMap<>();
     private ArrayList<NodeInfo> allNodesInfo;
     private ScheduleAlgorithm scheAlgo;
     private Scheduler sche;
@@ -101,6 +102,11 @@ public class Simulator {
     
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
+        for (int i = 0; i < jobList.size(); ++i) {
+            Job ljob = jobList.get(i);
+            int jobId = ljob.getJobId();
+            this.jobMap.put(jobId, ljob);
+        }
         this.allNodesInfo = allNodesInfo;
         this.scheAlgo = scheAlgo;
         initScheduler(scheAlgo);
@@ -1176,5 +1182,9 @@ public class Simulator {
 
     public Map<JobMatching, Double> getJobMatchingTable() {
         return jobMatchingTable;
+    }
+
+    public Map<Integer, Job> getJobMap() {
+        return jobMap;
     }
 }

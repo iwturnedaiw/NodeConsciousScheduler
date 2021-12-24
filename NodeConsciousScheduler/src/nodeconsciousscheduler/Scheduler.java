@@ -298,7 +298,7 @@ public abstract class Scheduler {
 
     protected void assignJob(int startTime, LinkedList<TimeSlice> timeSlices, ArrayList<NodeInfo> allNodesInfo, Job job, ArrayList<Integer> assignNodesNo, boolean tmpFlag) {
         int addedPpn = job.getRequiredCores()/job.getRequiredNodes();
-        double expectedEndTimeDouble = startTime + (job.getRequiredTime()-job.getCpuTimeForNow())*job.getOCStateLevel();
+        double expectedEndTimeDouble = startTime + (job.getRequiredTime()-job.getCpuTimeOnlyConsiderMultiplicity())*job.getOCStateLevel();
         int expectedEndTime = (int) ceil(expectedEndTimeDouble);
         long addedMpn = job.getMaxMemory();
         boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
@@ -818,8 +818,8 @@ public abstract class Scheduler {
         System.out.println("");
     }
 
-     protected Job getJobByJobId(int coexistingJobId) {
-
+    protected Job getJobByJobId(int coexistingJobId) {
+/*
         ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
         int i;
         Job job = new Job();
@@ -836,6 +836,8 @@ public abstract class Scheduler {
         }
         assert job.getJobId() == coexistingJobId;
         return job;
+*/
+        return NodeConsciousScheduler.sim.getJobMap().get(coexistingJobId);
     }
      
      protected int checkMultiplicityAlongNodes(ArrayList<UsingNode> coexistingJobUsingNodeList, int endingJobId, int coexistingJobId) {        
@@ -892,11 +894,16 @@ public abstract class Scheduler {
         if (previousMeasuredTime == currentTime) {
             return;
         }
-        // TODO: should be double, but now int.
+        // TODO: should be double, but now int.        
         double cpuTimeForNow = victimJob.getCpuTimeForNow();
         int realDeltaTime = currentTime - previousMeasuredTime;
-        cpuTimeForNow += (double)realDeltaTime / currentOCStateLevel;
+        double ratio = victimJob.getCurrentRatio();
+        cpuTimeForNow += (double)realDeltaTime / currentOCStateLevel / ratio;
         victimJob.setCpuTimeForNow(cpuTimeForNow);
+        
+        double cpuTimeOnlyConsiderMultiplicity = victimJob.getCpuTimeOnlyConsiderMultiplicity();
+        cpuTimeOnlyConsiderMultiplicity += (double)realDeltaTime / currentOCStateLevel;
+        victimJob.setCpuTimeOnlyConsiderMultiplicity(cpuTimeOnlyConsiderMultiplicity);
 
         if (OCStateLevel == 1) {
             int runningTimeDed = victimJob.getRunningTimeDed();
@@ -933,12 +940,22 @@ public abstract class Scheduler {
         int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
         double cpuTimeForNow = victimJob.getCpuTimeForNow();
         int actualExecuteTime = victimJob.getActualExecuteTime();
-        double restActualExecuteTime = (actualExecuteTime - cpuTimeForNow) * currentOCStateLevel;
+        double restActualExecuteTime = (actualExecuteTime - cpuTimeForNow) * currentOCStateLevel;      
+        //double ratio = 1.0;
+        int OCStateLevel = victimJob.getOCStateLevel();
+        /*
+        if (OCStateLevel >= 2 && NodeConsciousScheduler.sim.isConsiderJobMatching()) {
+            Set<Integer> coexistingJobs = victimJob.getCoexistingJobs();
+            ratio = calculateMaxDegradationRatio(victimJob, coexistingJobs);
+        }
+        */
+        double ratio = victimJob.getCurrentRatio();
+        restActualExecuteTime *= ratio;
         double trueEndTime = startTime + restActualExecuteTime;
 
         return (int) ceil(trueEndTime);
     }
-    
+
  
     protected void printThrowENDEvent(int currentTime, int trueEndTime, Job job, EventType evt) {
         printThrowENDEvent(currentTime, trueEndTime, job, evt, 1);
@@ -965,12 +982,15 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
         coexistingJob.setOCStateLevel(OCStateLevel);
+        double ratio = calculateMaxDegradationRatio(coexistingJob, coexistingJob.getCoexistingJobs());
+        coexistingJob.setCurrentRatio(ratio);
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
 //        assert trueEndTime <= oldTrueEndTime;
 
         //  1-3. Rethrow the END event set the time
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
-        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+        if (currentTime != trueEndTime && currentTime != oldTrueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
             coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);
@@ -981,18 +1001,18 @@ public abstract class Scheduler {
     /* This method return the exepeceted end time. */
     protected int calculateNewExpectedEndTime(int currentTime, Job victimJob) {
         int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
-        double cpuTimeForNow = victimJob.getCpuTimeForNow();
+        double cpuTimeForOnlyConsiderMultiplicity = victimJob.getCpuTimeOnlyConsiderMultiplicity();
         int requiredTime = victimJob.getRequiredTime();
-        double restRequiredTime = (requiredTime - cpuTimeForNow) * currentOCStateLevel;
+        double restRequiredTime = (requiredTime - cpuTimeForOnlyConsiderMultiplicity) * currentOCStateLevel;
         double expectedEndTime = currentTime + restRequiredTime;
 
         return (int) ceil(expectedEndTime);
     }
 
     protected int calculateApproximateEndTime(int currentTime, Job victimJob, int OCStateLevel) {
-        double cpuTimeForNow = victimJob.getCpuTimeForNow();
+        double cpuTimeForOnlyConsiderMultiplicity = victimJob.getCpuTimeOnlyConsiderMultiplicity();
         int requiredTime = victimJob.getRequiredTime();
-        double restRequiredTime = (requiredTime - cpuTimeForNow) * OCStateLevel;
+        double restRequiredTime = (requiredTime - cpuTimeForOnlyConsiderMultiplicity) * OCStateLevel;
         double expectedEndTime = currentTime + restRequiredTime;
 
         return (int) ceil(expectedEndTime);
@@ -1173,14 +1193,17 @@ public abstract class Scheduler {
         /* debug */
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
-        victimJob.setOCStateLevel(OCStateLevel);
+        victimJob.setOCStateLevel(OCStateLevel);                        
+        double ratio = calculateMaxDegradationRatio(victimJob, victimJob.getCoexistingJobs());
+        victimJob.setCurrentRatio(ratio);
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
-        assert oldTrueEndTime <= trueEndTime+1;
+        //assert oldTrueEndTime <= trueEndTime+1;
         victimJob.setOCStateLevel(currentOCStateLevel);
         
         /*  1-3. Rethrow the END event set the time */
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
-        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
+        if (currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, victimJob));
             victimJob.setEndEventOccuranceTimeNow(trueEndTime);
@@ -1252,7 +1275,7 @@ public abstract class Scheduler {
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
-        assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime+1) || (!OCStateLevelIncreasingflag && oldTrueEndTime >= trueEndTime);
+        //assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime+1) || (!OCStateLevelIncreasingflag && oldTrueEndTime >= trueEndTime);
         victimJob.setOCStateLevel(currentOCStateLevel);
         
         /*  1-3. Rethrow the END event set the time */
@@ -1517,5 +1540,59 @@ public abstract class Scheduler {
     private void outputResultForVis(Job migratingJob, int currentTime) {
         NodeConsciousScheduler.sim.outputResultForVis(migratingJob, currentTime);
     }
+
+    protected double calculateMaxDegradationRatio(Job victimJob, Set<Integer> coexistingJobs) {
+        int victimJobGroup = victimJob.getMatchingGroup();
+        double ratio = 0;
+        for (int coexistingJobId: coexistingJobs) {
+            Job coexistingJob = getJobByJobId(coexistingJobId);
+            int coexistingJobGroup = coexistingJob.getMatchingGroup();
+            double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, coexistingJobGroup));
+            ratio = max(ratio, localRatio);
+        }
+        if (ratio == 0) ratio = 1.0;
+        return ratio;
+    }
+
+
+    protected void modifyTheENDEventTime(Job coexistingJob, int coexistingJobId, int currentTime, int OCStateLevel, ArrayList<Event> result, boolean endFlag, int endingJobId) {
+        int coexistingStartTime = coexistingJob.getStartTime();
+        assert coexistingStartTime >= 0;
+        assert coexistingStartTime <= currentTime;
+
+        //  1-1. Measure the executing time at current time for each victim jobs.
+        measureCurrentExecutingTime(currentTime, coexistingJob);
+        coexistingJob.setPreviousMeasuredTime(currentTime);
+
+        //  1-2. Calculate new trueEndTime
+        int currentOCStateLevel = coexistingJob.getOCStateLevel();
+        assert (currentOCStateLevel - 1 == OCStateLevel) || (currentOCStateLevel == OCStateLevel) || (currentOCStateLevel > OCStateLevel);
+        // debug
+        printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
+        int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
+        coexistingJob.setOCStateLevel(OCStateLevel);
+        Set<Integer> coexistingCoexistingJobs = coexistingJob.getCoexistingJobs();
+        double ratio = coexistingJob.getCurrentRatio();
+        if (endFlag) {
+            coexistingCoexistingJobs.remove(endingJobId);
+            ratio = calculateMaxDegradationRatio(coexistingJob, coexistingCoexistingJobs);
+        }
+        coexistingJob.setCurrentRatio(ratio);
+        int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
+        coexistingCoexistingJobs.add(endingJobId);
+//        assert trueEndTime <= oldTrueEndTime;
+
+        //  1-3. Rethrow the END event set the time
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+        if (currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+            printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
+            result.add(new Event(EventType.END, trueEndTime, coexistingJob));
+            coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);
+            printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
+            result.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
+        }
+    }
+
 
 }

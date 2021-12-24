@@ -124,6 +124,7 @@ public class FCFSOC extends FCFS {
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();           
                         Job victimJob = getJobByJobId(victimJobId);
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
+                        victimJob.getCoexistingJobs().add(opponentJobId);;
 //                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
                         resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
@@ -151,7 +152,6 @@ public class FCFSOC extends FCFS {
                         result.add(new Event(EventType.END, trueEndTime, victimJob));
                         result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
                         */
-                        victimJob.getCoexistingJobs().add(opponentJobId);         
                         victimJob.setOCStateLevel(victimNewOCStateLevel);
                     }
                     
@@ -191,6 +191,8 @@ public class FCFSOC extends FCFS {
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForJob;
+                    double ratio = calculateMaxDegradationRatio(job, victimJobs);
+                    job.setCurrentRatio(ratio);
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
@@ -269,7 +271,7 @@ public class FCFSOC extends FCFS {
             int OCStateLevel = checkMultiplicityAlongNodes(coexistingJobUsingNodeList, endingJobId, coexistingJobId);
 
             // 2. Modify the END event time
-            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevel, result);
+            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevel, result, true, endingJobId);
 
             // 3. Modify the timeSlices
             modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);
