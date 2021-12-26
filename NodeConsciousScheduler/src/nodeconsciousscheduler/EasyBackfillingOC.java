@@ -36,7 +36,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
             int jobId = job.getJobId();
             
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
-            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo();
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
             assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
@@ -234,7 +234,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
         while (tailWaitingQueue.size() > 0) {
-            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo();
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
             assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;            
             Job backfillJob = tailWaitingQueue.poll();

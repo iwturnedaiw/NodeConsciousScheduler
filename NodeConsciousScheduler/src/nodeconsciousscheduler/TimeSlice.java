@@ -146,4 +146,34 @@ class TimeSlice implements Cloneable {
         System.out.println(this.startTime + "-" + this.endTime + ": " +  this.availableCores);
 
     }
+
+    void assignResources(Job job) {
+        int M = NodeConsciousScheduler.M;
+        int numCore = NodeConsciousScheduler.numCores;
+        
+        int addedPpn = job.getRequiredCoresPerNode();
+        long addedMpn = job.getMaxMemory();
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
+        ArrayList<Integer> cores = this.getAvailableCores();
+        ArrayList<Long> memories = this.getAvailableMemory();
+        ArrayList<UsingNode> usingNodes = job.getUsingNodesList();
+        ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
+        for (int i = 0; i < usingNodes.size(); ++i) {
+            assignNodesNo.add(usingNodes.get(i).getNodeNum());
+        }
+        for (int j = 0; j < assignNodesNo.size(); ++j) {
+            int nodeNo = assignNodesNo.get(j);
+            int core = cores.get(nodeNo);
+            core -= addedPpn;
+            assert core >= -(M-1) * numCore; 
+            cores.set(nodeNo, core);
+
+            if (scheduleUsingMemory) {
+                long memory = memories.get(nodeNo);
+                memory -= addedMpn;
+                assert memory >= 0;
+                memories.set(nodeNo, memory);
+            }
+        }
+    }
 }

@@ -48,7 +48,7 @@ class EasyBackfilling extends Scheduler {
 
             /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
-            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo();
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
             assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {

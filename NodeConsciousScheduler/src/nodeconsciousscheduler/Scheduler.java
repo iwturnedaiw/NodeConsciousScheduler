@@ -8,16 +8,20 @@ package nodeconsciousscheduler;
 
 import static java.lang.Math.ceil;
 import static java.lang.Math.max;
+import static java.lang.Math.max;
+import static java.lang.Math.max;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.BLANK_JOBID;
+import static nodeconsciousscheduler.Constants.NOT_FINISHED;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.UNUSED;
@@ -178,10 +182,11 @@ public abstract class Scheduler {
     }
     
     
-    protected TimeSlicesAndNodeInfoConsistency checkTimeSlicesAndAllNodeInfo() {
+    protected TimeSlicesAndNodeInfoConsistency checkTimeSlicesAndAllNodeInfo(int currentTime) {
         /* For TimeSlices */
         ArrayList<Integer> freeCoreInTimeSlices = new ArrayList<Integer>();
         TimeSlice ts = timeSlices.get(0);
+        assert currentTime == ts.getStartTime();
         for (int i = 0; i < ts.getNumNode(); ++i) {
             int freeCore = ts.getAvailableCores().get(i);
             freeCoreInTimeSlices.add(freeCore);
@@ -207,9 +212,46 @@ public abstract class Scheduler {
             int freeCoreInNodeInfo = freeCoreInAllNodeInfo.get(i);
             if (freeCoreInTimeSlice == freeCoreInNodeInfo) continue;
             if (freeCoreInTimeSlice > freeCoreInNodeInfo) {
-                ret2 = true;
-                System.out.println("Differ freecore value at node " + i);
-                System.out.println("Check multiple END Event with the same event time are.");
+                System.out.println("Differ freecore value at node " + i);                
+                System.out.println("Check wheter multiple END Event with the same event time exist.");
+                int endEventTimeCnt = 0;
+                boolean existMultipleEventSameTime = false;
+                for (Entry<Integer, Job> entry : NodeConsciousScheduler.sim.getJobMap().entrySet()) {
+                    Job job = entry.getValue();
+                    int submitTime = job.getStartTime();
+                    if (submitTime > currentTime) break;
+                    
+                    int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
+                    if (endEventOccuranceTimeNow == currentTime) endEventTimeCnt++;
+                    if (endEventTimeCnt >= 2) {
+                        existMultipleEventSameTime = true;
+                        break;
+                    }
+                }
+                ret2 = existMultipleEventSameTime;
+                
+                System.out.println("Check wheter job slow down more than requested time.");
+                boolean existSlowsDownJob = false;
+                for (Entry<Integer, Job> entry : NodeConsciousScheduler.sim.getJobMap().entrySet()) {
+                    Job job = entry.getValue();
+                    int submitTime = job.getStartTime();
+                    if (submitTime > currentTime) break;
+                    
+                    int startTime = job.getStartTime();
+                    if (startTime == UNSTARTED) continue;
+                    
+                    int occupiedTimeInTimeSeries = job.getOccupiedTimeInTimeSlices();
+                    int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
+                    boolean workingFlag = (job.getFinishedTime() == NOT_FINISHED);
+                    if (workingFlag && occupiedTimeInTimeSeries < endEventOccuranceTimeNow) {
+                        int jobId = job.getJobId();
+                        System.out.println("Job " + jobId + ": slows down more than requested time... it needs to be modified timeslices information");
+                        existSlowsDownJob = true;
+                        modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, endEventOccuranceTimeNow, job);
+                        job.setOccupiedTimeInTimeSlices(endEventOccuranceTimeNow);
+                    }
+                }
+                assert existMultipleEventSameTime || existSlowsDownJob;
             } else {
                 ret1 = false;
             }
@@ -1443,7 +1485,9 @@ public abstract class Scheduler {
         migratingJobCoexistingJob.addAll(newCoexistingJobs);
         migratingJobCoexistingJob.removeAll(deletedCoexistingJobs);
         
-
+        double ratio = calculateMaxDegradationRatio(migratingJob, migratingJobCoexistingJob);
+        migratingJob.setCurrentRatio(ratio);
+        
         return result;
     }
 
@@ -1595,5 +1639,33 @@ public abstract class Scheduler {
         }
     }
 
+    private void modifyTimeSlicesDueToSlowsDonwJob(int currentTime, int occupiedTimeInTimeSeries, int endEventOccuranceTimeNow, Job job) {
+        makeTimeslices(currentTime);
+        makeTimeslices(endEventOccuranceTimeNow);
 
+        for (int i = completedTimeSlices.size()-1; i >= 0; --i) {
+            TimeSlice ts = completedTimeSlices.get(i);
+            int startTime = ts.getStartTime();
+            int endTime = ts.getEndTime();
+            if (endTime == occupiedTimeInTimeSeries) {
+                break;
+            } else if (endTime < occupiedTimeInTimeSeries) {
+                break;  
+            } else if (startTime >= endEventOccuranceTimeNow) {
+                break; 
+            } else {
+                ts.assignResources(job);
+            }
+        }
+        
+        for (TimeSlice ts: timeSlices) {
+            int startTime = ts.getStartTime();
+            assert startTime >= currentTime;
+            if (startTime < occupiedTimeInTimeSeries) continue;
+            if (startTime >= endEventOccuranceTimeNow) {
+                break;
+            }
+            ts.assignResources(job);
+        }
+    }
 }

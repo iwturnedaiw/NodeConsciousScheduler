@@ -9,6 +9,7 @@ package nodeconsciousscheduler;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import static nodeconsciousscheduler.Constants.NOT_FINISHED;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
 
 /**
@@ -81,7 +82,7 @@ public class Job implements Comparable<Job> {
         this.currentRatio = 1.0;
         
         this.startTime = -1;
-        this.finishedTime = 2 << 30;
+        this.finishedTime = NOT_FINISHED;
         this.waitTime = -1;
         this.cpuTimeForNow = 0.0;
         this.cpuTimeOnlyConsiderMultiplicity = 0.0;

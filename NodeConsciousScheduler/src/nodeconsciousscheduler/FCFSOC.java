@@ -45,7 +45,7 @@ public class FCFSOC extends FCFS {
 
             /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
-            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo();
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
             assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;            
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
@@ -165,8 +165,13 @@ public class FCFSOC extends FCFS {
                         /*  2-1. Calculate new expectedEndTime */
                         int oldExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices();
                         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
+                        int endEventOccuranceTime = victimJob.getEndEventOccuranceTimeNow();
+                        if (newExpectedEndTime < endEventOccuranceTime) { // This is not good implement
+                            newExpectedEndTime = endEventOccuranceTime;
+                        }
+                        //newExpectedEndTime = max(oldExpectedEndTime, oldExpectedEndTime);
                         victimJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
-                        assert oldExpectedEndTime <= newExpectedEndTime+1;
+//                        assert oldExpectedEndTime <= newExpectedEndTime+1;
                         
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
                         int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
