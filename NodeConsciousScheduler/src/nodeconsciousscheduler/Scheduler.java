@@ -207,6 +207,7 @@ public abstract class Scheduler {
         boolean ret1 = true;
         boolean ret2 = false;
         
+        Set<Job> modifiedJobInTimeSlices = new HashSet<Job>();
         for (int i = 0; i < freeCoreInAllNodeInfo.size(); ++i) {
             int freeCoreInTimeSlice = freeCoreInTimeSlices.get(i);
             int freeCoreInNodeInfo = freeCoreInAllNodeInfo.get(i);
@@ -216,10 +217,8 @@ public abstract class Scheduler {
                 System.out.println("Check wheter multiple END Event with the same event time exist.");
                 int endEventTimeCnt = 0;
                 boolean existMultipleEventSameTime = false;
-                for (Entry<Integer, Job> entry : NodeConsciousScheduler.sim.getJobMap().entrySet()) {
-                    Job job = entry.getValue();
-                    int submitTime = job.getStartTime();
-                    if (submitTime > currentTime) break;
+                for (int k = 0; k < NodeConsciousScheduler.sim.getExecutingJobList().size(); ++k) {
+                    Job job = NodeConsciousScheduler.sim.getExecutingJobList().get(k);
                     
                     int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
                     if (endEventOccuranceTimeNow == currentTime) endEventTimeCnt++;
@@ -232,29 +231,33 @@ public abstract class Scheduler {
                 
                 System.out.println("Check wheter job slow down more than requested time.");
                 boolean existSlowsDownJob = false;
-                for (Entry<Integer, Job> entry : NodeConsciousScheduler.sim.getJobMap().entrySet()) {
-                    Job job = entry.getValue();
-                    int submitTime = job.getStartTime();
-                    if (submitTime > currentTime) break;
-                    
-                    int startTime = job.getStartTime();
-                    if (startTime == UNSTARTED) continue;
+                for (int k = 0; k < NodeConsciousScheduler.sim.getExecutingJobList().size(); ++k) {
+                    Job job = NodeConsciousScheduler.sim.getExecutingJobList().get(k);
                     
                     int occupiedTimeInTimeSeries = job.getOccupiedTimeInTimeSlices();
                     int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
-                    boolean workingFlag = (job.getFinishedTime() == NOT_FINISHED);
-                    if (workingFlag && occupiedTimeInTimeSeries < endEventOccuranceTimeNow) {
+                    ArrayList<UsingNode> usingNodes = job.getUsingNodesList();
+                    ArrayList<Integer> usingNodeIds = new ArrayList<Integer>();
+                    for (int j = 0; j < usingNodes.size(); ++j) {
+                        usingNodeIds.add(usingNodes.get(j).getNodeNum());
+                    }
+                    if (occupiedTimeInTimeSeries < endEventOccuranceTimeNow && usingNodeIds.contains(i)) {
                         int jobId = job.getJobId();
                         System.out.println("Job " + jobId + ": slows down more than requested time... it needs to be modified timeslices information");
                         existSlowsDownJob = true;
-                        modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, endEventOccuranceTimeNow, job);
-                        job.setOccupiedTimeInTimeSlices(endEventOccuranceTimeNow);
+                        modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, endEventOccuranceTimeNow, i, job);
+                        modifiedJobInTimeSlices.add(job);
                     }
                 }
                 assert existMultipleEventSameTime || existSlowsDownJob;
             } else {
                 ret1 = false;
             }
+        }
+        for (Job job: modifiedJobInTimeSlices) {
+            int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
+            int newOccupiedTimeInTimeSlices = endEventOccuranceTimeNow;
+            job.setOccupiedTimeInTimeSlices(newOccupiedTimeInTimeSlices);
         }
         
         // Executing Job List
@@ -289,6 +292,8 @@ public abstract class Scheduler {
         makeTimeslices(currentTime);
         reduceTimeslices(currentTime, ev);
         completeOldSlices(currentTime);
+        
+       TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
 
         try {
             EventQueue.debugExecuting(currentTime, ev);
@@ -401,7 +406,7 @@ public abstract class Scheduler {
                 */
 
                 jobList.add(jobId);                    
-                --coreCnt;                    
+                --coreCnt;
                 assert jobList.size() <= NodeConsciousScheduler.M;
                 if (coreCnt == 0) break;
             }
@@ -1166,13 +1171,17 @@ public abstract class Scheduler {
             //  2-1. Get old expectedEndTime            
             int oldExpectedEndTime = coexistingJob.getOccupiedTimeInTimeSlices();
             int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, coexistingJob);
+            int endEventOccuranceTime = coexistingJob.getEndEventOccuranceTimeNow();
+            if (newExpectedEndTime < endEventOccuranceTime) { // This is not good implement            
+                newExpectedEndTime = endEventOccuranceTime;                
+            }
             coexistingJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
             // assert newExpectedEndTime <= oldExpectedEndTime;
             printDifferenceExpectedEndTime(oldExpectedEndTime, newExpectedEndTime, coexistingJob.getJobId());
 
             //  2-2. Update the timeslice between current and new expectedEndTime           
             int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
-            refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, coexistingJob);
+            refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, coexistingJob);                       
             makeTimeslices(currentTime);
             makeTimeslices(newExpectedEndTime);
             reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, coexistingJob);
@@ -1639,7 +1648,7 @@ public abstract class Scheduler {
         }
     }
 
-    private void modifyTimeSlicesDueToSlowsDonwJob(int currentTime, int occupiedTimeInTimeSeries, int endEventOccuranceTimeNow, Job job) {
+    private void modifyTimeSlicesDueToSlowsDonwJob(int currentTime, int occupiedTimeInTimeSeries, int endEventOccuranceTimeNow, int nodeNum, Job job) {
         makeTimeslices(currentTime);
         makeTimeslices(endEventOccuranceTimeNow);
 
@@ -1654,7 +1663,7 @@ public abstract class Scheduler {
             } else if (startTime >= endEventOccuranceTimeNow) {
                 break; 
             } else {
-                ts.assignResources(job);
+                ts.assignResourcesAtNode(nodeNum, job);
             }
         }
         
@@ -1665,7 +1674,7 @@ public abstract class Scheduler {
             if (startTime >= endEventOccuranceTimeNow) {
                 break;
             }
-            ts.assignResources(job);
+            ts.assignResourcesAtNode(nodeNum, job);
         }
     }
 }
