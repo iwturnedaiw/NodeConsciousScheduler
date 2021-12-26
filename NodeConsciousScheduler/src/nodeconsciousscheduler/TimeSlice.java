@@ -113,7 +113,7 @@ class TimeSlice implements Cloneable {
 
     void refillResources(Job job) {
         int endTime = this.endTime;
-        int expectedEndTime = job.getSpecifiedExecuteTime();
+        int expectedEndTime = job.getOccupiedTimeInTimeSlices();
         
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
         

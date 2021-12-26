@@ -64,7 +64,7 @@ class FCFS extends Scheduler {
                 
                 int expectedEndTime = startTime + job.getRequiredTime();
                 makeTimeslices(expectedEndTime);
-                job.setSpecifiedExecuteTime(expectedEndTime);
+                job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                 /* 5. Modify the resource informaiton */
                 assignJob(startTime, job, assignNodesNo);

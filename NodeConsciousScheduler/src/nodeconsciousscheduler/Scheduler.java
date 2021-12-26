@@ -113,7 +113,7 @@ public abstract class Scheduler {
     protected void reduceTimeslices(int currentTime, Event ev) {
 
         Job job = ev.getJob();
-        int expectedEndTime = job.getSpecifiedExecuteTime();
+        int expectedEndTime = job.getOccupiedTimeInTimeSlices();
         
         for (int i = 0; i < timeSlices.size(); ++i) {            
             TimeSlice ts = timeSlices.get(i);        
@@ -1120,11 +1120,11 @@ public abstract class Scheduler {
         // 3. Modify the timeSlices
         boolean notEndFlag = (endingJobId == BLANK_JOBID);
 
-        if (currentTime != coexistingJob.getSpecifiedExecuteTime()) {
+        if (currentTime != coexistingJob.getOccupiedTimeInTimeSlices()) {
             //  2-1. Get old expectedEndTime            
-            int oldExpectedEndTime = coexistingJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
+            int oldExpectedEndTime = coexistingJob.getOccupiedTimeInTimeSlices();
             int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, coexistingJob);
-            coexistingJob.setSpecifiedExecuteTime(newExpectedEndTime);
+            coexistingJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
             // assert newExpectedEndTime <= oldExpectedEndTime;
             printDifferenceExpectedEndTime(oldExpectedEndTime, newExpectedEndTime, coexistingJob.getJobId());
 

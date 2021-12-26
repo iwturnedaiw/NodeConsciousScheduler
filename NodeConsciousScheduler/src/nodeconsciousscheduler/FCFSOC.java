@@ -74,7 +74,7 @@ public class FCFSOC extends FCFS {
                     /* 5. Modify the timeSlices */        
                     int expectedEndTime = startTime + job.getRequiredTime();
                     makeTimeslices(expectedEndTime);
-                    job.setSpecifiedExecuteTime(expectedEndTime);
+                    job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     job.setOCStateLevel(OCStateLevelForJob);
                     /* 6. Modify the resource informaiton */        
@@ -163,9 +163,9 @@ public class FCFSOC extends FCFS {
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
 
                         /*  2-1. Calculate new expectedEndTime */
-                        int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
+                        int oldExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices();
                         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
-                        victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
+                        victimJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
                         assert oldExpectedEndTime <= newExpectedEndTime+1;
                         
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
@@ -182,7 +182,7 @@ public class FCFSOC extends FCFS {
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForJob;
                     int expectedEndTime = calculateNewExpectedEndTime(startTime, job);
                     makeTimeslices(expectedEndTime);
-                    job.setSpecifiedExecuteTime(expectedEndTime);
+                    job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     /* Set previous time. */
                     /* This is opponent, so it is not "switched" now. But, this value is needed. */

@@ -71,7 +71,7 @@ class EasyBackfilling extends Scheduler {
 
                 int expectedEndTime = startTime + job.getRequiredTime();
                 makeTimeslices(expectedEndTime);
-                job.setSpecifiedExecuteTime(expectedEndTime);
+                job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                 /* 5. Modify the resource informaiton */        
                 assignJob(startTime, job, assignNodesNo);
@@ -175,7 +175,7 @@ class EasyBackfilling extends Scheduler {
                 int expectedEndTime = startTime + backfillJob.getRequiredTime();
                 makeTimeslices(expectedEndTime);
                 makeTimeslices(expectedEndTime, tmpTimeSlices);
-                backfillJob.setSpecifiedExecuteTime(expectedEndTime);
+                backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                 /* 5. Modify the resource informaiton */        
                 assignJob(startTime, backfillJob, assignNodesNo);

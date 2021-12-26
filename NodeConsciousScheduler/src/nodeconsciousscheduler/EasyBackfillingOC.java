@@ -56,7 +56,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 if (OCStateLevelForJob == 1) {
                     int expectedEndTime = startTime + job.getRequiredTime();
                     makeTimeslices(expectedEndTime);
-                    job.setSpecifiedExecuteTime(expectedEndTime);
+                    job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     job.setOCStateLevel(OCStateLevelForJob);
                     assignJob(startTime, job, assignNodesNo);
@@ -143,9 +143,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
 
                         /*  2-1. Calculate new expectedEndTime */
-                        int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
+                        int oldExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices(); // This field name is bad. Difficult to interpret.
                         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
-                        victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
+                        victimJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
                         assert oldExpectedEndTime <= newExpectedEndTime+1;
                         
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
@@ -162,7 +162,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForBackfillJob;
                     int expectedEndTime = calculateNewExpectedEndTime(startTime, job);
                     makeTimeslices(expectedEndTime);
-                    job.setSpecifiedExecuteTime(expectedEndTime);
+                    job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     /* Set previous time. */
                     /* This is opponent, so it is not "switched" now. But, this value is needed. */
@@ -261,7 +261,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 for (int victimJobId: victimJobs) {
                     Job victimJob = getJobByJobId(victimJobId);
                     if (OCStateLevelForBackfillJob == victimJob.getOCStateLevel()) continue;
-                    int currentVictimExpectedEndTime = victimJob.getSpecifiedExecuteTime();
+                    int currentVictimExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices();
                     if (currentVictimExpectedEndTime > startTimeFirstJob) continue;
                     int victimApproximateEndTime = calculateApproximateEndTime(currentTime, victimJob, OCStateLevelForBackfillJob);
                     /*
@@ -300,7 +300,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     int expectedEndTime = startTime + backfillJob.getRequiredTime();
                     makeTimeslices(expectedEndTime);
                     makeTimeslices(expectedEndTime, tmpTimeSlices);
-                    backfillJob.setSpecifiedExecuteTime(expectedEndTime);
+                    backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     backfillJob.setOCStateLevel(OCStateLevelForBackfillJob);
                     assignJob(startTime, backfillJob, assignNodesNo);
@@ -334,9 +334,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                         /*  2-1. Calculate new expectedEndTime */
 
-                        int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
+                        int oldExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices(); // This field name is bad. Difficult to interpret.
                         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
-                        victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
+                        victimJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
                         assert oldExpectedEndTime <= newExpectedEndTime + 1;
 
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
@@ -357,7 +357,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     int expectedEndTime = calculateNewExpectedEndTime(currentTime, backfillJob);
                     makeTimeslices(expectedEndTime);
                     makeTimeslices(expectedEndTime, tmpTimeSlices);
-                    backfillJob.setSpecifiedExecuteTime(expectedEndTime);
+                    backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     assignJob(startTime, backfillJob, assignNodesNo);
                     assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);

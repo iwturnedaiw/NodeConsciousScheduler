@@ -19,7 +19,7 @@ public class Job implements Comparable<Job> {
     private int jobId;
     private int submitTime;
     private int actualExecuteTime;
-    private int specifiedExecuteTime;
+    private int occupiedTimeInTimeSlices;
     private int endEventOccuranceTimeNow;
     private int requiredTime;
     private int requiredCores;
@@ -220,12 +220,12 @@ public class Job implements Comparable<Job> {
         this.usingNodesList = usingNodesList;
     }
 
-    public int getSpecifiedExecuteTime() {
-        return specifiedExecuteTime;
+    public int getOccupiedTimeInTimeSlices() {
+        return occupiedTimeInTimeSlices;
     }
 
-    public void setSpecifiedExecuteTime(int specifiedExecuteTime) {
-        this.specifiedExecuteTime = specifiedExecuteTime;
+    public void setOccupiedTimeInTimeSlices(int occupiedTimeInTimeSlices) {
+        this.occupiedTimeInTimeSlices = occupiedTimeInTimeSlices;
     }
 
     public void setCpuTimeForNow(double cpuTimeForNow) {
