@@ -216,9 +216,16 @@ public abstract class Scheduler {
                 System.out.println("Differ freecore value at node " + i);                
                 System.out.println("Check wheter multiple END Event with the same event time exist.");
                 int endEventTimeCnt = 0;
+                ArrayList<Job> completedJobList = NodeConsciousScheduler.sim.getCompletedJobList();
+                int sizeOfCompletedJobList = completedJobList.size();
+                int endEventOccuranceTimeNowCompleted = completedJobList.get(sizeOfCompletedJobList-1).getEndEventOccuranceTimeNow();
+                if (endEventOccuranceTimeNowCompleted == currentTime) {
+                    endEventTimeCnt++;
+                }
                 boolean existMultipleEventSameTime = false;
-                for (int k = 0; k < NodeConsciousScheduler.sim.getExecutingJobList().size(); ++k) {
-                    Job job = NodeConsciousScheduler.sim.getExecutingJobList().get(k);
+                ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
+                for (int k = 0; k < executingJobList.size(); ++k) {
+                    Job job = executingJobList.get(k);
                     
                     int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
                     if (endEventOccuranceTimeNow == currentTime) endEventTimeCnt++;
@@ -229,10 +236,10 @@ public abstract class Scheduler {
                 }
                 ret2 = existMultipleEventSameTime;
                 
-                System.out.println("Check wheter job slow down more than requested time.");
+                System.out.println("Check whether job slow down more than requested time.");
                 boolean existSlowsDownJob = false;
-                for (int k = 0; k < NodeConsciousScheduler.sim.getExecutingJobList().size(); ++k) {
-                    Job job = NodeConsciousScheduler.sim.getExecutingJobList().get(k);
+                for (int k = 0; k < executingJobList.size(); ++k) {
+                    Job job = executingJobList.get(k);
                     
                     int occupiedTimeInTimeSeries = job.getOccupiedTimeInTimeSlices();
                     int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
@@ -294,6 +301,7 @@ public abstract class Scheduler {
         completeOldSlices(currentTime);
         
        TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
+       assert consistency.isConsistency() || consistency.isSameEndEventFlag();
 
         try {
             EventQueue.debugExecuting(currentTime, ev);
