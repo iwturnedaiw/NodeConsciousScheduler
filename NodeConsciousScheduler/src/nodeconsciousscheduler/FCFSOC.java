@@ -208,6 +208,7 @@ public class FCFSOC extends FCFS {
                 temporallyScheduledJobList.add(job);
             } else break;
         }
+        temporallyScheduledJobList.clear();
         return result;
     }
 
