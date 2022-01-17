@@ -235,6 +235,10 @@ public abstract class Scheduler {
                     }
                 }
                 ret2 = existMultipleEventSameTime;
+                if (ret2) {
+                    System.out.println("Found multiple END Event with the same event time.");
+                    break;
+                }
                 
                 System.out.println("Check whether job slow down more than requested time.");
                 boolean existSlowsDownJob = false;
