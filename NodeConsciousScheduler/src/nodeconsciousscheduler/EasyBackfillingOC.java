@@ -35,10 +35,11 @@ public class EasyBackfillingOC extends EasyBackfilling {
             Job job = waitingQueue.peek();
             int jobId = job.getJobId();
             
-            ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
             TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
             assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;
+            
+            ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
@@ -145,8 +146,12 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         /*  2-1. Calculate new expectedEndTime */
                         int oldExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices(); // This field name is bad. Difficult to interpret.
                         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
+                        int endEventOccuranceTime = victimJob.getEndEventOccuranceTimeNow();
+                        if (newExpectedEndTime < endEventOccuranceTime) { // This is not good implement
+                            newExpectedEndTime = endEventOccuranceTime;
+                        }
                         victimJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
-                        assert oldExpectedEndTime <= newExpectedEndTime+1;
+                        //assert oldExpectedEndTime <= newExpectedEndTime+1;
                         
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
                         int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
@@ -181,7 +186,10 @@ public class EasyBackfillingOC extends EasyBackfilling {
             } else break;
         }
         
-        if (waitingQueue.size() <= 1) return result;
+        if (waitingQueue.size() <= 1) {
+            temporallyScheduledJobList.clear();
+            return result;
+        }
         
         /* Backfilling */
         Queue<Job> tailWaitingQueue = copyWaitingQueue();
@@ -335,9 +343,13 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         /*  2-1. Calculate new expectedEndTime */
 
                         int oldExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices(); // This field name is bad. Difficult to interpret.
-                        int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
+                        int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);                         
+                        int endEventOccuranceTime = victimJob.getEndEventOccuranceTimeNow();
+                        if (newExpectedEndTime < endEventOccuranceTime) { // This is not good implement
+                            newExpectedEndTime = endEventOccuranceTime;
+                        }
                         victimJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
-                        assert oldExpectedEndTime <= newExpectedEndTime + 1;
+                        //assert oldExpectedEndTime <= newExpectedEndTime + 1;
 
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
                         int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
@@ -374,7 +386,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
         }
         // TODO: firstJob clear
         firstJob.setOCStateLevel(1);
-        
+
+        temporallyScheduledJobList.clear();
         return result;
     }
     
