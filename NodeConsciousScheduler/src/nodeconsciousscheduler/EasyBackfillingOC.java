@@ -105,6 +105,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
+                        victimJob.getCoexistingJobs().add(opponentJobId);    
                         resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
                             result.add(ev);
@@ -176,6 +177,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForBackfillJob;
+                    job.setCurrentRatio(calculateMaxDegradationRatio(job, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
@@ -331,6 +333,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();
                         Job victimJob = getJobByJobId(victimJobId); // O(N)                        
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, backfillJob.getRequiredCoresPerNode(), assignNodesNo);
+                        victimJob.getCoexistingJobs().add(backfillJobId);
                         resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
                             result.add(ev);
@@ -378,6 +381,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
 
                     backfillJob.setPreviousMeasuredTime(startTime);
+                    backfillJob.setCurrentRatio(calculateMaxDegradationRatio(backfillJob, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, backfillJob);
                     result.add(new Event(EventType.START, startTime, backfillJob));
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
@@ -460,7 +464,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
             int OCStateLevel = checkMultiplicityAlongNodes(coexistingJobUsingNodeList, endingJobId, coexistingJobId);
 
             // 2. Modify the END event time
-            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevel, result);
+            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevel, result, true, endingJobId);
 
             // 3. Modify the timeSlices
             modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);

@@ -218,9 +218,11 @@ public abstract class Scheduler {
                 int endEventTimeCnt = 0;
                 ArrayList<Job> completedJobList = NodeConsciousScheduler.sim.getCompletedJobList();
                 int sizeOfCompletedJobList = completedJobList.size();
-                int endEventOccuranceTimeNowCompleted = completedJobList.get(sizeOfCompletedJobList-1).getEndEventOccuranceTimeNow();
-                if (endEventOccuranceTimeNowCompleted == currentTime) {
-                    endEventTimeCnt++;
+                if (sizeOfCompletedJobList != 0) {
+                    int endEventOccuranceTimeNowCompleted = completedJobList.get(sizeOfCompletedJobList - 1).getEndEventOccuranceTimeNow();
+                    if (endEventOccuranceTimeNowCompleted == currentTime) {
+                        endEventTimeCnt++;
+                    }
                 }
                 boolean existMultipleEventSameTime = false;
                 ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
