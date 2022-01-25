@@ -1689,4 +1689,12 @@ public abstract class Scheduler {
             ts.assignResourcesAtNode(nodeNum, job);
         }
     }
+    protected Set<Integer> cloneCoexistingJobs(Set<Integer> coexistingJobs) {
+        Set<Integer> clonedObject = new HashSet<Integer>();
+
+        for(int jobId: coexistingJobs) {
+            clonedObject.add(jobId);
+        }
+        return clonedObject;
+    }
 }

@@ -268,18 +268,21 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 boolean backfillFlag = true;
                 for (int victimJobId: victimJobs) {
                     Job victimJob = getJobByJobId(victimJobId);
-                    if (OCStateLevelForBackfillJob == victimJob.getOCStateLevel()) continue;
+                    //if (OCStateLevelForBackfillJob == victimJob.getOCStateLevel()) continue;
                     int currentVictimExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices();
+                    /* "victim's occupied time in timeslices > first job's start time" means victim job does not use nodes in common with first job.*/
+                    /* Thus we can skip it. */
                     if (currentVictimExpectedEndTime > startTimeFirstJob) continue;
-                    int victimApproximateEndTime = calculateApproximateEndTime(currentTime, victimJob, OCStateLevelForBackfillJob);
-                    /*
-                    if (OCStateLevelForBackfillJob > victimJob.getOCStateLevel()) {
+                    int victimApproximateEndTime = calculateApproximateEndTime(currentTime, victimJob, victimJob.getOCStateLevel());
+                    if (victimApproximateEndTime > startTimeFirstJob) {
                         backfillFlag = false;
                         break;
                     }
-                    */
-//                    if (checkEffectOnVictimJob(victimJob)) {
-                    if (victimApproximateEndTime > startTimeFirstJob) {
+
+                    Set<Integer> tmpCoexistingJobs = cloneCoexistingJobs(victimJob.getCoexistingJobs());
+                    tmpCoexistingJobs.add(backfillJobId);
+                    double tmpRatio = calculateMaxDegradationRatio(victimJob, tmpCoexistingJobs);
+                    if (tmpRatio > victimJob.getCurrentRatio()) {
                         backfillFlag = false;
                         break;
                     }
@@ -720,5 +723,5 @@ public class EasyBackfillingOC extends EasyBackfilling {
     private boolean checkEffectOnVictimJob(Job victimJob) {
         return false;
     }
- 
+
 }
