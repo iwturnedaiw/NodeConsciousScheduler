@@ -44,7 +44,7 @@ class FCFS extends Scheduler {
 
             /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
-            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo();
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
             assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
@@ -64,7 +64,7 @@ class FCFS extends Scheduler {
                 
                 int expectedEndTime = startTime + job.getRequiredTime();
                 makeTimeslices(expectedEndTime);
-                job.setSpecifiedExecuteTime(expectedEndTime);
+                job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                 /* 5. Modify the resource informaiton */
                 assignJob(startTime, job, assignNodesNo);
@@ -78,6 +78,7 @@ class FCFS extends Scheduler {
                 temporallyScheduledJobList.add(job);
             } else break;
         }
+        temporallyScheduledJobList.clear();
         return result;
     }
 

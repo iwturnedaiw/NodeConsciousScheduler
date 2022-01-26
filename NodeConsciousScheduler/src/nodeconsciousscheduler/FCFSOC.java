@@ -43,10 +43,11 @@ public class FCFSOC extends FCFS {
             Job job = waitingQueue.peek();
             int jobId = job.getJobId();
 
+
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
+            assert consistency.isConsistency();
             /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
-            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo();
-            assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;            
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
 
@@ -74,7 +75,7 @@ public class FCFSOC extends FCFS {
                     /* 5. Modify the timeSlices */        
                     int expectedEndTime = startTime + job.getRequiredTime();
                     makeTimeslices(expectedEndTime);
-                    job.setSpecifiedExecuteTime(expectedEndTime);
+                    job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     job.setOCStateLevel(OCStateLevelForJob);
                     /* 6. Modify the resource informaiton */        
@@ -124,6 +125,7 @@ public class FCFSOC extends FCFS {
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();           
                         Job victimJob = getJobByJobId(victimJobId);
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
+                        victimJob.getCoexistingJobs().add(opponentJobId);;
 //                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
                         resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
@@ -151,7 +153,6 @@ public class FCFSOC extends FCFS {
                         result.add(new Event(EventType.END, trueEndTime, victimJob));
                         result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
                         */
-                        victimJob.getCoexistingJobs().add(opponentJobId);         
                         victimJob.setOCStateLevel(victimNewOCStateLevel);
                     }
                     
@@ -163,10 +164,15 @@ public class FCFSOC extends FCFS {
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
 
                         /*  2-1. Calculate new expectedEndTime */
-                        int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
+                        int oldExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices();
                         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
-                        victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
-                        assert oldExpectedEndTime <= newExpectedEndTime+1;
+                        int endEventOccuranceTime = victimJob.getEndEventOccuranceTimeNow();
+                        if (newExpectedEndTime < endEventOccuranceTime) { // This is not good implement
+                            newExpectedEndTime = endEventOccuranceTime;
+                        }
+                        //newExpectedEndTime = max(oldExpectedEndTime, oldExpectedEndTime);
+                        victimJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
+//                        assert oldExpectedEndTime <= newExpectedEndTime+1;
                         
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
                         int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
@@ -182,7 +188,7 @@ public class FCFSOC extends FCFS {
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForJob;
                     int expectedEndTime = calculateNewExpectedEndTime(startTime, job);
                     makeTimeslices(expectedEndTime);
-                    job.setSpecifiedExecuteTime(expectedEndTime);
+                    job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     /* Set previous time. */
                     /* This is opponent, so it is not "switched" now. But, this value is needed. */
@@ -191,6 +197,8 @@ public class FCFSOC extends FCFS {
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForJob;
+                    double ratio = calculateMaxDegradationRatio(job, victimJobs);
+                    job.setCurrentRatio(ratio);
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
@@ -200,6 +208,7 @@ public class FCFSOC extends FCFS {
                 temporallyScheduledJobList.add(job);
             } else break;
         }
+        temporallyScheduledJobList.clear();
         return result;
     }
 
@@ -269,7 +278,7 @@ public class FCFSOC extends FCFS {
             int OCStateLevel = checkMultiplicityAlongNodes(coexistingJobUsingNodeList, endingJobId, coexistingJobId);
 
             // 2. Modify the END event time
-            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevel, result);
+            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevel, result, true, endingJobId);
 
             // 3. Modify the timeSlices
             modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);

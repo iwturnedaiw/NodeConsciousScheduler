@@ -48,7 +48,7 @@ class EasyBackfilling extends Scheduler {
 
             /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
-            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo();
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
             assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
@@ -71,7 +71,7 @@ class EasyBackfilling extends Scheduler {
 
                 int expectedEndTime = startTime + job.getRequiredTime();
                 makeTimeslices(expectedEndTime);
-                job.setSpecifiedExecuteTime(expectedEndTime);
+                job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                 /* 5. Modify the resource informaiton */        
                 assignJob(startTime, job, assignNodesNo);
@@ -86,7 +86,10 @@ class EasyBackfilling extends Scheduler {
             } else break;
         }
         
-        if (waitingQueue.size() <= 1) return result;
+        if (waitingQueue.size() <= 1) {
+            temporallyScheduledJobList.clear();
+            return result;
+        }
         
         /* Backfilling */
 
@@ -175,7 +178,7 @@ class EasyBackfilling extends Scheduler {
                 int expectedEndTime = startTime + backfillJob.getRequiredTime();
                 makeTimeslices(expectedEndTime);
                 makeTimeslices(expectedEndTime, tmpTimeSlices);
-                backfillJob.setSpecifiedExecuteTime(expectedEndTime);
+                backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                 /* 5. Modify the resource informaiton */        
                 assignJob(startTime, backfillJob, assignNodesNo);
@@ -190,7 +193,8 @@ class EasyBackfilling extends Scheduler {
                 temporallyScheduledJobList.add(backfillJob);
             }
         }
-        
+
+        temporallyScheduledJobList.clear();
         return result;
     }
  
