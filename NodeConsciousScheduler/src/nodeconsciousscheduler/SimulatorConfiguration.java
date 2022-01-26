@@ -7,6 +7,8 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -16,23 +18,9 @@ class SimulatorConfiguration {
     private ArrayList<Double> thresholdForSlowdown = new ArrayList<Double>();
     private boolean outputMinuteTimeseries;
     private boolean scheduleUsingMemory;
-    private boolean ignoreIncompleteMemoryData;
-    private boolean memoryDataPerCore;
-    private boolean memoryDataPerNode;
-    private boolean outputResultsInDetail;
-    private boolean considerMemoryForNodeNum;
     private boolean crammingMemoryScheduling;
-
-    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries) {
-        double previousValue = -1;
-        for (int i = 0; i < thresholdForSlowdown.length; ++i) {
-            double value = Double.parseDouble(thresholdForSlowdown[i]);
-            assert previousValue < value;
-            this.thresholdForSlowdown.add(value);
-            previousValue = value;
-        }
-        this.outputMinuteTimeseries = outputMinuteTimeseries;
-    }
+    private boolean considerJobMatching;
+    Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
 
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory) {
         this.scheduleUsingMemory = scheduleUsingMemory;
@@ -45,15 +33,10 @@ class SimulatorConfiguration {
         }
         this.outputMinuteTimeseries = outputMinuteTimeseries;
     }
-    
 
-    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean ignoreIncompleteMemoryData, boolean memoryDataPerCore, boolean memoryDataPerNode, boolean outputResultsInDetail, boolean considerMemoryForNodeNum, boolean crammingMemoryScheduling) {
+    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean crammingMemoryScheduling, boolean considerJobMatching) {
         this.scheduleUsingMemory = scheduleUsingMemory;
-        this.ignoreIncompleteMemoryData = ignoreIncompleteMemoryData;
-        this.memoryDataPerCore = memoryDataPerCore;
-        this.memoryDataPerNode = memoryDataPerNode;
-        this.outputResultsInDetail = outputResultsInDetail;
-        this.considerMemoryForNodeNum = considerMemoryForNodeNum;
+        this.considerJobMatching = considerJobMatching;
         this.crammingMemoryScheduling = crammingMemoryScheduling;
         double previousValue = -1;
         for (int i = 0; i < thresholdForSlowdown.length; ++i) {
@@ -77,29 +60,19 @@ class SimulatorConfiguration {
         return scheduleUsingMemory;
     }
 
-    public boolean isIgnoreIncompleteMemoryData() {
-        return ignoreIncompleteMemoryData;
+    public boolean isConsiderJobMatching() {
+        return considerJobMatching;
     }
 
-    public boolean isMemoryDataPerCore() {
-        return memoryDataPerCore;
+    public void setJobMatchingTable(Map<JobMatching, Double> jobMatchingTable) {
+        this.jobMatchingTable = jobMatchingTable;
     }
 
-    public boolean isOutputResults() {
-        return outputResultsInDetail;
-    }
-
-    public boolean isMemoryDataPerNode() {
-        return memoryDataPerNode;
-    }
-
-    public boolean isConsiderMemoryForNodeNum() {
-        return considerMemoryForNodeNum;
+    public Map<JobMatching, Double> getJobMatchingTable() {
+        return jobMatchingTable;
     }
 
     public boolean isCrammingMemoryScheduling() {
         return crammingMemoryScheduling;
     }
-    
-    
 }

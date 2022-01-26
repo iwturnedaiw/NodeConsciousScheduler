@@ -83,6 +83,7 @@ import static nodeconsciousscheduler.Constants.WAITING_RESOURCES_PER_MINUTE_OUTP
  */
 public class Simulator {
     private ArrayList<Job> jobList;
+    private Map<Integer, Job> jobMap = new HashMap<>();
     private ArrayList<NodeInfo> allNodesInfo;
     private ScheduleAlgorithm scheAlgo;
     private Scheduler sche;
@@ -96,9 +97,16 @@ public class Simulator {
     private boolean outputMinuteBoolean;
     private boolean scheduleUsingMemory;
     private boolean crammingMemoryScheduling;
-
+    private boolean considerJobMatching;
+    Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
+    
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
+        for (int i = 0; i < jobList.size(); ++i) {
+            Job ljob = jobList.get(i);
+            int jobId = ljob.getJobId();
+            this.jobMap.put(jobId, ljob);
+        }
         this.allNodesInfo = allNodesInfo;
         this.scheAlgo = scheAlgo;
         initScheduler(scheAlgo);
@@ -109,6 +117,8 @@ public class Simulator {
         this.outputMinuteBoolean = simConf.isOutputMinuteTimeseries();
         this.scheduleUsingMemory = simConf.isScheduleUsingMemory();
         this.crammingMemoryScheduling = simConf.isCrammingMemoryScheduling();
+        this.considerJobMatching = simConf.isConsiderJobMatching();
+        this.jobMatchingTable = simConf.getJobMatchingTable();
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -1250,4 +1260,15 @@ public class Simulator {
         return result;
     }
     
+    public boolean isConsiderJobMatching() {
+        return considerJobMatching;
+    }
+
+    public Map<JobMatching, Double> getJobMatchingTable() {
+        return jobMatchingTable;
+    }
+
+    public Map<Integer, Job> getJobMap() {
+        return jobMap;
+    }
 }

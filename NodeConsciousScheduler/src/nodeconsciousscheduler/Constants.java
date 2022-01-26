@@ -85,4 +85,6 @@ public class Constants {
     static int DAY_IN_SECOND = 60 * 60 * 24;
     static int HOUR_IN_SECOND = 60 * 60;
     static int MINUTE_IN_SECOND = 60;
+
+    static int NOT_FINISHED = 2 << 30;
 }
