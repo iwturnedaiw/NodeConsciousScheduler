@@ -1609,13 +1609,16 @@ public abstract class Scheduler {
         NodeConsciousScheduler.sim.outputResultForVis(migratingJob, currentTime);
     }
 
-    protected double calculateMaxDegradationRatio(Job victimJob, Set<Integer> coexistingJobs) {
+    protected double calculateMaxDegradationRatio(Job victimJob, Set<Integer> coexistingJobs) {    
+        boolean considerJobMatching = NodeConsciousScheduler.sim.isConsiderJobMatching();
+        if (!considerJobMatching) return 1.0;
+
         int victimJobGroup = victimJob.getMatchingGroup();
         double ratio = 0;
         for (int coexistingJobId: coexistingJobs) {
             Job coexistingJob = getJobByJobId(coexistingJobId);
             int coexistingJobGroup = coexistingJob.getMatchingGroup();
-            double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, coexistingJobGroup));
+                double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, coexistingJobGroup));
             ratio = max(ratio, localRatio);
         }
         if (ratio == 0) ratio = 1.0;

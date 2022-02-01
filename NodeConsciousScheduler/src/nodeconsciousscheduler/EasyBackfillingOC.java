@@ -268,19 +268,26 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 victimJobs = searchVictimJobs(startTime, backfillJob, assignNodesNo);
 
                 boolean backfillFlag = true;
+                // Check whether victim jobs will slow and delay the start time of first job.
                 for (int victimJobId: victimJobs) {
                     Job victimJob = getJobByJobId(victimJobId);
-                    //if (OCStateLevelForBackfillJob == victimJob.getOCStateLevel()) continue;
                     int currentVictimExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices();
                     /* "victim's occupied time in timeslices > first job's start time" means victim job does not use nodes in common with first job.*/
                     /* Thus we can skip it. */
                     if (currentVictimExpectedEndTime > startTimeFirstJob) continue;
-                    int victimApproximateEndTime = calculateApproximateEndTime(currentTime, victimJob, victimJob.getOCStateLevel());
-                    if (victimApproximateEndTime > startTimeFirstJob) {
+
+                    /* if OC state level is up, it may delay the start time. */
+                    /* Thus, we quit backfill */
+                    int victimCurrentOCStateLevel = victimJob.getOCStateLevel();
+                    int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, backfillJob.getRequiredCoresPerNode(), assignNodesNo);
+
+                    if (victimNewOCStateLevel > victimCurrentOCStateLevel) {
                         backfillFlag = false;
                         break;
                     }
 
+                    /* if ratio is worse, it may delay the start time. */
+                    /* Thus, we quit backfill */
                     Set<Integer> tmpCoexistingJobs = cloneCoexistingJobs(victimJob.getCoexistingJobs());
                     tmpCoexistingJobs.add(backfillJobId);
                     double tmpRatio = calculateMaxDegradationRatio(victimJob, tmpCoexistingJobs);
@@ -596,7 +603,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                     freeCores = min(freeCores, node.getFreeCores());
                     assert freeCores >= -(M-1)*numCore;
-                    assert freeCores <= numCore;                    
+                    assert freeCores <= numCore;
                     node.setFreeCores(freeCores);
 
                     // 0. Check memory hard-limit
