@@ -99,6 +99,7 @@ public class Simulator {
     private boolean crammingMemoryScheduling;
     private boolean considerJobMatching;
     Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
+    private boolean usingAffinityForSchedule;
     
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
@@ -119,6 +120,7 @@ public class Simulator {
         this.crammingMemoryScheduling = simConf.isCrammingMemoryScheduling();
         this.considerJobMatching = simConf.isConsiderJobMatching();
         this.jobMatchingTable = simConf.getJobMatchingTable();
+        this.usingAffinityForSchedule = simConf.isUsingAffinityForSchedule();
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -1270,5 +1272,9 @@ public class Simulator {
 
     public Map<Integer, Job> getJobMap() {
         return jobMap;
+    }
+
+    public boolean isUsingAffinityForSchedule() {
+        return usingAffinityForSchedule;
     }
 }

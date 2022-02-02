@@ -41,6 +41,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
             
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                    calculatePriorityForNodes(canExecuteNodes, job);
+                }
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForJob = 1;
@@ -216,6 +219,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
             }
         }
 
+        if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {        
+            calculatePriorityForNodes(canExecuteTmpNodes, firstJob);            
+        }
         Collections.sort(canExecuteTmpNodes);
         ArrayList<Integer> assignTmpNodesNo = new ArrayList<Integer>();
         int OCStateLevelForFirstJob = 1;
@@ -254,7 +260,10 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
             if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
                 // TO CONSIDER:
-                // Is it appropriate way to select the nodes?                
+                // Is it appropriate way to select the nodes?                                
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                    calculatePriorityForNodes(canExecuteNodesEasyBackfiling, backfillJob);
+                }
                 Collections.sort(canExecuteNodesEasyBackfiling);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForBackfillJob = 1;

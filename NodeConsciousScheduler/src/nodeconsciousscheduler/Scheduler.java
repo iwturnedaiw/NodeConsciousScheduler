@@ -10,6 +10,7 @@ import static java.lang.Math.ceil;
 import static java.lang.Math.max;
 import static java.lang.Math.max;
 import static java.lang.Math.max;
+import static java.lang.Math.max;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,8 +21,10 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.NodeChangeEvent;
 import static nodeconsciousscheduler.Constants.BLANK_JOBID;
 import static nodeconsciousscheduler.Constants.NOT_FINISHED;
+import static nodeconsciousscheduler.Constants.UNSPECIFIED;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.UNUSED;
@@ -156,6 +159,9 @@ public abstract class Scheduler {
             
             int coreCnt = addedPpn;
             ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
+            if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                calculatePriorityForCores(occupiedCores, job);
+            }
             Collections.sort(occupiedCores);
             for (int j = 0; j < numCores; ++j) {
                 CoreInfo eachCore = occupiedCores.get(j);
@@ -1418,12 +1424,29 @@ public abstract class Scheduler {
         assert candidateMigratingJobs.size() >= 2;
 
         int migratingJobId = UNUPDATED;
+        double currentLeastRatio = 1 << 30;
         for (int i = 0; i < candidateMigratingJobs.size(); ++i) {
-            migratingJobId = candidateMigratingJobs.get(i);
-            assert maxCoreInfo.getJobList().contains(migratingJobId);
-            if (!minCoreInfo.getJobList().contains(migratingJobId)) {                
-                break;
+            int tmpMigratingJobId = candidateMigratingJobs.get(i);
+            assert maxCoreInfo.getJobList().contains(tmpMigratingJobId);
+            int tmpMigratingJobGroup = NodeConsciousScheduler.sim.getJobMap().get(tmpMigratingJobId).getMatchingGroup();
+            
+            if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                double localRatio = UNSPECIFIED;
+                for (Integer victimJobId: minCoreInfo.getJobList()) {
+                    int victimJobGroup = NodeConsciousScheduler.sim.getJobMap().get(victimJobId).getMatchingGroup();
+                    localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(tmpMigratingJobGroup, victimJobGroup));
+                    localRatio = max(localRatio, NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, tmpMigratingJobGroup)));
+                }
+                if (localRatio < currentLeastRatio) {
+                    currentLeastRatio = localRatio;
+                    migratingJobId = tmpMigratingJobId;
+                }
             }
+            /*            
+            if (!minCoreInfo.getJobList().contains(tmpMigratingJobId)) {
+                break;
+            }            
+            */
         }
         assert migratingJobId != UNUPDATED;
         Job migratingJob = getJobByJobId(migratingJobId);
@@ -1618,7 +1641,7 @@ public abstract class Scheduler {
         for (int coexistingJobId: coexistingJobs) {
             Job coexistingJob = getJobByJobId(coexistingJobId);
             int coexistingJobGroup = coexistingJob.getMatchingGroup();
-                double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, coexistingJobGroup));
+            double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, coexistingJobGroup));
             ratio = max(ratio, localRatio);
         }
         if (ratio == 0) ratio = 1.0;
@@ -1701,5 +1724,57 @@ public abstract class Scheduler {
             clonedObject.add(jobId);
         }
         return clonedObject;
+    } 
+    protected void calculatePriorityForNodes(ArrayList<VacantNode> canExecuteNodes, Job job) {
+        assert NodeConsciousScheduler.sim.isUsingAffinityForSchedule();
+        
+        for (VacantNode vn: canExecuteNodes) {
+            vn.setPriority(UNSPECIFIED);
+        }
+        
+        int jobGroup = job.getMatchingGroup();
+        
+        for (VacantNode vn: canExecuteNodes) {
+            int nodeId = vn.getNodeNo();
+            NodeInfo node = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeId);
+            Set<Integer> currentExecutingJobIds = node.getExecutingJobIds();
+            double ratio = UNSPECIFIED;
+            for (Integer currentExecutingJobId: currentExecutingJobIds) {                            
+                int currentExecutingJobGroup = getJobByJobId(currentExecutingJobId).getMatchingGroup();
+                double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(jobGroup, currentExecutingJobGroup));
+                localRatio = max(localRatio, NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(currentExecutingJobGroup, jobGroup)));
+                ratio = max(ratio, localRatio);
+            }
+            if (ratio == UNSPECIFIED) {
+                ratio = 1.0;
+            }
+            vn.setPriority(ratio);
+        }
+    }
+
+    private void calculatePriorityForCores(ArrayList<CoreInfo> occupiedCores, Job job) {
+        assert NodeConsciousScheduler.sim.isUsingAffinityForSchedule();
+        
+        for (CoreInfo ci: occupiedCores) {
+            ci.setPriority(UNSPECIFIED);
+        }
+        
+        int jobGroup = job.getMatchingGroup();
+        
+        for (CoreInfo ci: occupiedCores) {
+            int coreId = ci.getCoreId();
+            ArrayList<Integer> currentExecutingJobIds = ci.getJobList();
+            double ratio = UNSPECIFIED;
+            for (Integer currentExecutingJobId: currentExecutingJobIds) {                            
+                int currentExecutingJobGroup = getJobByJobId(currentExecutingJobId).getMatchingGroup();
+                double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(jobGroup, currentExecutingJobGroup));
+                localRatio = max(localRatio, NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(currentExecutingJobGroup, jobGroup)));
+                ratio = max(ratio, localRatio);
+            }
+            if (ratio == UNSPECIFIED) {
+                ratio = 1.0;
+            }
+            ci.setPriority(ratio);
+        }
     }
 }

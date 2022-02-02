@@ -53,6 +53,9 @@ public class FCFSOC extends FCFS {
 
                 /* 3. Select nodes the job is assigned to */        
                 /* 4. Calculate opponent job (the head job) OCStateLevel */        
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                    calculatePriorityForNodes(canExecuteNodes, job);
+                }
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForJob = 1;
@@ -563,4 +566,5 @@ public class FCFSOC extends FCFS {
         }
 
     }
+
 }
