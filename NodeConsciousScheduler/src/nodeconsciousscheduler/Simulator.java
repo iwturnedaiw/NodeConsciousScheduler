@@ -100,6 +100,7 @@ public class Simulator {
     private boolean considerJobMatching;
     Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
     private boolean usingAffinityForSchedule;
+    private double thresholdForAffinitySchedule;
     
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
@@ -121,6 +122,7 @@ public class Simulator {
         this.considerJobMatching = simConf.isConsiderJobMatching();
         this.jobMatchingTable = simConf.getJobMatchingTable();
         this.usingAffinityForSchedule = simConf.isUsingAffinityForSchedule();
+        this.thresholdForAffinitySchedule = simConf.getThresholdForAffinitySchedule();
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -245,7 +247,7 @@ public class Simulator {
         String fileNameForVis = FOR_VISUALIZATION_OUTPUT;
         try {
             this.pw = new PrintWriter(this.p + "/" + fileName);
-            pw.println("JobID\tuserId\tgroupId\tarrivalTime\twaitTime\tstartTime\tfinishedTime\trunnningTime\tslowdown\tslowdownOC\tspecifiedRequiredTime\tnum cores\tnum nodes\tnode num(tcore num)");
+            pw.println("JobID\tuserId\tgroupId\tarrivalTime\twaitTime\tstartTime\tfinishedTime\toriginalRunningTime\trunnningTime\tcpuTimePerCore\tslowdown\tslowdownOC\tspecifiedRequiredTime\tnum cores\tnum nodes\tnode num(tcore num)");
             this.pwForVis = new PrintWriter(this.p + "/" + fileNameForVis);
 
         } catch (FileNotFoundException ex) {
@@ -271,8 +273,9 @@ public class Simulator {
         int numCores = job.getRequiredCores();
         int numNodes = job.getRequiredNodes();
         int specifiedRequiredTime = job.getRequiredTime();
+        double cpuTimePerCore = job.getAccumulatedCpuTime();
         
-        pw.print(jobId + "\t" + userId + "\t" + groupId + "\t" + arrivalTime + "\t" + waitTime + "\t" + startTime + "\t" + finishedTime + "\t" + runningTime + "\t"
+        pw.print(jobId + "\t" + userId + "\t" + groupId + "\t" + arrivalTime + "\t" + waitTime + "\t" + startTime + "\t" + finishedTime + "\t" + originalRunningTime + "\t" + runningTime + "\t" + cpuTimePerCore + "\t"
                 + slowdown + "\t" + slowdownOC + "\t" + specifiedRequiredTime + "\t" + numCores + "\t" + numNodes + "\t");
         
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
@@ -1276,5 +1279,9 @@ public class Simulator {
 
     public boolean isUsingAffinityForSchedule() {
         return usingAffinityForSchedule;
+    }
+
+    public double getThresholdForAffinitySchedule() {
+        return thresholdForAffinitySchedule;
     }
 }

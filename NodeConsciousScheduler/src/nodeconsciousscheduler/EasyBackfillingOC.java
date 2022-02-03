@@ -52,7 +52,6 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     OCStateLevelForJob = max(OCStateLevelForJob, canExecuteNodes.get(i).getOCStateLevel());
                 }
 
-                waitingQueue.poll();
                 int startTime = currentTime;
                 //job.setStartTime(startTime);
                 makeTimeslices(startTime);
@@ -92,6 +91,15 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     Set<Integer> victimJobs = new HashSet<Integer>();
                     int opponentJobId = job.getJobId();
                     victimJobs = searchVictimJobs(startTime, job, assignNodesNo);
+                                         
+                    if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                        double ratio = calculateMaxDegradationRatio(job, victimJobs);
+                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
+                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY !!!!!!");
+                            break;
+                        }
+                    }
+                    
                     System.out.println("OC allocating, opponent jobId: " + opponentJobId + ", OCStateLevel: " + OCStateLevelForJob + ", victim jobId: " + victimJobs);
                     /* Set victim jobList for the opponent job */
                     job.setCoexistingJobs(victimJobs);
@@ -180,13 +188,14 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForBackfillJob;
-                    job.setCurrentRatio(calculateMaxDegradationRatio(job, victimJobs));
+                    job.setCurrentRatio(calculateMaxDegradationRatioForVictim(job, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, job));          
                     job.setEndEventOccuranceTimeNow(trueEndTime);
                 }
+                waitingQueue.poll();
                 temporallyScheduledJobList.add(job);
             } else break;
         }
@@ -299,7 +308,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     /* Thus, we quit backfill */
                     Set<Integer> tmpCoexistingJobs = cloneCoexistingJobs(victimJob.getCoexistingJobs());
                     tmpCoexistingJobs.add(backfillJobId);
-                    double tmpRatio = calculateMaxDegradationRatio(victimJob, tmpCoexistingJobs);
+                    double tmpRatio = calculateMaxDegradationRatioForVictim(victimJob, tmpCoexistingJobs);
                     if (tmpRatio > victimJob.getCurrentRatio()) {
                         backfillFlag = false;
                         break;
@@ -397,7 +406,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
 
                     backfillJob.setPreviousMeasuredTime(startTime);
-                    backfillJob.setCurrentRatio(calculateMaxDegradationRatio(backfillJob, victimJobs));
+                    backfillJob.setCurrentRatio(calculateMaxDegradationRatioForVictim(backfillJob, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, backfillJob);
                     result.add(new Event(EventType.START, startTime, backfillJob));
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);

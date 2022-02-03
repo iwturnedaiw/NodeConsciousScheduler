@@ -28,8 +28,8 @@ public class Job implements Comparable<Job> {
     private int requiredCoresPerNode;
     private int runningTimeDed;
     private int runningTimeOC;
-    private double cpuTimeForNow;
-    private double cpuTimeOnlyConsiderMultiplicity;
+    private double currentAccumulatedComputeQuantity;
+    private double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity;
     private int OCStateLevel;
     private int startTime;
     private int previousMeasuredTime;
@@ -46,6 +46,7 @@ public class Job implements Comparable<Job> {
     private long maxMemory;
     private int matchingGroup;
     private double currentRatio;
+    private double accumulatedCpuTime;
     
 
     Job() {}
@@ -60,7 +61,9 @@ public class Job implements Comparable<Job> {
         this.startTime = UNSTARTED;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
-        this.cpuTimeForNow = 0.0;
+        this.currentAccumulatedComputeQuantity = 0.0;
+        this.currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = 0.0;
+        this.accumulatedCpuTime = 0.0;
         this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
@@ -84,8 +87,9 @@ public class Job implements Comparable<Job> {
         this.startTime = -1;
         this.finishedTime = NOT_FINISHED;
         this.waitTime = -1;
-        this.cpuTimeForNow = 0.0;
-        this.cpuTimeOnlyConsiderMultiplicity = 0.0;
+        this.currentAccumulatedComputeQuantity = 0.0;
+        this.currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = 0.0;
+        this.accumulatedCpuTime = 0.0;
         this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
@@ -148,8 +152,8 @@ public class Job implements Comparable<Job> {
         return requiredNodes;
     }
 
-    public double getCpuTimeForNow() {
-        return cpuTimeForNow;
+    public double getCurrentAccumulatedComputeQuantity() {
+        return currentAccumulatedComputeQuantity;
     }
     
     public int getOCStateLevel() {
@@ -229,8 +233,8 @@ public class Job implements Comparable<Job> {
         this.occupiedTimeInTimeSlices = occupiedTimeInTimeSlices;
     }
 
-    public void setCpuTimeForNow(double cpuTimeForNow) {
-        this.cpuTimeForNow = cpuTimeForNow;
+    public void setCurrentAccumulatedComputeQuantity(double cpuTimeForNow) {
+        this.currentAccumulatedComputeQuantity = cpuTimeForNow;
     }
     
     public void setOCStateLevel(int OCStateLevel) {
@@ -330,13 +334,19 @@ public class Job implements Comparable<Job> {
         this.currentRatio = currentRatio;
     }
 
-    public double getCpuTimeOnlyConsiderMultiplicity() {
-        return cpuTimeOnlyConsiderMultiplicity;
+    public double getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity() {
+        return currentAccumulatedComputeQuantityOnlyConsiderMultiplicity;
     }
 
-    public void setCpuTimeOnlyConsiderMultiplicity(double cpuTimeOnlyConsiderMultiplicity) {
-        this.cpuTimeOnlyConsiderMultiplicity = cpuTimeOnlyConsiderMultiplicity;
+    public void setCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity(double cpuTimeOnlyConsiderMultiplicity) {
+        this.currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = cpuTimeOnlyConsiderMultiplicity;
     }
-    
-    
+
+    public double getAccumulatedCpuTime() {
+        return accumulatedCpuTime;
+    }
+
+    public void setAccumulatedCpuTime(double accumulatedCpuTime) {
+        this.accumulatedCpuTime = accumulatedCpuTime;
+    }
 }

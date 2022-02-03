@@ -64,15 +64,13 @@ public class FCFSOC extends FCFS {
                     OCStateLevelForJob = max(OCStateLevelForJob, canExecuteNodes.get(i).getOCStateLevel());
                 }
 
-                waitingQueue.poll();
-                int startTime = currentTime;
-                //job.setStartTime(startTime);
-                makeTimeslices(startTime);
-
-
                 /* 5. Modify the timeSlices */        
                 /* 6. Modify the resource informaiton */        
                 /* 7. Enqueue the START and END Events */                
+                
+                int startTime = currentTime;
+                //job.setStartTime(startTime);
+                makeTimeslices(startTime);
                 
                 if (OCStateLevelForJob == 1) {
                     /* 5. Modify the timeSlices */        
@@ -112,6 +110,16 @@ public class FCFSOC extends FCFS {
                     Set<Integer> victimJobs = new HashSet<Integer>();
                     victimJobs = searchVictimJobs(startTime, job, assignNodesNo);
                     int opponentJobId = job.getJobId();
+                    
+                    if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                        double ratio = calculateMaxDegradationRatio(job, victimJobs);
+                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
+                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY !!!!!!");
+                            break;
+                        }
+                    }
+                    
+                    
                     System.out.println("OC allocating, opponent jobId: " + opponentJobId + ", OCStateLevel: " + OCStateLevelForJob + ", victim jobId: " + victimJobs);
                     /* Set victim jobList for the opponent job */
                     job.setCoexistingJobs(victimJobs);
@@ -200,7 +208,7 @@ public class FCFSOC extends FCFS {
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForJob;
-                    double ratio = calculateMaxDegradationRatio(job, victimJobs);
+                    double ratio = calculateMaxDegradationRatioForVictim(job, victimJobs);
                     job.setCurrentRatio(ratio);
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
@@ -208,6 +216,7 @@ public class FCFSOC extends FCFS {
                     result.add(new Event(EventType.END, trueEndTime, job));
                     job.setEndEventOccuranceTimeNow(trueEndTime);                   
                 }
+                waitingQueue.poll();
                 temporallyScheduledJobList.add(job);
             } else break;
         }

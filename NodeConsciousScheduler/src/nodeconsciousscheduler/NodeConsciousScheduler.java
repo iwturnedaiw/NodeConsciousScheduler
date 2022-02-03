@@ -445,8 +445,9 @@ public class NodeConsciousScheduler {
         NodeConsciousScheduler.considerMemoryForNodeNum = Boolean.parseBoolean(configurations.getProperty("CONSIDER_MEMORY_FOR_JOB_NODENUM"));
         boolean considerJobMatching = Boolean.parseBoolean(configurations.getProperty("CONSIDER_JOB_MATCHING"));
         boolean usingAffinityForSchedule = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_AFFINITY"));
+        double thresholdForAffinitySchedule = Double.parseDouble(configurations.getProperty("QUIT_SCHEDULE_THRESHOLD"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, crammingMemoryScheduling, considerJobMatching, usingAffinityForSchedule);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, crammingMemoryScheduling, considerJobMatching, usingAffinityForSchedule, thresholdForAffinitySchedule);
     }
 
     private static int checkCanExecuteMultipleNodes(int requiredCores, int requiredMemeory, boolean scheduleUsingMemory) {
