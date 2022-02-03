@@ -227,6 +227,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 break;
             }
         }
+        
+        tailWaitingQueue.poll();
 
         if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {        
             calculatePriorityForNodes(canExecuteTmpNodes, firstJob);            
