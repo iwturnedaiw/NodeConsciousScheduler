@@ -85,6 +85,8 @@ public abstract class Scheduler {
         if (existSliceStartAt(currentTime, timeSlices))
             return;
 
+        uniteTimeSlices(timeSlices);
+        
         int breakIndex = UNUPDATED;
         breakIndex = sliceIndexToSplit(currentTime, timeSlices);
 
@@ -1822,6 +1824,71 @@ public abstract class Scheduler {
         if (ratio == UNSPECIFIED) ratio = 1.0;
         return ratio;
     }
-    
-    
+
+    private void uniteTimeSlices(LinkedList<TimeSlice> timeSlices) {
+        int size = timeSlices.size();
+        ArrayList<Integer> deleteList = new ArrayList<Integer>();
+        for (int i = 0; i < size - 1; ++i) {
+            TimeSlice currentTs = timeSlices.get(i);
+            TimeSlice nextTs = timeSlices.get(i+1);
+            
+            boolean flag = checkTimeSlicesAreSame(currentTs, nextTs);
+            if (flag) {
+                deleteList.add(i+1);
+            }
+        }
+        
+        int deleteListSize = deleteList.size();
+        for (int i = deleteListSize - 1; i >= 0; --i) {
+            int deleteIndex = deleteList.get(i);
+            deleteAndModifyTimeSliceForUnite(timeSlices, deleteIndex);
+        }
+    }    
+
+    private boolean checkTimeSlicesAreSame(TimeSlice currentTs, TimeSlice nextTs) {
+        boolean ret = true;
+        
+        ArrayList<Integer> currentAvailableCores = currentTs.getAvailableCores();
+        ArrayList<Integer> nextAvailableCores = nextTs.getAvailableCores();
+
+        // freeCores
+        for (int n = 0; n < NodeConsciousScheduler.numNodes; ++n) {            
+            if (currentAvailableCores.get(n) != nextAvailableCores.get(n)) {
+                ret = false;
+                break;
+            }
+        }
+        
+        // memory
+        if (NodeConsciousScheduler.sim.isScheduleUsingMemory()) {
+            ArrayList<Long> currentAvailableMemory = currentTs.getAvailableMemory();
+            ArrayList<Long> nextAvailableMemory = nextTs.getAvailableMemory();
+
+            // node
+            for (int n = 0; n < NodeConsciousScheduler.numNodes; ++n) {
+                if (currentAvailableMemory.get(n) != nextAvailableMemory.get(n)) {
+                    ret = false;
+                    break;
+                }
+            }
+        }
+        return ret;
+    }
+
+    private void deleteAndModifyTimeSliceForUnite(LinkedList<TimeSlice> timeSlices, int deleteIndex) {
+        TimeSlice deleteTimeSlice = timeSlices.get(deleteIndex);
+        TimeSlice modifyTimeSlice = timeSlices.get(deleteIndex-1);
+        
+        assert deleteTimeSlice.getStartTime() == modifyTimeSlice.getEndTime();
+        
+        int startTime = modifyTimeSlice.getStartTime();
+        int newEndTime = deleteTimeSlice.getEndTime();
+        
+        modifyTimeSlice.setEndTime(newEndTime);
+        modifyTimeSlice.setDuration(newEndTime - startTime);
+        
+        timeSlices.remove(deleteIndex);
+
+    }
+
 }

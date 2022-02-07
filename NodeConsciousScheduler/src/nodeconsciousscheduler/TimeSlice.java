@@ -78,7 +78,13 @@ class TimeSlice implements Cloneable {
         return availableMemory;
     }
 
-    
+    public void setEndTime(int endTime) {
+        this.endTime = endTime;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
     
     LinkedList<TimeSlice> split(int currentTime) {
         TimeSlice first = this.clone();

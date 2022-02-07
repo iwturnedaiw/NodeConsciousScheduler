@@ -216,13 +216,40 @@ public class EasyBackfillingOC extends EasyBackfilling {
             TimeSlice ts = timeSlices.get(i);
             //ts.printTsInfo();
             int tmpStartTime = ts.getStartTime();
-            if (tmpStartTime < currentTime) {
+            if (tmpStartTime <= currentTime) {
                 continue;
             }
 
             canExecuteTmpNodes = canExecutableTmpNodes(tmpStartTime, firstJob);
 
             if (canExecuteTmpNodes.size() >= firstJob.getRequiredNodes()) {
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                    calculatePriorityForNodes(canExecuteTmpNodes, firstJob);
+                }                
+                Collections.sort(canExecuteTmpNodes);
+                ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
+                int OCStateLevelForJob = 1;
+                for (int j = 0; j < firstJob.getRequiredNodes(); ++j) {
+                    assignNodesNo.add(canExecuteTmpNodes.get(j).getNodeNo());
+                    OCStateLevelForJob = max(OCStateLevelForJob, canExecuteTmpNodes.get(j).getOCStateLevel());
+                }
+                
+                Set<Integer> victimJobs = new HashSet<Integer>(); 
+                int opponentJobId = firstJob.getJobId();
+                victimJobs = searchVictimJobs(tmpStartTime, firstJob, assignNodesNo);
+                                         
+
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) { 
+                    if (OCStateLevelForJob > 2) {
+                        double ratio = calculateMaxDegradationRatio(firstJob, victimJobs);
+                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
+                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY FOR FIRST JOB !!!!!!");
+                            continue;
+                        }
+                    }
+                }
+                
+                
                 startTimeFirstJob = tmpStartTime;
                 break;
             }
@@ -287,6 +314,14 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 Set<Integer> victimJobs = new HashSet<Integer>();
                 victimJobs = searchVictimJobs(startTime, backfillJob, assignNodesNo);
 
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                        double ratio = calculateMaxDegradationRatio(backfillJob, victimJobs);
+                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
+                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY FOR BACKFILL JOB !!!!!!");
+                            break;
+                        }
+                    }
+                
                 boolean backfillFlag = true;
                 // Check whether victim jobs will slow and delay the start time of first job.
                 for (int victimJobId: victimJobs) {
