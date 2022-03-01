@@ -1448,6 +1448,7 @@ public abstract class Scheduler {
                     migratingJobId = tmpMigratingJobId;
                 }
             }
+            migratingJobId = tmpMigratingJobId;
             /*            
             if (!minCoreInfo.getJobList().contains(tmpMigratingJobId)) {
                 break;
