@@ -211,11 +211,13 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
         int startTimeFirstJob = CANNOT_START;
         ArrayList<VacantNode> canExecuteTmpNodes = new ArrayList<VacantNode>();
+        ArrayList<NodeInfo> tmpAllNodesInfo = cloneAllNodesInfo(NodeConsciousScheduler.sim.getAllNodesInfo());        
         /* Find tempollary executable nodes */
         for (int i = 0; i < timeSlices.size(); ++i) {
             TimeSlice ts = timeSlices.get(i);
             //ts.printTsInfo();
             int tmpStartTime = ts.getStartTime();
+            updateAllNodesInfo(timeSlices, tmpAllNodesInfo, tmpStartTime);
             if (tmpStartTime <= currentTime) {
                 continue;
             }
@@ -236,11 +238,11 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 
                 Set<Integer> victimJobs = new HashSet<Integer>(); 
                 int opponentJobId = firstJob.getJobId();
-                victimJobs = searchVictimJobs(tmpStartTime, firstJob, assignNodesNo);
+                victimJobs = searchVictimJobs(tmpStartTime, tmpAllNodesInfo, firstJob, assignNodesNo);
                                          
 
                 if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) { 
-                    if (OCStateLevelForJob > 2) {
+                    if (OCStateLevelForJob >= 2) {
                         double ratio = calculateMaxDegradationRatio(firstJob, victimJobs);
                         if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
                             System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY FOR FIRST JOB !!!!!!");
@@ -278,7 +280,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
         /* We must handle the copy of original list */
         /* TODO?: Define the appropriate clonable setting */
         LinkedList<TimeSlice> tmpTimeSlices = cloneTimeSlices(timeSlices);
-        ArrayList<NodeInfo> tmpAllNodesInfo = cloneAllNodesInfo(NodeConsciousScheduler.sim.getAllNodesInfo());
+
 
         firstJob.setOCStateLevel(OCStateLevelForFirstJob);
         makeTimeslices(startTimeFirstJob, tmpTimeSlices);
@@ -790,6 +792,19 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
     private boolean checkEffectOnVictimJob(Job victimJob) {
         return false;
+    }
+
+    private void updateAllNodesInfo(LinkedList<TimeSlice> timeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, int tmpStartTime) {
+        Job endingJobInTimeSlices = new Job();
+        
+        ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
+        
+        for (Job execJob : executingJobList) {
+            int endTimeInTimeSlice = execJob.getOccupiedTimeInTimeSlices();
+            if (endTimeInTimeSlice == tmpStartTime) {
+                NodeConsciousScheduler.sim.freeResources(execJob, tmpAllNodesInfo);
+            }
+        }        
     }
 
 }

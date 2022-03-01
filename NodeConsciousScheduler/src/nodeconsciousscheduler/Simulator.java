@@ -1284,4 +1284,67 @@ public class Simulator {
     public double getThresholdForAffinitySchedule() {
         return thresholdForAffinitySchedule;
     }
+    
+    public void freeResources(Job job) {
+        freeResources(job, this.allNodesInfo);
+    }
+    
+
+    public void freeResources(Job job, ArrayList<NodeInfo> allNodeInfo) {
+        int jobId = job.getJobId();
+        ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
+        
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
+
+        for (int i = 0; i < usingNodesList.size(); ++i) {
+            UsingNode usingNode = usingNodesList.get(i);
+            int nodeNo = usingNode.getNodeNum();
+            NodeInfo nodeInfo = allNodeInfo.get(nodeNo);
+            int numFreeCores = nodeInfo.getNumFreeCores();
+            int numOccupiedCores = nodeInfo.getNumOccupiedCores();
+            assert nodeInfo.getExecutingJobIds().contains(jobId);
+
+            int numUsingCores = usingNode.getNumUsingCores();
+            long mpn = job.getMaxMemory();
+            
+            /* Number of free/occupied Cores */
+            numFreeCores += numUsingCores;
+            assert numFreeCores <= nodeInfo.getNumCores();
+            assert numFreeCores >= -(NodeConsciousScheduler.M-1)*nodeInfo.getNumCores();
+            nodeInfo.setNumFreeCores(numFreeCores);
+            numOccupiedCores -= numUsingCores;
+            nodeInfo.setNumOccupiedCores(numOccupiedCores);
+
+            /* Number of free/occupied Memory */
+            if (scheduleUsingMemory) {
+                long freeMemory = nodeInfo.getFreeMemory();
+                long occupiedMemory = nodeInfo.getOccupiedMemory();
+                freeMemory += mpn;
+                assert freeMemory <= nodeInfo.getMemorySize();
+                assert freeMemory >= 0;
+                occupiedMemory -= mpn;
+                assert occupiedMemory <= nodeInfo.getMemorySize();
+                assert occupiedMemory >= 0;
+                nodeInfo.setFreeMemory(freeMemory);
+                nodeInfo.setOccupiedMemory(occupiedMemory);
+            }
+            
+            /* Each core */
+            ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
+            for (int j = 0; j < nodeInfo.getNumCores(); ++j) {
+                CoreInfo eachCore = occupiedCores.get(j);
+                ArrayList<Integer> jobList = eachCore.getJobList();
+                for (int k = 0; k < jobList.size(); ++k) {
+                    if (jobList.get(k) == jobId) {
+                        jobList.remove(k);
+                    }
+                }
+            }
+            
+            nodeInfo.getExecutingJobIds().remove(jobId);            
+            // TODO:
+            // Want to free usingNode
+        }
+
+    }
 }
