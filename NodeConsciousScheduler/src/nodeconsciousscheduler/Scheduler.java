@@ -262,7 +262,7 @@ public abstract class Scheduler {
                     for (int j = 0; j < usingNodes.size(); ++j) {
                         usingNodeIds.add(usingNodes.get(j).getNodeNum());
                     }
-                    if (occupiedTimeInTimeSeries < endEventOccuranceTimeNow && usingNodeIds.contains(i)) {
+                    if (occupiedTimeInTimeSeries < currentTime && occupiedTimeInTimeSeries < endEventOccuranceTimeNow && usingNodeIds.contains(i)) {
                         int jobId = job.getJobId();
                         System.out.println("Job " + jobId + ": slows down more than requested time... it needs to be modified timeslices information");
                         existSlowsDownJob = true;
