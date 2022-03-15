@@ -805,6 +805,13 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 NodeConsciousScheduler.sim.freeResources(execJob, tmpAllNodesInfo);
             }
         }        
+
+        for (Job tempJob : temporallyScheduledJobList) {
+            int endTimeInTimeSlice = tempJob.getOccupiedTimeInTimeSlices();
+            if (endTimeInTimeSlice == tmpStartTime) {
+                NodeConsciousScheduler.sim.freeResources(tempJob, tmpAllNodesInfo);
+            }
+        }
     }
 
 }

@@ -1281,7 +1281,7 @@ public abstract class Scheduler {
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
         //if (currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
-        if (currentTime < trueEndTime && oldTrueEndTime != trueEndTime) {
+        if (currentTime < trueEndTime && oldTrueEndTime != trueEndTime && oldTrueEndTime != currentTime) {
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, victimJob));
             victimJob.setEndEventOccuranceTimeNow(trueEndTime);
