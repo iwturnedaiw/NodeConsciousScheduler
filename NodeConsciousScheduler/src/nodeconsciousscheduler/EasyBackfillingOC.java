@@ -10,11 +10,14 @@ package nodeconsciousscheduler;
 import static java.lang.Math.ceil;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.min;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import static nodeconsciousscheduler.Constants.CANNOT_START;
@@ -391,9 +394,11 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 } else {
                     System.out.println("OC allocating, opponent jobId: " + backfillJobId + ", OCStateLevel: " + OCStateLevelForBackfillJob + ", victim jobId: " + victimJobs);
 
+                    Map<Integer, Boolean> neednessRealloc = new HashMap<Integer, Boolean>();
                     backfillJob.setCoexistingJobs(victimJobs);
                     /* 1. Modify the victim job's end time in event queue */
-                    for (int victimJobId: victimJobs) {                        
+                    for (int victimJobId: victimJobs) {                                                 
+                        neednessRealloc.put(victimJobId, true);
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();
                         Job victimJob = getJobByJobId(victimJobId); // O(N)                        
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, backfillJob.getRequiredCoresPerNode(), assignNodesNo);
@@ -401,13 +406,15 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
                             result.add(ev);
+                            neednessRealloc.put(victimJobId, false);
                         }
                         victimJob.getCoexistingJobs().add(backfillJobId);
                         victimJob.setOCStateLevel(victimNewOCStateLevel);
                     }
 
                     /* 2. Modify the time slices (variable name: timeSlices defined in Class Scheduler) */
-                    for (int victimJobId: victimJobs) {
+                    for (int victimJobId: victimJobs) {                        
+                        if (neednessRealloc.get(victimJobId)) continue;
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
 
                         /*  2-1. Calculate new expectedEndTime */
