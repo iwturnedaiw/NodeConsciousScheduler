@@ -223,23 +223,38 @@ public abstract class Scheduler {
             if (freeCoreInTimeSlice > freeCoreInNodeInfo) {
                 System.out.println("Differ freecore value at node " + i);                
                 System.out.println("Check wheter multiple END Event with the same event time exist.");
-                int endEventTimeCnt = 0;
+                int endEventCnt = 0;
+/*
                 ArrayList<Job> completedJobList = NodeConsciousScheduler.sim.getCompletedJobList();
                 int sizeOfCompletedJobList = completedJobList.size();
                 if (sizeOfCompletedJobList != 0) {
-                    int endEventOccuranceTimeNowCompleted = completedJobList.get(sizeOfCompletedJobList - 1).getEndEventOccuranceTimeNow();
-                    if (endEventOccuranceTimeNowCompleted == currentTime) {
-                        endEventTimeCnt++;
+                    for (int k = sizeOfCompletedJobList - 1; k >= 0; --k) {
+                        Job lastCompletedJob = completedJobList.get(k);
+                        int endEventOccuranceTimeNowCompleted = lastCompletedJob.getEndEventOccuranceTimeNow();
+                        if (endEventOccuranceTimeNowCompleted < currentTime) break;
+                        if (lastCompletedJob.getUsingNodesList().contains((Integer)i) && endEventOccuranceTimeNowCompleted == currentTime) {
+                            endEventCnt++;
+                        }                    
                     }
                 }
+                */
                 boolean existMultipleEventSameTime = false;
                 ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
                 for (int k = 0; k < executingJobList.size(); ++k) {
                     Job job = executingJobList.get(k);
                     
                     int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
-                    if (endEventOccuranceTimeNow == currentTime) endEventTimeCnt++;
-                    if (endEventTimeCnt >= 2) {
+                    boolean containsNodeId = false;
+                    for (UsingNode un: job.getUsingNodesList()) {
+                        int nid = un.getNodeNum();
+                        if (nid == i) {
+                            containsNodeId = true;
+                            break;
+                        }
+                    }
+                    if (!containsNodeId) continue;
+                    if (endEventOccuranceTimeNow == currentTime) endEventCnt++;
+                    if (endEventCnt >= 1) {
                         existMultipleEventSameTime = true;
                         break;
                     }
@@ -247,7 +262,7 @@ public abstract class Scheduler {
                 ret2 = existMultipleEventSameTime;
                 if (ret2) {
                     System.out.println("Found multiple END Event with the same event time.");
-                    break;
+                    continue;
                 }
                 
                 System.out.println("Check whether job slow down more than requested time.");
