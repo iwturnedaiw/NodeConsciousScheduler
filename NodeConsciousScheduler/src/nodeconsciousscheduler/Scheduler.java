@@ -244,6 +244,7 @@ public abstract class Scheduler {
                     Job job = executingJobList.get(k);
                     
                     int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
+                    int occupiedTimeInTimeSeries = job.getOccupiedTimeInTimeSlices();
                     boolean containsNodeId = false;
                     for (UsingNode un: job.getUsingNodesList()) {
                         int nid = un.getNodeNum();
@@ -253,7 +254,7 @@ public abstract class Scheduler {
                         }
                     }
                     if (!containsNodeId) continue;
-                    if (endEventOccuranceTimeNow == currentTime) endEventCnt++;
+                    if (endEventOccuranceTimeNow == currentTime && occupiedTimeInTimeSeries >= currentTime) endEventCnt++;
                     if (endEventCnt >= 1) {
                         existMultipleEventSameTime = true;
                         break;
