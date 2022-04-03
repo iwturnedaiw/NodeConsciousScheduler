@@ -47,6 +47,7 @@ public class Job implements Comparable<Job> {
     private int matchingGroup;
     private double currentRatio;
     private double accumulatedCpuTime;
+    private int queueNum;
     
 
     Job() {}
@@ -69,7 +70,7 @@ public class Job implements Comparable<Job> {
         this.OCStateLevel = 1;
     }
 
-    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes, int userId, int groupId, int maxMemory, int matchingGroup) {
+    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes, int userId, int groupId, int maxMemory, int matchingGroup, int queueNum) {
         this.jobId = jobId;
         this.submitTime = submitTime;
         this.actualExecuteTime = actualExecuteTime;
@@ -93,6 +94,7 @@ public class Job implements Comparable<Job> {
         this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
+        this.queueNum = queueNum;
     }
     
     
@@ -348,5 +350,9 @@ public class Job implements Comparable<Job> {
 
     public void setAccumulatedCpuTime(double accumulatedCpuTime) {
         this.accumulatedCpuTime = accumulatedCpuTime;
+    }
+
+    public int getQueueNum() {
+        return queueNum;
     }
 }

@@ -413,7 +413,9 @@ public class NodeConsciousScheduler {
                 addCheckSkip++;
                 continue;
             }
-            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory, matchingGroup);
+            
+            int queueNum = Integer.parseInt(values[14]);
+            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory, matchingGroup, queueNum);
             jobList.add(job);
             
         }
