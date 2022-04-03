@@ -991,7 +991,7 @@ public abstract class Scheduler {
         victimJob.setCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity(currentAccumulatedComputeQuantityOnlyConsiderMultiplicity);
 
         double accumulatedCpuTime = victimJob.getAccumulatedCpuTime();
-        accumulatedCpuTime += (realDeltaTime) / currentOCStateLevel;
+        accumulatedCpuTime += (double)(realDeltaTime) / currentOCStateLevel;
         victimJob.setAccumulatedCpuTime(accumulatedCpuTime);
         
         if (OCStateLevel == 1) {
