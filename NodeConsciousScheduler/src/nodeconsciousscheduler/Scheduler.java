@@ -10,6 +10,7 @@ import static java.lang.Math.ceil;
 import static java.lang.Math.max;
 import static java.lang.Math.max;
 import static java.lang.Math.max;
+import static java.lang.Math.max;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,8 +21,10 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.NodeChangeEvent;
 import static nodeconsciousscheduler.Constants.BLANK_JOBID;
 import static nodeconsciousscheduler.Constants.NOT_FINISHED;
+import static nodeconsciousscheduler.Constants.UNSPECIFIED;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.UNUSED;
@@ -82,6 +85,8 @@ public abstract class Scheduler {
         if (existSliceStartAt(currentTime, timeSlices))
             return;
 
+        uniteTimeSlices(timeSlices);
+        
         int breakIndex = UNUPDATED;
         breakIndex = sliceIndexToSplit(currentTime, timeSlices);
 
@@ -156,6 +161,9 @@ public abstract class Scheduler {
             
             int coreCnt = addedPpn;
             ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
+            if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                calculatePriorityForCores(occupiedCores, job);
+            }
             Collections.sort(occupiedCores);
             for (int j = 0; j < numCores; ++j) {
                 CoreInfo eachCore = occupiedCores.get(j);
@@ -215,23 +223,39 @@ public abstract class Scheduler {
             if (freeCoreInTimeSlice > freeCoreInNodeInfo) {
                 System.out.println("Differ freecore value at node " + i);                
                 System.out.println("Check wheter multiple END Event with the same event time exist.");
-                int endEventTimeCnt = 0;
+                int endEventCnt = 0;
+/*
                 ArrayList<Job> completedJobList = NodeConsciousScheduler.sim.getCompletedJobList();
                 int sizeOfCompletedJobList = completedJobList.size();
                 if (sizeOfCompletedJobList != 0) {
-                    int endEventOccuranceTimeNowCompleted = completedJobList.get(sizeOfCompletedJobList - 1).getEndEventOccuranceTimeNow();
-                    if (endEventOccuranceTimeNowCompleted == currentTime) {
-                        endEventTimeCnt++;
+                    for (int k = sizeOfCompletedJobList - 1; k >= 0; --k) {
+                        Job lastCompletedJob = completedJobList.get(k);
+                        int endEventOccuranceTimeNowCompleted = lastCompletedJob.getEndEventOccuranceTimeNow();
+                        if (endEventOccuranceTimeNowCompleted < currentTime) break;
+                        if (lastCompletedJob.getUsingNodesList().contains((Integer)i) && endEventOccuranceTimeNowCompleted == currentTime) {
+                            endEventCnt++;
+                        }                    
                     }
                 }
+                */
                 boolean existMultipleEventSameTime = false;
                 ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
                 for (int k = 0; k < executingJobList.size(); ++k) {
                     Job job = executingJobList.get(k);
                     
                     int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
-                    if (endEventOccuranceTimeNow == currentTime) endEventTimeCnt++;
-                    if (endEventTimeCnt >= 2) {
+                    int occupiedTimeInTimeSeries = job.getOccupiedTimeInTimeSlices();
+                    boolean containsNodeId = false;
+                    for (UsingNode un: job.getUsingNodesList()) {
+                        int nid = un.getNodeNum();
+                        if (nid == i) {
+                            containsNodeId = true;
+                            break;
+                        }
+                    }
+                    if (!containsNodeId) continue;
+                    if (endEventOccuranceTimeNow == currentTime && occupiedTimeInTimeSeries >= currentTime) endEventCnt++;
+                    if (endEventCnt >= 1) {
                         existMultipleEventSameTime = true;
                         break;
                     }
@@ -239,7 +263,7 @@ public abstract class Scheduler {
                 ret2 = existMultipleEventSameTime;
                 if (ret2) {
                     System.out.println("Found multiple END Event with the same event time.");
-                    break;
+                    continue;
                 }
                 
                 System.out.println("Check whether job slow down more than requested time.");
@@ -254,7 +278,7 @@ public abstract class Scheduler {
                     for (int j = 0; j < usingNodes.size(); ++j) {
                         usingNodeIds.add(usingNodes.get(j).getNodeNum());
                     }
-                    if (occupiedTimeInTimeSeries < endEventOccuranceTimeNow && usingNodeIds.contains(i)) {
+                    if (occupiedTimeInTimeSeries <= currentTime && occupiedTimeInTimeSeries < endEventOccuranceTimeNow && usingNodeIds.contains(i)) {
                         int jobId = job.getJobId();
                         System.out.println("Job " + jobId + ": slows down more than requested time... it needs to be modified timeslices information");
                         existSlowsDownJob = true;
@@ -359,7 +383,7 @@ public abstract class Scheduler {
 
     protected void assignJob(int startTime, LinkedList<TimeSlice> timeSlices, ArrayList<NodeInfo> allNodesInfo, Job job, ArrayList<Integer> assignNodesNo, boolean tmpFlag) {
         int addedPpn = job.getRequiredCores()/job.getRequiredNodes();
-        double expectedEndTimeDouble = startTime + (job.getRequiredTime()-job.getCpuTimeOnlyConsiderMultiplicity())*job.getOCStateLevel();
+        double expectedEndTimeDouble = startTime + (job.getRequiredTime()-job.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity())*job.getOCStateLevel();
         int expectedEndTime = (int) ceil(expectedEndTimeDouble);
         long addedMpn = job.getMaxMemory();
         boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
@@ -956,16 +980,20 @@ public abstract class Scheduler {
             return;
         }
         // TODO: should be double, but now int.        
-        double cpuTimeForNow = victimJob.getCpuTimeForNow();
+        double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int realDeltaTime = currentTime - previousMeasuredTime;
         double ratio = victimJob.getCurrentRatio();
-        cpuTimeForNow += (double)realDeltaTime / currentOCStateLevel / ratio;
-        victimJob.setCpuTimeForNow(cpuTimeForNow);
+        currentAccumulatedComputeQuantity += (double)realDeltaTime / currentOCStateLevel / ratio;
+        victimJob.setCurrentAccumulatedComputeQuantity(currentAccumulatedComputeQuantity);
         
-        double cpuTimeOnlyConsiderMultiplicity = victimJob.getCpuTimeOnlyConsiderMultiplicity();
-        cpuTimeOnlyConsiderMultiplicity += (double)realDeltaTime / currentOCStateLevel;
-        victimJob.setCpuTimeOnlyConsiderMultiplicity(cpuTimeOnlyConsiderMultiplicity);
+        double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
+        currentAccumulatedComputeQuantityOnlyConsiderMultiplicity += (double)realDeltaTime / currentOCStateLevel;
+        victimJob.setCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity(currentAccumulatedComputeQuantityOnlyConsiderMultiplicity);
 
+        double accumulatedCpuTime = victimJob.getAccumulatedCpuTime();
+        accumulatedCpuTime += (double)(realDeltaTime) / currentOCStateLevel;
+        victimJob.setAccumulatedCpuTime(accumulatedCpuTime);
+        
         if (OCStateLevel == 1) {
             int runningTimeDed = victimJob.getRunningTimeDed();
             runningTimeDed += realDeltaTime;
@@ -999,15 +1027,15 @@ public abstract class Scheduler {
     protected int calculateNewActualEndTime(int startTime, Job victimJob) {
         /* calculate new actual End Time */
         int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
-        double cpuTimeForNow = victimJob.getCpuTimeForNow();
+        double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int actualExecuteTime = victimJob.getActualExecuteTime();
-        double restActualExecuteTime = (actualExecuteTime - cpuTimeForNow) * currentOCStateLevel;      
+        double restActualExecuteTime = (actualExecuteTime - currentAccumulatedComputeQuantity) * currentOCStateLevel;      
         //double ratio = 1.0;
         int OCStateLevel = victimJob.getOCStateLevel();
         /*
         if (OCStateLevel >= 2 && NodeConsciousScheduler.sim.isConsiderJobMatching()) {
             Set<Integer> coexistingJobs = victimJob.getCoexistingJobs();
-            ratio = calculateMaxDegradationRatio(victimJob, coexistingJobs);
+            ratio = calculateMaxDegradationRatioForVictim(victimJob, coexistingJobs);
         }
         */
         double ratio = victimJob.getCurrentRatio();
@@ -1043,7 +1071,7 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
         coexistingJob.setOCStateLevel(OCStateLevel);
-        double ratio = calculateMaxDegradationRatio(coexistingJob, coexistingJob.getCoexistingJobs());
+        double ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingJob.getCoexistingJobs());
         coexistingJob.setCurrentRatio(ratio);
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
 //        assert trueEndTime <= oldTrueEndTime;
@@ -1062,18 +1090,18 @@ public abstract class Scheduler {
     /* This method return the exepeceted end time. */
     protected int calculateNewExpectedEndTime(int currentTime, Job victimJob) {
         int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
-        double cpuTimeForOnlyConsiderMultiplicity = victimJob.getCpuTimeOnlyConsiderMultiplicity();
+        double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
         int requiredTime = victimJob.getRequiredTime();
-        double restRequiredTime = (requiredTime - cpuTimeForOnlyConsiderMultiplicity) * currentOCStateLevel;
+        double restRequiredTime = (requiredTime - currentAccumulatedComputeQuantityOnlyConsiderMultiplicity) * currentOCStateLevel;
         double expectedEndTime = currentTime + restRequiredTime;
 
         return (int) ceil(expectedEndTime);
     }
 
     protected int calculateApproximateEndTime(int currentTime, Job victimJob, int OCStateLevel) {
-        double cpuTimeForOnlyConsiderMultiplicity = victimJob.getCpuTimeOnlyConsiderMultiplicity();
+        double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
         int requiredTime = victimJob.getRequiredTime();
-        double restRequiredTime = (requiredTime - cpuTimeForOnlyConsiderMultiplicity) * OCStateLevel;
+        double restRequiredTime = (requiredTime - currentAccumulatedComputeQuantityOnlyConsiderMultiplicity) * OCStateLevel;
         double expectedEndTime = currentTime + restRequiredTime;
 
         return (int) ceil(expectedEndTime);
@@ -1259,7 +1287,7 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);                        
-        double ratio = calculateMaxDegradationRatio(victimJob, victimJob.getCoexistingJobs());
+        double ratio = calculateMaxDegradationRatioForVictim(victimJob, victimJob.getCoexistingJobs());
         victimJob.setCurrentRatio(ratio);
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         //assert oldTrueEndTime <= trueEndTime+1;
@@ -1269,7 +1297,7 @@ public abstract class Scheduler {
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
         //if (currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
-        if (currentTime < trueEndTime && oldTrueEndTime != trueEndTime) {
+        if (currentTime < trueEndTime && oldTrueEndTime != trueEndTime && oldTrueEndTime != currentTime) {
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, victimJob));
             victimJob.setEndEventOccuranceTimeNow(trueEndTime);
@@ -1418,12 +1446,30 @@ public abstract class Scheduler {
         assert candidateMigratingJobs.size() >= 2;
 
         int migratingJobId = UNUPDATED;
+        double currentLeastRatio = 1 << 30;
         for (int i = 0; i < candidateMigratingJobs.size(); ++i) {
-            migratingJobId = candidateMigratingJobs.get(i);
-            assert maxCoreInfo.getJobList().contains(migratingJobId);
-            if (!minCoreInfo.getJobList().contains(migratingJobId)) {                
-                break;
+            int tmpMigratingJobId = candidateMigratingJobs.get(i);
+            assert maxCoreInfo.getJobList().contains(tmpMigratingJobId);
+            int tmpMigratingJobGroup = NodeConsciousScheduler.sim.getJobMap().get(tmpMigratingJobId).getMatchingGroup();
+            
+            if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                double localRatio = UNSPECIFIED;
+                for (Integer victimJobId: minCoreInfo.getJobList()) {
+                    int victimJobGroup = NodeConsciousScheduler.sim.getJobMap().get(victimJobId).getMatchingGroup();
+                    localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(tmpMigratingJobGroup, victimJobGroup));
+                    localRatio = max(localRatio, NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, tmpMigratingJobGroup)));
+                }
+                if (localRatio < currentLeastRatio) {
+                    currentLeastRatio = localRatio;
+                    migratingJobId = tmpMigratingJobId;
+                }
             }
+            migratingJobId = tmpMigratingJobId;
+            /*            
+            if (!minCoreInfo.getJobList().contains(tmpMigratingJobId)) {
+                break;
+            }            
+            */
         }
         assert migratingJobId != UNUPDATED;
         Job migratingJob = getJobByJobId(migratingJobId);
@@ -1508,7 +1554,7 @@ public abstract class Scheduler {
         migratingJobCoexistingJob.addAll(newCoexistingJobs);
         migratingJobCoexistingJob.removeAll(deletedCoexistingJobs);
         
-        double ratio = calculateMaxDegradationRatio(migratingJob, migratingJobCoexistingJob);
+        double ratio = calculateMaxDegradationRatioForVictim(migratingJob, migratingJobCoexistingJob);
         migratingJob.setCurrentRatio(ratio);
         
         return result;
@@ -1609,7 +1655,7 @@ public abstract class Scheduler {
         NodeConsciousScheduler.sim.outputResultForVis(migratingJob, currentTime);
     }
 
-    protected double calculateMaxDegradationRatio(Job victimJob, Set<Integer> coexistingJobs) {    
+    protected double calculateMaxDegradationRatioForVictim(Job victimJob, Set<Integer> coexistingJobs) {    
         boolean considerJobMatching = NodeConsciousScheduler.sim.isConsiderJobMatching();
         if (!considerJobMatching) return 1.0;
 
@@ -1618,7 +1664,7 @@ public abstract class Scheduler {
         for (int coexistingJobId: coexistingJobs) {
             Job coexistingJob = getJobByJobId(coexistingJobId);
             int coexistingJobGroup = coexistingJob.getMatchingGroup();
-                double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, coexistingJobGroup));
+            double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, coexistingJobGroup));
             ratio = max(ratio, localRatio);
         }
         if (ratio == 0) ratio = 1.0;
@@ -1646,7 +1692,7 @@ public abstract class Scheduler {
         double ratio = coexistingJob.getCurrentRatio();
         if (endFlag) {
             coexistingCoexistingJobs.remove(endingJobId);
-            ratio = calculateMaxDegradationRatio(coexistingJob, coexistingCoexistingJobs);
+            ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingCoexistingJobs);
         }
         coexistingJob.setCurrentRatio(ratio);
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
@@ -1701,5 +1747,165 @@ public abstract class Scheduler {
             clonedObject.add(jobId);
         }
         return clonedObject;
+    } 
+    protected void calculatePriorityForNodes(ArrayList<VacantNode> canExecuteNodes, Job job) {
+        assert NodeConsciousScheduler.sim.isUsingAffinityForSchedule();
+        
+        for (VacantNode vn: canExecuteNodes) {
+            vn.setPriority(UNSPECIFIED);
+        }
+        
+        int jobGroup = job.getMatchingGroup();
+        
+        for (VacantNode vn: canExecuteNodes) {
+            int nodeId = vn.getNodeNo();
+            NodeInfo node = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeId);
+            Set<Integer> currentExecutingJobIds = node.getExecutingJobIds();
+            double ratio = calculateMaxDegradationRatio(job, currentExecutingJobIds);
+            /*
+            for (Integer currentExecutingJobId: currentExecutingJobIds) {                            
+                int currentExecutingJobGroup = getJobByJobId(currentExecutingJobId).getMatchingGroup();
+                double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(jobGroup, currentExecutingJobGroup));
+                localRatio = max(localRatio, NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(currentExecutingJobGroup, jobGroup)));
+                ratio = max(ratio, localRatio);
+            }
+            if (ratio == UNSPECIFIED) {
+                ratio = 1.0;
+            }
+            */            
+            vn.setPriority(ratio);
+        }
     }
+
+    private void calculatePriorityForCores(ArrayList<CoreInfo> occupiedCores, Job job) {
+        assert NodeConsciousScheduler.sim.isUsingAffinityForSchedule();
+        
+        for (CoreInfo ci: occupiedCores) {
+            ci.setPriority(UNSPECIFIED);
+        }
+        
+//        int jobGroup = job.getMatchingGroup();
+        
+        for (CoreInfo ci: occupiedCores) {
+            int coreId = ci.getCoreId();
+            ArrayList<Integer> currentExecutingJobIds = ci.getJobList();
+/*
+            double ratio = UNSPECIFIED;
+            for (Integer currentExecutingJobId: currentExecutingJobIds) {                            
+                int currentExecutingJobGroup = getJobByJobId(currentExecutingJobId).getMatchingGroup();
+                double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(jobGroup, currentExecutingJobGroup));
+                localRatio = max(localRatio, NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(currentExecutingJobGroup, jobGroup)));
+                ratio = max(ratio, localRatio);
+            }
+            if (ratio == UNSPECIFIED) {
+                ratio = 1.0;
+            }
+            */
+            double ratio = calculateMaxDegradationRatio(job, currentExecutingJobIds);
+            ci.setPriority(ratio);
+        }
+    }
+
+    /* This method calculates the worst ratio if a new job overcommits with n coexisting jobs. */
+    /* The ratio is the worst one of 2*(n+1) values.  */
+    protected double calculateMaxDegradationRatio(Job victimJob, Set<Integer> coexistingJobs) {    
+        boolean considerJobMatching = NodeConsciousScheduler.sim.isConsiderJobMatching();
+        if (!considerJobMatching) return 1.0;
+
+        int victimJobGroup = victimJob.getMatchingGroup();
+        double ratio = UNSPECIFIED;
+        for (int coexistingJobId: coexistingJobs) {
+            Job coexistingJob = getJobByJobId(coexistingJobId);
+            int coexistingJobGroup = coexistingJob.getMatchingGroup();
+            double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, coexistingJobGroup));
+            localRatio =max(localRatio, NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(coexistingJobGroup, victimJobGroup)));
+            ratio = max(ratio, localRatio);
+        }
+        if (ratio == UNSPECIFIED) ratio = 1.0;
+        return ratio;
+    }
+
+    protected double calculateMaxDegradationRatio(Job victimJob, ArrayList<Integer> coexistingJobs) {    
+        boolean considerJobMatching = NodeConsciousScheduler.sim.isConsiderJobMatching();
+        if (!considerJobMatching) return 1.0;
+
+        int victimJobGroup = victimJob.getMatchingGroup();
+        double ratio = UNSPECIFIED;
+        for (int coexistingJobId: coexistingJobs) {
+            Job coexistingJob = getJobByJobId(coexistingJobId);
+            int coexistingJobGroup = coexistingJob.getMatchingGroup();
+            double localRatio = NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(victimJobGroup, coexistingJobGroup));
+            localRatio =max(localRatio, NodeConsciousScheduler.sim.jobMatchingTable.get(new JobMatching(coexistingJobGroup, victimJobGroup)));
+            ratio = max(ratio, localRatio);
+        }
+        if (ratio == UNSPECIFIED) ratio = 1.0;
+        return ratio;
+    }
+
+    private void uniteTimeSlices(LinkedList<TimeSlice> timeSlices) {
+        int size = timeSlices.size();
+        ArrayList<Integer> deleteList = new ArrayList<Integer>();
+        for (int i = 0; i < size - 1; ++i) {
+            TimeSlice currentTs = timeSlices.get(i);
+            TimeSlice nextTs = timeSlices.get(i+1);
+            
+            boolean flag = checkTimeSlicesAreSame(currentTs, nextTs);
+            if (flag) {
+                deleteList.add(i+1);
+            }
+        }
+        
+        int deleteListSize = deleteList.size();
+        for (int i = deleteListSize - 1; i >= 0; --i) {
+            int deleteIndex = deleteList.get(i);
+            deleteAndModifyTimeSliceForUnite(timeSlices, deleteIndex);
+        }
+    }    
+
+    private boolean checkTimeSlicesAreSame(TimeSlice currentTs, TimeSlice nextTs) {
+        boolean ret = true;
+        
+        ArrayList<Integer> currentAvailableCores = currentTs.getAvailableCores();
+        ArrayList<Integer> nextAvailableCores = nextTs.getAvailableCores();
+
+        // freeCores
+        for (int n = 0; n < NodeConsciousScheduler.numNodes; ++n) {            
+            if (currentAvailableCores.get(n) != nextAvailableCores.get(n)) {
+                ret = false;
+                break;
+            }
+        }
+        
+        // memory
+        if (NodeConsciousScheduler.sim.isScheduleUsingMemory()) {
+            ArrayList<Long> currentAvailableMemory = currentTs.getAvailableMemory();
+            ArrayList<Long> nextAvailableMemory = nextTs.getAvailableMemory();
+
+            // node
+            for (int n = 0; n < NodeConsciousScheduler.numNodes; ++n) {
+                if (currentAvailableMemory.get(n) != nextAvailableMemory.get(n)) {
+                    ret = false;
+                    break;
+                }
+            }
+        }
+        return ret;
+    }
+
+    private void deleteAndModifyTimeSliceForUnite(LinkedList<TimeSlice> timeSlices, int deleteIndex) {
+        TimeSlice deleteTimeSlice = timeSlices.get(deleteIndex);
+        TimeSlice modifyTimeSlice = timeSlices.get(deleteIndex-1);
+        
+        assert deleteTimeSlice.getStartTime() == modifyTimeSlice.getEndTime();
+        
+        int startTime = modifyTimeSlice.getStartTime();
+        int newEndTime = deleteTimeSlice.getEndTime();
+        
+        modifyTimeSlice.setEndTime(newEndTime);
+        modifyTimeSlice.setDuration(newEndTime - startTime);
+        
+        timeSlices.remove(deleteIndex);
+
+    }
+
 }

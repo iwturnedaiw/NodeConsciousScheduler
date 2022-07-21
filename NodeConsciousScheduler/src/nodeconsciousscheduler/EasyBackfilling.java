@@ -11,12 +11,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Set;
 import static nodeconsciousscheduler.Constants.CANNOT_START;
 import static nodeconsciousscheduler.Constants.TS_ENDTIME;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
@@ -410,8 +412,18 @@ class EasyBackfilling extends Scheduler {
             occupiedCores.add(eachCore);
         }
         assert occupiedCores.size() == numCore;
+
+        /* Set executing Jobs */
+        HashSet<Integer> copiedJobList = closeExecutingJobList(copiedNodeInfo.getExecutingJobIds());
+        copiedNodeInfo.setExecutingJobIds(copiedJobList);
         
         return copiedNodeInfo;
+    }
+
+    private HashSet<Integer> closeExecutingJobList(Set<Integer> executingJobIds) {
+        HashSet<Integer> clonedJobList = new HashSet<Integer>();
+        clonedJobList.addAll(executingJobIds);
+        return clonedJobList;
     }
 
 

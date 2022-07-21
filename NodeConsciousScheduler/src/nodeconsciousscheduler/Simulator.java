@@ -99,6 +99,8 @@ public class Simulator {
     private boolean crammingMemoryScheduling;
     private boolean considerJobMatching;
     Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
+    private boolean usingAffinityForSchedule;
+    private double thresholdForAffinitySchedule;
     
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
@@ -119,6 +121,8 @@ public class Simulator {
         this.crammingMemoryScheduling = simConf.isCrammingMemoryScheduling();
         this.considerJobMatching = simConf.isConsiderJobMatching();
         this.jobMatchingTable = simConf.getJobMatchingTable();
+        this.usingAffinityForSchedule = simConf.isUsingAffinityForSchedule();
+        this.thresholdForAffinitySchedule = simConf.getThresholdForAffinitySchedule();
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -243,7 +247,7 @@ public class Simulator {
         String fileNameForVis = FOR_VISUALIZATION_OUTPUT;
         try {
             this.pw = new PrintWriter(this.p + "/" + fileName);
-            pw.println("JobID\tuserId\tgroupId\tarrivalTime\twaitTime\tstartTime\tfinishedTime\trunnningTime\tslowdown\tslowdownOC\tspecifiedRequiredTime\tnum cores\tnum nodes\tnode num(tcore num)");
+            pw.println("JobID\tuserId\tgroupId\tarrivalTime\twaitTime\tstartTime\tfinishedTime\toriginalRunningTime\trunnningTime\tcpuTimePerCore\tslowdown\tslowdownOC\tspecifiedRequiredTime\tqueueNum\tnumCores\tnumNodes\tnodeNum(tcoreNum)");
             this.pwForVis = new PrintWriter(this.p + "/" + fileNameForVis);
 
         } catch (FileNotFoundException ex) {
@@ -269,9 +273,11 @@ public class Simulator {
         int numCores = job.getRequiredCores();
         int numNodes = job.getRequiredNodes();
         int specifiedRequiredTime = job.getRequiredTime();
+        double cpuTimePerCore = job.getAccumulatedCpuTime();
+        int queueNum = job.getQueueNum();
         
-        pw.print(jobId + "\t" + userId + "\t" + groupId + "\t" + arrivalTime + "\t" + waitTime + "\t" + startTime + "\t" + finishedTime + "\t" + runningTime + "\t"
-                + slowdown + "\t" + slowdownOC + "\t" + specifiedRequiredTime + "\t" + numCores + "\t" + numNodes + "\t");
+        pw.print(jobId + "\t" + userId + "\t" + groupId + "\t" + arrivalTime + "\t" + waitTime + "\t" + startTime + "\t" + finishedTime + "\t" + originalRunningTime + "\t" + runningTime + "\t" + cpuTimePerCore + "\t"
+                + slowdown + "\t" + slowdownOC + "\t" + specifiedRequiredTime + "\t" + queueNum + "\t" + numCores + "\t" + numNodes + "\t");
         
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
         Collections.sort(usingNodesList);
@@ -1270,5 +1276,76 @@ public class Simulator {
 
     public Map<Integer, Job> getJobMap() {
         return jobMap;
+    }
+
+    public boolean isUsingAffinityForSchedule() {
+        return usingAffinityForSchedule;
+    }
+
+    public double getThresholdForAffinitySchedule() {
+        return thresholdForAffinitySchedule;
+    }
+    
+    public void freeResources(Job job) {
+        freeResources(job, this.allNodesInfo);
+    }
+    
+
+    public void freeResources(Job job, ArrayList<NodeInfo> allNodeInfo) {
+        int jobId = job.getJobId();
+        ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
+        
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
+
+        for (int i = 0; i < usingNodesList.size(); ++i) {
+            UsingNode usingNode = usingNodesList.get(i);
+            int nodeNo = usingNode.getNodeNum();
+            NodeInfo nodeInfo = allNodeInfo.get(nodeNo);
+            int numFreeCores = nodeInfo.getNumFreeCores();
+            int numOccupiedCores = nodeInfo.getNumOccupiedCores();
+            assert nodeInfo.getExecutingJobIds().contains(jobId);
+
+            int numUsingCores = usingNode.getNumUsingCores();
+            long mpn = job.getMaxMemory();
+            
+            /* Number of free/occupied Cores */
+            numFreeCores += numUsingCores;
+            assert numFreeCores <= nodeInfo.getNumCores();
+            assert numFreeCores >= -(NodeConsciousScheduler.M-1)*nodeInfo.getNumCores();
+            nodeInfo.setNumFreeCores(numFreeCores);
+            numOccupiedCores -= numUsingCores;
+            nodeInfo.setNumOccupiedCores(numOccupiedCores);
+
+            /* Number of free/occupied Memory */
+            if (scheduleUsingMemory) {
+                long freeMemory = nodeInfo.getFreeMemory();
+                long occupiedMemory = nodeInfo.getOccupiedMemory();
+                freeMemory += mpn;
+                assert freeMemory <= nodeInfo.getMemorySize();
+                assert freeMemory >= 0;
+                occupiedMemory -= mpn;
+                assert occupiedMemory <= nodeInfo.getMemorySize();
+                assert occupiedMemory >= 0;
+                nodeInfo.setFreeMemory(freeMemory);
+                nodeInfo.setOccupiedMemory(occupiedMemory);
+            }
+            
+            /* Each core */
+            ArrayList<CoreInfo> occupiedCores = nodeInfo.getOccupiedCores();
+            for (int j = 0; j < nodeInfo.getNumCores(); ++j) {
+                CoreInfo eachCore = occupiedCores.get(j);
+                ArrayList<Integer> jobList = eachCore.getJobList();
+                for (int k = 0; k < jobList.size(); ++k) {
+                    if (jobList.get(k) == jobId) {
+                        jobList.remove(k);
+                    }
+                }
+            }
+            
+            nodeInfo.getExecutingJobIds().remove(jobId);            
+            // TODO:
+            // Want to free usingNode
+        }
+
     }
 }

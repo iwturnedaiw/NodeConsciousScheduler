@@ -21,7 +21,9 @@ class SimulatorConfiguration {
     private boolean crammingMemoryScheduling;
     private boolean considerJobMatching;
     Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
-
+    private boolean usingAffinityForSchedule;
+    private double thresholdForAffinitySchedule;
+    
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory) {
         this.scheduleUsingMemory = scheduleUsingMemory;
         double previousValue = -1;
@@ -34,10 +36,12 @@ class SimulatorConfiguration {
         this.outputMinuteTimeseries = outputMinuteTimeseries;
     }
 
-    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean crammingMemoryScheduling, boolean considerJobMatching) {
+    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean crammingMemoryScheduling, boolean considerJobMatching, boolean usingAffinityForSchedule, double thresholdForAffinitySchedule) {
         this.scheduleUsingMemory = scheduleUsingMemory;
         this.considerJobMatching = considerJobMatching;
         this.crammingMemoryScheduling = crammingMemoryScheduling;
+        this.usingAffinityForSchedule = usingAffinityForSchedule;
+        this.thresholdForAffinitySchedule = thresholdForAffinitySchedule;
         double previousValue = -1;
         for (int i = 0; i < thresholdForSlowdown.length; ++i) {
             double value = Double.parseDouble(thresholdForSlowdown[i]);
@@ -74,5 +78,13 @@ class SimulatorConfiguration {
 
     public boolean isCrammingMemoryScheduling() {
         return crammingMemoryScheduling;
+    }
+
+    public boolean isUsingAffinityForSchedule() {
+        return usingAffinityForSchedule;
+    }
+
+    public double getThresholdForAffinitySchedule() {
+        return thresholdForAffinitySchedule;
     }
 }

@@ -10,11 +10,14 @@ package nodeconsciousscheduler;
 import static java.lang.Math.ceil;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.min;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import static nodeconsciousscheduler.Constants.CANNOT_START;
@@ -41,6 +44,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
             
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesAt(currentTime, job);
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                    calculatePriorityForNodes(canExecuteNodes, job);
+                }
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForJob = 1;
@@ -49,7 +55,6 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     OCStateLevelForJob = max(OCStateLevelForJob, canExecuteNodes.get(i).getOCStateLevel());
                 }
 
-                waitingQueue.poll();
                 int startTime = currentTime;
                 //job.setStartTime(startTime);
                 makeTimeslices(startTime);
@@ -89,6 +94,15 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     Set<Integer> victimJobs = new HashSet<Integer>();
                     int opponentJobId = job.getJobId();
                     victimJobs = searchVictimJobs(startTime, job, assignNodesNo);
+                                         
+                    if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                        double ratio = calculateMaxDegradationRatio(job, victimJobs);
+                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
+                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY !!!!!!");
+                            break;
+                        }
+                    }
+                    
                     System.out.println("OC allocating, opponent jobId: " + opponentJobId + ", OCStateLevel: " + OCStateLevelForJob + ", victim jobId: " + victimJobs);
                     /* Set victim jobList for the opponent job */
                     job.setCoexistingJobs(victimJobs);
@@ -177,13 +191,14 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForBackfillJob;
-                    job.setCurrentRatio(calculateMaxDegradationRatio(job, victimJobs));
+                    job.setCurrentRatio(calculateMaxDegradationRatioForVictim(job, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
                     printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, job));          
                     job.setEndEventOccuranceTimeNow(trueEndTime);
                 }
+                waitingQueue.poll();
                 temporallyScheduledJobList.add(job);
             } else break;
         }
@@ -199,23 +214,57 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
         int startTimeFirstJob = CANNOT_START;
         ArrayList<VacantNode> canExecuteTmpNodes = new ArrayList<VacantNode>();
+        ArrayList<NodeInfo> tmpAllNodesInfo = cloneAllNodesInfo(NodeConsciousScheduler.sim.getAllNodesInfo());        
         /* Find tempollary executable nodes */
         for (int i = 0; i < timeSlices.size(); ++i) {
             TimeSlice ts = timeSlices.get(i);
             //ts.printTsInfo();
             int tmpStartTime = ts.getStartTime();
-            if (tmpStartTime < currentTime) {
+            updateAllNodesInfo(timeSlices, tmpAllNodesInfo, tmpStartTime);
+            if (tmpStartTime <= currentTime) {
                 continue;
             }
 
             canExecuteTmpNodes = canExecutableTmpNodes(tmpStartTime, firstJob);
 
             if (canExecuteTmpNodes.size() >= firstJob.getRequiredNodes()) {
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                    calculatePriorityForNodes(canExecuteTmpNodes, firstJob);
+                }                
+                Collections.sort(canExecuteTmpNodes);
+                ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
+                int OCStateLevelForJob = 1;
+                for (int j = 0; j < firstJob.getRequiredNodes(); ++j) {
+                    assignNodesNo.add(canExecuteTmpNodes.get(j).getNodeNo());
+                    OCStateLevelForJob = max(OCStateLevelForJob, canExecuteTmpNodes.get(j).getOCStateLevel());
+                }
+                
+                Set<Integer> victimJobs = new HashSet<Integer>(); 
+                int opponentJobId = firstJob.getJobId();
+                victimJobs = searchVictimJobs(tmpStartTime, tmpAllNodesInfo, firstJob, assignNodesNo);
+                                         
+
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) { 
+                    if (OCStateLevelForJob >= 2) {
+                        double ratio = calculateMaxDegradationRatio(firstJob, victimJobs);
+                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
+                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY FOR FIRST JOB !!!!!!");
+                            continue;
+                        }
+                    }
+                }
+                
+                
                 startTimeFirstJob = tmpStartTime;
                 break;
             }
         }
+        
+        tailWaitingQueue.poll();
 
+        if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {        
+            calculatePriorityForNodes(canExecuteTmpNodes, firstJob);            
+        }
         Collections.sort(canExecuteTmpNodes);
         ArrayList<Integer> assignTmpNodesNo = new ArrayList<Integer>();
         int OCStateLevelForFirstJob = 1;
@@ -234,7 +283,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
         /* We must handle the copy of original list */
         /* TODO?: Define the appropriate clonable setting */
         LinkedList<TimeSlice> tmpTimeSlices = cloneTimeSlices(timeSlices);
-        ArrayList<NodeInfo> tmpAllNodesInfo = cloneAllNodesInfo(NodeConsciousScheduler.sim.getAllNodesInfo());
+
 
         firstJob.setOCStateLevel(OCStateLevelForFirstJob);
         makeTimeslices(startTimeFirstJob, tmpTimeSlices);
@@ -254,7 +303,10 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
             if (canExecuteNodesEasyBackfiling.size() >= backfillJob.getRequiredNodes()) {
                 // TO CONSIDER:
-                // Is it appropriate way to select the nodes?                
+                // Is it appropriate way to select the nodes?                                
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                    calculatePriorityForNodes(canExecuteNodesEasyBackfiling, backfillJob);
+                }
                 Collections.sort(canExecuteNodesEasyBackfiling);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForBackfillJob = 1;
@@ -267,6 +319,14 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 Set<Integer> victimJobs = new HashSet<Integer>();
                 victimJobs = searchVictimJobs(startTime, backfillJob, assignNodesNo);
 
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                        double ratio = calculateMaxDegradationRatio(backfillJob, victimJobs);
+                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
+                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY FOR BACKFILL JOB !!!!!!");
+                            break;
+                        }
+                    }
+                
                 boolean backfillFlag = true;
                 // Check whether victim jobs will slow and delay the start time of first job.
                 for (int victimJobId: victimJobs) {
@@ -290,7 +350,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     /* Thus, we quit backfill */
                     Set<Integer> tmpCoexistingJobs = cloneCoexistingJobs(victimJob.getCoexistingJobs());
                     tmpCoexistingJobs.add(backfillJobId);
-                    double tmpRatio = calculateMaxDegradationRatio(victimJob, tmpCoexistingJobs);
+                    double tmpRatio = calculateMaxDegradationRatioForVictim(victimJob, tmpCoexistingJobs);
                     if (tmpRatio > victimJob.getCurrentRatio()) {
                         backfillFlag = false;
                         break;
@@ -334,9 +394,11 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 } else {
                     System.out.println("OC allocating, opponent jobId: " + backfillJobId + ", OCStateLevel: " + OCStateLevelForBackfillJob + ", victim jobId: " + victimJobs);
 
+                    Map<Integer, Boolean> neednessRealloc = new HashMap<Integer, Boolean>();
                     backfillJob.setCoexistingJobs(victimJobs);
                     /* 1. Modify the victim job's end time in event queue */
-                    for (int victimJobId: victimJobs) {                        
+                    for (int victimJobId: victimJobs) {                                                 
+                        neednessRealloc.put(victimJobId, true);
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();
                         Job victimJob = getJobByJobId(victimJobId); // O(N)                        
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, backfillJob.getRequiredCoresPerNode(), assignNodesNo);
@@ -344,13 +406,15 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
                             result.add(ev);
+                            neednessRealloc.put(victimJobId, false);
                         }
                         victimJob.getCoexistingJobs().add(backfillJobId);
                         victimJob.setOCStateLevel(victimNewOCStateLevel);
                     }
 
                     /* 2. Modify the time slices (variable name: timeSlices defined in Class Scheduler) */
-                    for (int victimJobId: victimJobs) {
+                    for (int victimJobId: victimJobs) {                        
+                        if (neednessRealloc.get(victimJobId)) continue;
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
 
                         /*  2-1. Calculate new expectedEndTime */
@@ -388,7 +452,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
 
                     backfillJob.setPreviousMeasuredTime(startTime);
-                    backfillJob.setCurrentRatio(calculateMaxDegradationRatio(backfillJob, victimJobs));
+                    backfillJob.setCurrentRatio(calculateMaxDegradationRatioForVictim(backfillJob, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, backfillJob);
                     result.add(new Event(EventType.START, startTime, backfillJob));
                     printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
@@ -735,6 +799,26 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
     private boolean checkEffectOnVictimJob(Job victimJob) {
         return false;
+    }
+
+    private void updateAllNodesInfo(LinkedList<TimeSlice> timeSlices, ArrayList<NodeInfo> tmpAllNodesInfo, int tmpStartTime) {
+        Job endingJobInTimeSlices = new Job();
+        
+        ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
+        
+        for (Job execJob : executingJobList) {
+            int endTimeInTimeSlice = execJob.getOccupiedTimeInTimeSlices();
+            if (endTimeInTimeSlice == tmpStartTime) {
+                NodeConsciousScheduler.sim.freeResources(execJob, tmpAllNodesInfo);
+            }
+        }        
+
+        for (Job tempJob : temporallyScheduledJobList) {
+            int endTimeInTimeSlice = tempJob.getOccupiedTimeInTimeSlices();
+            if (endTimeInTimeSlice == tmpStartTime) {
+                NodeConsciousScheduler.sim.freeResources(tempJob, tmpAllNodesInfo);
+            }
+        }
     }
 
 }

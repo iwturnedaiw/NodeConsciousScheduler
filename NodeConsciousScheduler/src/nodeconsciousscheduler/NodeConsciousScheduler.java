@@ -91,7 +91,8 @@ public class NodeConsciousScheduler {
         SimulatorConfiguration simConf = readSimulatorConfiguration(CONFIGURATION_FILE);
         boolean scheduleUsingMemory = simConf.isScheduleUsingMemory();
         boolean considerJobMatching = simConf.isConsiderJobMatching();
-        
+        boolean usingAffinityForSchedule = simConf.isUsingAffinityForSchedule();
+                
         if (memoryDataPerCore & memoryDataPerNode) {
             System.out.println("Configuration Error. Both MEMORY_DATA_PER_CORE and MEMORY_DATA_PER_NODE cannot be set true");
             System.exit(1);
@@ -100,6 +101,11 @@ public class NodeConsciousScheduler {
         if (considerMemoryForNodeNum & scheduleUsingMemory) {
             System.out.println("Configuration Error. Both SCHEDULE_USING_MEMORY and CONSIDER_MEMORY_FOR_JOB_NODENUM cannot be set true");
             System.exit(1);            
+        }
+        
+        if (usingAffinityForSchedule && !considerJobMatching) {
+            System.out.println("Configuration Error. SCHEDULE_USING_AFFINITY must be set false when CONSIDER_JOB_MATCHING is false.");
+            System.exit(1);
         }
         
         Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
@@ -407,7 +413,9 @@ public class NodeConsciousScheduler {
                 addCheckSkip++;
                 continue;
             }
-            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory, matchingGroup);
+            
+            int queueNum = Integer.parseInt(values[14]);
+            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory, matchingGroup, queueNum);
             jobList.add(job);
             
         }
@@ -438,8 +446,10 @@ public class NodeConsciousScheduler {
         NodeConsciousScheduler.memoryDataPerNode = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_NODE"));
         NodeConsciousScheduler.considerMemoryForNodeNum = Boolean.parseBoolean(configurations.getProperty("CONSIDER_MEMORY_FOR_JOB_NODENUM"));
         boolean considerJobMatching = Boolean.parseBoolean(configurations.getProperty("CONSIDER_JOB_MATCHING"));
+        boolean usingAffinityForSchedule = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_AFFINITY"));
+        double thresholdForAffinitySchedule = Double.parseDouble(configurations.getProperty("QUIT_SCHEDULE_THRESHOLD"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, crammingMemoryScheduling, considerJobMatching);
+        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, crammingMemoryScheduling, considerJobMatching, usingAffinityForSchedule, thresholdForAffinitySchedule);
     }
 
     private static int checkCanExecuteMultipleNodes(int requiredCores, int requiredMemeory, boolean scheduleUsingMemory) {
