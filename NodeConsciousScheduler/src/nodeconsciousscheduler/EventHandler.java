@@ -51,6 +51,9 @@ class Start implements EventHandler {
         
         NodeConsciousScheduler.sim.getExecutingJobList().add(job);
         
+        // TODO
+        // Update activated cores table if it is not int.
+        
         return evs;
     }
 }
@@ -109,6 +112,118 @@ class End implements EventHandler {
 
 
 }
+
+class IntActivate implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
+        
+        ArrayList<Event> evs = new ArrayList<Event>();
+        
+        // TODO
+        // Get job Info
+        // Timing coexisting jobs
+        // Activation the job and coexisting jobs
+        
+        /* Fix the finish time */
+        Job job = ev.getJob();
+        int jobId = job.getJobId();
+        int currentTime = ev.getOccurrenceTime();
+        assert currentTime == job.getEndEventOccuranceTimeNow();
+        int previousMeasuredTime = job.getPreviousMeasuredTime();
+        int mostRecentRunningTime = currentTime - previousMeasuredTime;
+        int OCStateLevel = job.getOCStateLevel();
+        double accumulatedCpuTime = job.getAccumulatedCpuTime();
+        accumulatedCpuTime += (double)mostRecentRunningTime / OCStateLevel;
+        job.setAccumulatedCpuTime(accumulatedCpuTime);
+        if (OCStateLevel == 1) {
+            int runningTimeDed = job.getRunningTimeDed();
+            job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
+        }
+        else {
+            int runningTimeOC = job.getRunningTimeOC();
+            job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
+        }
+        int runningTimeDed = job.getRunningTimeDed();
+        int runningTimeOC = job.getRunningTimeOC();
+        int runningTime = runningTimeDed + runningTimeOC;
+        int finishedTime = runningTime + job.getStartTime();
+        job.setFinishedTime(finishedTime);
+        assert currentTime == finishedTime;
+        
+        // Output the result
+        NodeConsciousScheduler.sim.outputResult(job);
+        NodeConsciousScheduler.sim.outputResultForVis(job);
+
+        // Erase the job from executing job list
+        NodeConsciousScheduler.sim.getExecutingJobList().remove(job);
+        // Add the job completed List
+        NodeConsciousScheduler.sim.getCompletedJobList().add(job);
+
+        // Resource refill        
+        NodeConsciousScheduler.sim.freeResources(job);
+
+        // Again call scheduling
+        evs = NodeConsciousScheduler.sim.getSche().scheduleJobsOnEnd(ev);
+
+        
+        return evs;
+    }
+}
+
+class IntDeactivate implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
+        
+        ArrayList<Event> evs = new ArrayList<Event>();
+        
+        // TODO
+        
+        /* Fix the finish time */
+        Job job = ev.getJob();
+        int jobId = job.getJobId();
+        int currentTime = ev.getOccurrenceTime();
+        assert currentTime == job.getEndEventOccuranceTimeNow();
+        int previousMeasuredTime = job.getPreviousMeasuredTime();
+        int mostRecentRunningTime = currentTime - previousMeasuredTime;
+        int OCStateLevel = job.getOCStateLevel();
+        double accumulatedCpuTime = job.getAccumulatedCpuTime();
+        accumulatedCpuTime += (double)mostRecentRunningTime / OCStateLevel;
+        job.setAccumulatedCpuTime(accumulatedCpuTime);
+        if (OCStateLevel == 1) {
+            int runningTimeDed = job.getRunningTimeDed();
+            job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
+        }
+        else {
+            int runningTimeOC = job.getRunningTimeOC();
+            job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
+        }
+        int runningTimeDed = job.getRunningTimeDed();
+        int runningTimeOC = job.getRunningTimeOC();
+        int runningTime = runningTimeDed + runningTimeOC;
+        int finishedTime = runningTime + job.getStartTime();
+        job.setFinishedTime(finishedTime);
+        assert currentTime == finishedTime;
+        
+        // Output the result
+        NodeConsciousScheduler.sim.outputResult(job);
+        NodeConsciousScheduler.sim.outputResultForVis(job);
+
+        // Erase the job from executing job list
+        NodeConsciousScheduler.sim.getExecutingJobList().remove(job);
+        // Add the job completed List
+        NodeConsciousScheduler.sim.getCompletedJobList().add(job);
+
+        // Resource refill        
+        NodeConsciousScheduler.sim.freeResources(job);
+
+        // Again call scheduling
+        evs = NodeConsciousScheduler.sim.getSche().scheduleJobsOnEnd(ev);
+
+        
+        return evs;
+    }
+}
+
 
 class DeleteFromBeginning implements EventHandler {
     public ArrayList<Event> handle(Event ev) {

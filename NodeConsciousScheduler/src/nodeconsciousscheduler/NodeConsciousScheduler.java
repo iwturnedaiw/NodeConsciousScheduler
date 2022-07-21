@@ -425,22 +425,22 @@ public class NodeConsciousScheduler {
                     continue;
                 }
             }
-            boolean addFlag = checkJobProperty(submitTime, actualExecuteTime, specifiedExecuteTime, requiredNodes, ppn, scheduleUsingMemory, requiredMemory);
-            
-            if (!addFlag) {
-                addCheckSkip++;
-                continue;
-            }
             
             int queueNum = Integer.parseInt(values[14]);
             
+            boolean interactiveJob = false;                
+            int interactiveExecuteTime = -1;
+            int executionTimePerActivate = -1;
+            int prologTime = -1;
+            int epilogTime = -1;            
+            int idleTimeBetweenActivate = -1;
             if (accurateInteractiveJobs && (queueNum == NodeConsciousScheduler.interactiveQueueNumber) ) {
-                int interactiveExecuteTime = (int) Math.ceil(actualExecuteTime * interactiveCPURatio);
+                interactiveExecuteTime = (int) Math.ceil(actualExecuteTime * interactiveCPURatio);
 
                 /* 0.2, 0.1, 0.1 are hard-coded following multiply. */
-                int executionTimePerActivate = (int )Math.ceil(interactiveExecuteTime * 0.2);
-                int prologTime = (int) Math.ceil(actualExecuteTime * 0.1);
-                int epilogTime = (int) Math.ceil(actualExecuteTime * 0.1);
+                executionTimePerActivate = (int )Math.ceil(interactiveExecuteTime * 0.2);
+                prologTime = (int) Math.ceil(actualExecuteTime * 0.1);
+                epilogTime = (int) Math.ceil(actualExecuteTime * 0.1);
                 
                 if (actualExecuteTime <= prologTime + epilogTime) {
                     prologTime = 0;
@@ -449,7 +449,7 @@ public class NodeConsciousScheduler {
 
                 int numOfTimesToActivate = (int) ((interactiveExecuteTime + executionTimePerActivate -1)/executionTimePerActivate);
                 int numOfTimesBetweenActivate = numOfTimesToActivate - 1;
-                int idleTimeBetweenActivate = -1;
+                idleTimeBetweenActivate = -1;
                 if (numOfTimesBetweenActivate != 0) {
                     idleTimeBetweenActivate = (actualExecuteTime - prologTime - epilogTime - interactiveExecuteTime)/numOfTimesBetweenActivate;                            
                 } else {
@@ -474,11 +474,23 @@ public class NodeConsciousScheduler {
                                 prologTime, epilogTime, idleTimeBetweenActivate, sumTime,
                                 actualExecuteTime - sumTime);                                
                 
-                boolean interactiveJob = true;
+                interactiveJob = true;
                 /* next job initialization */
             }            
+
+            boolean addFlag = checkJobProperty(submitTime, actualExecuteTime, specifiedExecuteTime, requiredNodes, ppn, scheduleUsingMemory, requiredMemory);
             
-            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory, matchingGroup, queueNum);
+            if (!addFlag) {
+                addCheckSkip++;
+                continue;
+            }
+            
+            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, 
+                            requiredCores, requiredNodes, userId, groupId, requiredMemory, 
+                            matchingGroup, queueNum,
+                            accurateInteractiveJobs, 
+                            interactiveJob, interactiveExecuteTime, executionTimePerActivate, 
+                            prologTime, epilogTime, idleTimeBetweenActivate);
             jobList.add(job);
             
         }

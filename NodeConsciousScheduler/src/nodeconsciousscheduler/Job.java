@@ -78,7 +78,13 @@ public class Job implements Comparable<Job> {
         this.OCStateLevel = 1;
     }
 
-    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes, int userId, int groupId, int maxMemory, int matchingGroup, int queueNum) {
+    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, 
+            int requiredCores, int requiredNodes, int userId, int groupId, 
+            int maxMemory, int matchingGroup, int queueNum,
+            boolean accurateIntteractiveJobs,   
+            boolean interactiveJob, 
+            int interactiveExecuteTime, int executionTimePerActivate, 
+            int prologTime, int epilogTime, int idleTimeBetweenActivate) {
         this.jobId = jobId;
         this.submitTime = submitTime;
         this.actualExecuteTime = actualExecuteTime;
@@ -103,6 +109,19 @@ public class Job implements Comparable<Job> {
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
         this.queueNum = queueNum;
+        this.apparentOCStateLevel = 1;
+
+        if (accurateIntteractiveJobs) {
+            this.interacitveJob = interacitveJob;
+            this.interactiveExecuteTime = interactiveExecuteTime;
+            this.prologTime = prologTime;
+            this.epilogTIme = epilogTime;
+            this.idleTime = idleTimeBetweenActivate;
+            this.runningTimePerActivate = executionTimePerActivate;
+            this.activationState = false;
+        } else {            
+            this.interacitveJob = interacitveJob;
+        }
     }
     
     

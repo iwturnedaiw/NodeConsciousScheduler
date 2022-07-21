@@ -90,12 +90,24 @@ public class Event implements Comparable<Event> {
         if (o.eventType == EventType.START) {
             return 1;
         }        
+        if (this.eventType == EventType.INT_ACTIVATE) {
+            return -1;
+        }
+        if (o.eventType == EventType.INT_ACTIVATE) {
+            return 1;
+        }        
         if (this.eventType == EventType.END) {
             return -1;
         }
         if (o.eventType == EventType.END) {
             return 1;
         }
+        if (this.eventType == EventType.INT_DEACTIVATE) {
+            return -1;
+        }
+        if (o.eventType == EventType.INT_DEACTIVATE) {
+            return 1;
+        }        
         if (this.eventType == EventType.DELETE_FROM_END) {
             return -1;
         }
