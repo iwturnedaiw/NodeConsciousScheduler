@@ -141,7 +141,7 @@ public class NodeConsciousScheduler {
         */      
         ArrayList<Job> jobList = new ArrayList<Job>();
         try {
-            jobList = readSWFFile(fname, scheduleUsingMemory, considerJobMatching);
+            jobList = readSWFFile(fname, scheduleUsingMemory, considerJobMatching, accurateInteractiveJobs, interactiveCPURatio);
         } catch (IOException ex) {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -211,8 +211,14 @@ public class NodeConsciousScheduler {
         return nodeInfoList;
     }
 
-    private static ArrayList<Job> readSWFFile(String fname, boolean scheduleUsingMemory, boolean considerJobMatching) throws IOException {
+    private static ArrayList<Job> readSWFFile(String fname, 
+            boolean scheduleUsingMemory, 
+            boolean considerJobMatching,
+            boolean accurateInteractiveJobs,
+            double interactiveCPURatio) throws IOException {
         boolean ignoreIncompleteMemoryData = NodeConsciousScheduler.ignoreIncompleteMemoryData;
+        int interactiveQueueNumber = NodeConsciousScheduler.interactiveQueueNumber;
+
         System.out.println("Opening job file at: " + DATASET_DIRECTORY + "/" + fname);
         BufferedReader br = null;
         Input in = new Input();
@@ -427,12 +433,56 @@ public class NodeConsciousScheduler {
             }
             
             int queueNum = Integer.parseInt(values[14]);
+            
+            if (accurateInteractiveJobs && (queueNum == NodeConsciousScheduler.interactiveQueueNumber) ) {
+                int interactiveExecuteTime = (int) Math.ceil(actualExecuteTime * interactiveCPURatio);
+
+                /* 0.2, 0.1, 0.1 are hard-coded following multiply. */
+                int executionTimePerActivate = (int )Math.ceil(interactiveExecuteTime * 0.2);
+                int prologTime = (int) Math.ceil(actualExecuteTime * 0.1);
+                int epilogTime = (int) Math.ceil(actualExecuteTime * 0.1);
+                
+                if (actualExecuteTime <= prologTime + epilogTime) {
+                    prologTime = 0;
+                    epilogTime = 0;
+                }
+
+                int numOfTimesToActivate = (int) ((interactiveExecuteTime + executionTimePerActivate -1)/executionTimePerActivate);
+                int numOfTimesBetweenActivate = numOfTimesToActivate - 1;
+                int idleTimeBetweenActivate = -1;
+                if (numOfTimesBetweenActivate != 0) {
+                    idleTimeBetweenActivate = (actualExecuteTime - prologTime - epilogTime - interactiveExecuteTime)/numOfTimesBetweenActivate;                            
+                } else {
+                    idleTimeBetweenActivate = 0;
+                }                
+                
+                int sumTime = prologTime + epilogTime + interactiveExecuteTime + idleTimeBetweenActivate * numOfTimesBetweenActivate;
+                
+                /* If interactiveCPURatio >= about 0.5, a short-running job may be caught here. */
+                if (sumTime > actualExecuteTime) {                   
+                    System.out.printf("JobId:%d\tacutualTime:%d\tintExecTime:%d\tExecTimePerAct:%d"
+                                + "\tprologTime:%d\tepilogTime:%d\tidleTimeBtAct:%d\tsumTime:%d\n", 
+                                jobId, actualExecuteTime, interactiveExecuteTime, executionTimePerActivate,
+                                prologTime, epilogTime, idleTimeBetweenActivate, sumTime);                                                    
+                }
+
+                System.out.printf("JobId:%d\tacutualTime:%d\tintExecTime:%d"
+                                + "\tExecTimePerAct:%d\tnumActivate:%d"
+                                + "\tprologTime:%d\tepilogTime:%d\tidleTimeBtAct:%d\tsumTime:%d\tDiff:%d\n", 
+                                jobId, actualExecuteTime, interactiveExecuteTime,
+                                executionTimePerActivate, numOfTimesToActivate,
+                                prologTime, epilogTime, idleTimeBetweenActivate, sumTime,
+                                actualExecuteTime - sumTime);                                
+                
+                boolean interactiveJob = true;
+                /* next job initialization */
+            }            
+            
             Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes, userId, groupId, requiredMemory, matchingGroup, queueNum);
             jobList.add(job);
             
         }
-        return jobList;
-        
+        return jobList;        
     }
 
     private static SimulatorConfiguration readSimulatorConfiguration(String fname) throws IOException {
