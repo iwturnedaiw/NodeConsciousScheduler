@@ -48,6 +48,14 @@ public class Job implements Comparable<Job> {
     private double currentRatio;
     private double accumulatedCpuTime;
     private int queueNum;
+    private int apparentOCStateLevel;
+    private int interacitveJob;
+    private int interactiveExecuteTime;
+    private int prologTime;
+    private int epilogTIme;
+    private int idleTime;
+    private int runningTimePerActivate;
+    private boolean activationState;
     
 
     Job() {}
@@ -355,4 +363,46 @@ public class Job implements Comparable<Job> {
     public int getQueueNum() {
         return queueNum;
     }
+
+    public int getApparentOCStateLevel() {
+        return apparentOCStateLevel;
+    }
+
+    public int getInteracitveJob() {
+        return interacitveJob;
+    }
+
+    public int getPrologTime() {
+        return prologTime;
+    }
+
+    public int getEpilogTIme() {
+        return epilogTIme;
+    }
+
+    public int getIdleTime() {
+        return idleTime;
+    }
+
+    public int getRunningTimePerActivate() {
+        return runningTimePerActivate;
+    }
+
+    public boolean isActivationState() {
+        return activationState;
+    }
+
+    public void setApparentOCStateLevel(int apparentOCStateLevel) {
+        this.apparentOCStateLevel = apparentOCStateLevel;
+    }
+
+    public void setActivationState(boolean activationState) {
+        this.activationState = activationState;
+    }
+
+    public int getInteractiveExecuteTime() {
+        return interactiveExecuteTime;
+    }
+    
+    
 }
