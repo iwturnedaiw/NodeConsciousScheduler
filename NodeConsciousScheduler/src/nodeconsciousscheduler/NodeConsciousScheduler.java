@@ -53,6 +53,7 @@ public class NodeConsciousScheduler {
     static boolean outputResultsInDetail = true;
     static boolean considerMemoryForNodeNum = false;
     static Map<Integer, Integer> matchingGroup;
+    static int interactiveQueueNumber = -1;
 
     
     /**
@@ -113,6 +114,17 @@ public class NodeConsciousScheduler {
             matchingGroup = readJobMatchingGroupTable(fname);
             jobMatchingTable = readJobMatchingTable(fname);
             simConf.setJobMatchingTable(jobMatchingTable);
+        }
+        
+        boolean accurateInteractiveJobs = simConf.isAccurateInteractiveJobs();
+        double interactiveCPURatio = simConf.getInteractiveCPURatio();
+        if (accurateInteractiveJobs && interactiveQueueNumber == -1) {
+            System.out.println("Configuration Error. INTERACTIVE_QUEUE_NUMBER must be set.");
+            System.exit(1);            
+        }
+        if (accurateInteractiveJobs && ( (interactiveCPURatio <= 0) || (interactiveCPURatio >= 1))) {
+            System.out.println("Configuration Error. INTERACTIVE_CPU_RATIO must be set between 0 < r < 1.");
+            System.exit(1);            
         }
         
         // Workload Trace Setting
@@ -448,8 +460,19 @@ public class NodeConsciousScheduler {
         boolean considerJobMatching = Boolean.parseBoolean(configurations.getProperty("CONSIDER_JOB_MATCHING"));
         boolean usingAffinityForSchedule = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_AFFINITY"));
         double thresholdForAffinitySchedule = Double.parseDouble(configurations.getProperty("QUIT_SCHEDULE_THRESHOLD"));
+        NodeConsciousScheduler.interactiveQueueNumber = Integer.parseInt(configurations.getProperty("INTERACTIVE_QUEUE_NUMBER"));
+        boolean accurateInteractiveJobs = Boolean.parseBoolean(configurations.getProperty("ACCURATE_INTERACTIVE_JOBS"));
+        double interacitiveCPURatio = Double.parseDouble(configurations.getProperty("INTERACTIVE_CPU_RATIO"));
         
-        return new SimulatorConfiguration(slowdownThresholds, outputMinuteTimeseries, scheduleUsingMemory, crammingMemoryScheduling, considerJobMatching, usingAffinityForSchedule, thresholdForAffinitySchedule);
+        return new SimulatorConfiguration(slowdownThresholds, 
+                outputMinuteTimeseries, 
+                scheduleUsingMemory, 
+                crammingMemoryScheduling, 
+                considerJobMatching, 
+                usingAffinityForSchedule, 
+                thresholdForAffinitySchedule, 
+                accurateInteractiveJobs, 
+                interacitiveCPURatio);
     }
 
     private static int checkCanExecuteMultipleNodes(int requiredCores, int requiredMemeory, boolean scheduleUsingMemory) {

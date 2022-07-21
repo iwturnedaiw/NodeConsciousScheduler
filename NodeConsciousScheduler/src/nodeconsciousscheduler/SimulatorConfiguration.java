@@ -23,6 +23,8 @@ class SimulatorConfiguration {
     Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
     private boolean usingAffinityForSchedule;
     private double thresholdForAffinitySchedule;
+    private boolean accurateInteractiveJobs;
+    private double interactiveCPURatio;
     
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory) {
         this.scheduleUsingMemory = scheduleUsingMemory;
@@ -36,7 +38,15 @@ class SimulatorConfiguration {
         this.outputMinuteTimeseries = outputMinuteTimeseries;
     }
 
-    SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory, boolean crammingMemoryScheduling, boolean considerJobMatching, boolean usingAffinityForSchedule, double thresholdForAffinitySchedule) {
+    SimulatorConfiguration(String[] thresholdForSlowdown, 
+            boolean outputMinuteTimeseries, 
+            boolean scheduleUsingMemory, 
+            boolean crammingMemoryScheduling, 
+            boolean considerJobMatching, 
+            boolean usingAffinityForSchedule, 
+            double thresholdForAffinitySchedule,
+            boolean accurateInteractiveJobs, 
+            double interacitiveCPURatio) {
         this.scheduleUsingMemory = scheduleUsingMemory;
         this.considerJobMatching = considerJobMatching;
         this.crammingMemoryScheduling = crammingMemoryScheduling;
@@ -50,6 +60,8 @@ class SimulatorConfiguration {
             previousValue = value;
         }
         this.outputMinuteTimeseries = outputMinuteTimeseries;
+        this.accurateInteractiveJobs = accurateInteractiveJobs;     
+        this.interactiveCPURatio = interacitiveCPURatio;
     }
     
     public ArrayList<Double> getThresholdForSlowdown() {
@@ -86,5 +98,13 @@ class SimulatorConfiguration {
 
     public double getThresholdForAffinitySchedule() {
         return thresholdForAffinitySchedule;
+    }
+
+    public boolean isAccurateInteractiveJobs() {
+        return accurateInteractiveJobs;
+    }
+
+    public double getInteractiveCPURatio() {
+        return interactiveCPURatio;
     }
 }
