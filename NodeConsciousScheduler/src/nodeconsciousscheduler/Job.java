@@ -53,8 +53,8 @@ public class Job implements Comparable<Job> {
     private int interactiveExecuteTime;
     private int prologTime;
     private int epilogTIme;
-    private int idleTime;
-    private int runningTimePerActivate;
+    ArrayList<Integer> activationTimes;
+    ArrayList<Integer> idleTimes;
     private boolean activationState;
     
 
@@ -83,8 +83,8 @@ public class Job implements Comparable<Job> {
             int maxMemory, int matchingGroup, int queueNum,
             boolean accurateIntteractiveJobs,   
             boolean interactiveJob, 
-            int interactiveExecuteTime, int executionTimePerActivate, 
-            int prologTime, int epilogTime, int idleTimeBetweenActivate) {
+            int interactiveExecuteTime, ArrayList<Integer> activationTimes, 
+            int prologTime, int epilogTime, ArrayList<Integer> idleTimes) {
         this.jobId = jobId;
         this.submitTime = submitTime;
         this.actualExecuteTime = actualExecuteTime;
@@ -116,8 +116,8 @@ public class Job implements Comparable<Job> {
             this.interactiveExecuteTime = interactiveExecuteTime;
             this.prologTime = prologTime;
             this.epilogTIme = epilogTime;
-            this.idleTime = idleTimeBetweenActivate;
-            this.runningTimePerActivate = executionTimePerActivate;
+            this.idleTimes = idleTimes;
+            this.activationTimes = activationTimes;
             this.activationState = false;
         } else {            
             this.interacitveJob = interacitveJob;
@@ -397,14 +397,6 @@ public class Job implements Comparable<Job> {
 
     public int getEpilogTIme() {
         return epilogTIme;
-    }
-
-    public int getIdleTime() {
-        return idleTime;
-    }
-
-    public int getRunningTimePerActivate() {
-        return runningTimePerActivate;
     }
 
     public boolean isActivationState() {

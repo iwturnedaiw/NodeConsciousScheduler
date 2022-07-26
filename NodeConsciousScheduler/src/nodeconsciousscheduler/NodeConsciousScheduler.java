@@ -430,53 +430,20 @@ public class NodeConsciousScheduler {
             
             boolean interactiveJob = false;                
             int interactiveExecuteTime = -1;
-            int executionTimePerActivate = -1;
+            ArrayList<Integer> activationTimes = new ArrayList();
+            ArrayList<Integer> idleTimes = new ArrayList();
             int prologTime = -1;
-            int epilogTime = -1;            
-            int idleTimeBetweenActivate = -1;
+            int epilogTime = -1;
             if (accurateInteractiveJobs && (queueNum == NodeConsciousScheduler.interactiveQueueNumber) ) {
-                interactiveExecuteTime = (int) Math.ceil(actualExecuteTime * interactiveCPURatio);
-
-                /* 0.2, 0.1, 0.1 are hard-coded following multiply. */
-                executionTimePerActivate = (int )Math.ceil(interactiveExecuteTime * 0.2);
-                prologTime = (int) Math.ceil(actualExecuteTime * 0.1);
-                epilogTime = (int) Math.ceil(actualExecuteTime * 0.1);
-                
-                if (actualExecuteTime <= prologTime + epilogTime) {
-                    prologTime = 0;
-                    epilogTime = 0;
-                }
-
-                int numOfTimesToActivate = (int) ((interactiveExecuteTime + executionTimePerActivate -1)/executionTimePerActivate);
-                int numOfTimesBetweenActivate = numOfTimesToActivate - 1;
-                idleTimeBetweenActivate = -1;
-                if (numOfTimesBetweenActivate != 0) {
-                    idleTimeBetweenActivate = (actualExecuteTime - prologTime - epilogTime - interactiveExecuteTime)/numOfTimesBetweenActivate;                            
-                } else {
-                    idleTimeBetweenActivate = 0;
-                }                
-                
-                int sumTime = prologTime + epilogTime + interactiveExecuteTime + idleTimeBetweenActivate * numOfTimesBetweenActivate;
-                
-                /* If interactiveCPURatio >= about 0.5, a short-running job may be caught here. */
-                if (sumTime > actualExecuteTime) {                   
-                    System.out.printf("JobId:%d\tacutualTime:%d\tintExecTime:%d\tExecTimePerAct:%d"
-                                + "\tprologTime:%d\tepilogTime:%d\tidleTimeBtAct:%d\tsumTime:%d\n", 
-                                jobId, actualExecuteTime, interactiveExecuteTime, executionTimePerActivate,
-                                prologTime, epilogTime, idleTimeBetweenActivate, sumTime);                                                    
-                }
-
-                System.out.printf("JobId:%d\tacutualTime:%d\tintExecTime:%d"
-                                + "\tExecTimePerAct:%d\tnumActivate:%d"
-                                + "\tprologTime:%d\tepilogTime:%d\tidleTimeBtAct:%d\tsumTime:%d\tDiff:%d\n", 
-                                jobId, actualExecuteTime, interactiveExecuteTime,
-                                executionTimePerActivate, numOfTimesToActivate,
-                                prologTime, epilogTime, idleTimeBetweenActivate, sumTime,
-                                actualExecuteTime - sumTime);                                
-                
-                interactiveJob = true;
+                 InteractiveJobInfoPack ij = simpleInteractiveModel(jobId, actualExecuteTime, interactiveCPURatio);
+                 interactiveJob = ij.isInteractiveJob();
+                 interactiveExecuteTime = ij.getInteractiveExecuteTime();
+                 activationTimes = ij.getActivationTimes();
+                 prologTime = ij.getPrologTime();
+                 epilogTime = ij.getEpilogTime();
+                 idleTimes = ij.getIdleTimes();
                 /* next job initialization */
-            }            
+            }
 
             boolean addFlag = checkJobProperty(submitTime, actualExecuteTime, specifiedExecuteTime, requiredNodes, ppn, scheduleUsingMemory, requiredMemory);
             
@@ -489,12 +456,12 @@ public class NodeConsciousScheduler {
                             requiredCores, requiredNodes, userId, groupId, requiredMemory, 
                             matchingGroup, queueNum,
                             accurateInteractiveJobs, 
-                            interactiveJob, interactiveExecuteTime, executionTimePerActivate, 
-                            prologTime, epilogTime, idleTimeBetweenActivate);
+                            interactiveJob, interactiveExecuteTime, activationTimes, 
+                            prologTime, epilogTime, idleTimes);
             jobList.add(job);
             
         }
-        return jobList;        
+        return jobList;
     }
 
     private static SimulatorConfiguration readSimulatorConfiguration(String fname) throws IOException {
@@ -626,6 +593,108 @@ public class NodeConsciousScheduler {
         }
         return matchingTable;
         
+    }
         
+    private static InteractiveJobInfoPack simpleInteractiveModel(int jobId, int actualExecuteTime, double interactiveCPURatio) {
+        int interactiveExecuteTime = (int) Math.ceil(actualExecuteTime * interactiveCPURatio);
+
+        /* 0.2, 0.1, 0.1 are hard-coded following multiply. */
+        int executionTimePerActivate = (int) Math.ceil(interactiveExecuteTime * 0.2);
+        int prologTime = (int) Math.ceil(actualExecuteTime * 0.1);
+        int epilogTime = (int) Math.ceil(actualExecuteTime * 0.1);
+
+        if (actualExecuteTime <= prologTime + epilogTime) {
+            prologTime = 0;
+            epilogTime = 0;
+        }
+
+        int numOfTimesToActivate = (int) ((interactiveExecuteTime + executionTimePerActivate - 1) / executionTimePerActivate);
+        int numOfTimesBetweenActivate = numOfTimesToActivate - 1;
+        int idleTimeBetweenActivate = -1;
+        if (numOfTimesBetweenActivate != 0) {
+            idleTimeBetweenActivate = (actualExecuteTime - prologTime - epilogTime - interactiveExecuteTime) / numOfTimesBetweenActivate;
+        } else {
+            idleTimeBetweenActivate = 0;
+        }
+
+        int sumTime = prologTime + epilogTime + interactiveExecuteTime + idleTimeBetweenActivate * numOfTimesBetweenActivate;
+
+        /* If interactiveCPURatio >= about 0.5, a short-running job may be caught here. */
+        if (sumTime > actualExecuteTime) {
+            System.out.printf("JobId:%d\tacutualTime:%d\tintExecTime:%d\tExecTimePerAct:%d"
+                    + "\tprologTime:%d\tepilogTime:%d\tidleTimeBtAct:%d\tsumTime:%d\n",
+                    jobId, actualExecuteTime, interactiveExecuteTime, executionTimePerActivate,
+                    prologTime, epilogTime, idleTimeBetweenActivate, sumTime);
+        }
+
+        System.out.printf("JobId:%d\tacutualTime:%d\tintExecTime:%d"
+                + "\tExecTimePerAct:%d\tnumActivate:%d"
+                + "\tprologTime:%d\tepilogTime:%d\tidleTimeBtAct:%d\tsumTime:%d\tDiff:%d\n",
+                jobId, actualExecuteTime, interactiveExecuteTime,
+                executionTimePerActivate, numOfTimesToActivate,
+                prologTime, epilogTime, idleTimeBetweenActivate, sumTime,
+                actualExecuteTime - sumTime);
+
+        /* packing */
+        ArrayList<Integer> activationTimes = new ArrayList();
+        ArrayList<Integer> idleTimes = new ArrayList();
+        
+        int restTime = interactiveExecuteTime;
+        for(int i = 0; i < numOfTimesToActivate; ++i) {
+            activationTimes.add((Integer) min(restTime, executionTimePerActivate));
+            restTime -= executionTimePerActivate;
+            if (i == numOfTimesToActivate-1) break;
+            idleTimes.add((Integer) idleTimeBetweenActivate);
+        }
+        assert activationTimes.size() == idleTimes.size() + 1;
+        
+        return new InteractiveJobInfoPack(true, interactiveExecuteTime, activationTimes, prologTime, epilogTime, idleTimes);
     }
 }
+
+class InteractiveJobInfoPack {
+
+    boolean interactiveJob; 
+    int interactiveExecuteTime;
+    ArrayList<Integer> activationTimes;
+    int prologTime;
+    int epilogTime;
+    ArrayList<Integer> idleTimes;
+
+    public InteractiveJobInfoPack(boolean interactiveJob, int interactiveExecuteTime, ArrayList<Integer> activationTimes, int prologTime, int epilogTime, ArrayList<Integer> idleTimes) {
+        this.interactiveJob = interactiveJob;
+        this.interactiveExecuteTime = interactiveExecuteTime;
+        this.activationTimes = activationTimes;
+        this.prologTime = prologTime;
+        this.epilogTime = epilogTime;
+        this.idleTimes = idleTimes;
+    }
+
+    public boolean isInteractiveJob() {
+        return interactiveJob;
+    }
+
+    public int getInteractiveExecuteTime() {
+        return interactiveExecuteTime;
+    }
+
+    public ArrayList<Integer> getActivationTimes() {
+        return activationTimes;
+    }
+
+    public int getPrologTime() {
+        return prologTime;
+    }
+
+    public int getEpilogTime() {
+        return epilogTime;
+    }
+
+    public ArrayList<Integer> getIdleTimes() {
+        return idleTimes;
+    }
+
+    
+    
+}
+
