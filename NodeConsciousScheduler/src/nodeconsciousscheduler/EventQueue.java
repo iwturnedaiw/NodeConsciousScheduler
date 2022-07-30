@@ -56,6 +56,10 @@ public class EventQueue extends PriorityQueue {
             evh = new DeleteFromBeginning();
         } else if (evt == EventType.DELETE_FROM_END) {
             evh = new DeleteFromEnd();
+        } else if (evt == EventType.INT_ACTIVATE) {
+            evh = new IntActivate();
+        } else if (evt == EventType.INT_DEACTIVATE) {
+            evh = new IntDeactivate();
         }
         
         assert evh != null;

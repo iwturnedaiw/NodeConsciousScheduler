@@ -7,8 +7,10 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.IntActivate.printThrowDeactivateEvent;
 
 /**
  *
@@ -53,8 +55,20 @@ class Start implements EventHandler {
         
         // TODO
         // Update activated cores table if it is not int.
+        boolean interactiveJob = job.isInteracitveJob();
+        if (interactiveJob) {
+            int currentTime = ev.getOccurrenceTime();
+            int prologTime = job.getPrologTime();
+            int activationTime = currentTime + prologTime;
+            printThrowActivateEvent(currentTime, activationTime, job, EventType.INT_ACTIVATE, 1);
+            evs.add(new Event(EventType.INT_ACTIVATE, activationTime, job));
+        }
         
         return evs;
+    }
+    private void printThrowActivateEvent(int currentTime, int activationTime, Job job, EventType evt, int tabno) {
+        for (int i = 0; i < tabno; ++i) System.out.print("\t");
+        System.out.println("debug) Throw " + evt + " event: jobId " + job.getJobId() + ", newAcTime: " + activationTime + " at " + currentTime);
     }
 }
 
@@ -89,7 +103,8 @@ class End implements EventHandler {
         int runningTime = runningTimeDed + runningTimeOC;
         int finishedTime = runningTime + job.getStartTime();
         job.setFinishedTime(finishedTime);
-        assert currentTime == finishedTime;
+        boolean interactiveJob = job.isInteracitveJob();
+        assert interactiveJob || currentTime == finishedTime;
         
         // Output the result
         NodeConsciousScheduler.sim.outputResult(job);
@@ -125,48 +140,67 @@ class IntActivate implements EventHandler {
         // Activation the job and coexisting jobs
         
         /* Fix the finish time */
+        int currentTime = ev.getOccurrenceTime();
         Job job = ev.getJob();
         int jobId = job.getJobId();
-        int currentTime = ev.getOccurrenceTime();
-        assert currentTime == job.getEndEventOccuranceTimeNow();
-        int previousMeasuredTime = job.getPreviousMeasuredTime();
-        int mostRecentRunningTime = currentTime - previousMeasuredTime;
-        int OCStateLevel = job.getOCStateLevel();
-        double accumulatedCpuTime = job.getAccumulatedCpuTime();
-        accumulatedCpuTime += (double)mostRecentRunningTime / OCStateLevel;
-        job.setAccumulatedCpuTime(accumulatedCpuTime);
-        if (OCStateLevel == 1) {
-            int runningTimeDed = job.getRunningTimeDed();
-            job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
-        }
-        else {
-            int runningTimeOC = job.getRunningTimeOC();
-            job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
-        }
-        int runningTimeDed = job.getRunningTimeDed();
-        int runningTimeOC = job.getRunningTimeOC();
-        int runningTime = runningTimeDed + runningTimeOC;
-        int finishedTime = runningTime + job.getStartTime();
-        job.setFinishedTime(finishedTime);
-        assert currentTime == finishedTime;
+        boolean interactiveJob = job.isInteracitveJob();
+        boolean activationState = job.isActivationState();
+        assert !activationState;
         
-        // Output the result
-        NodeConsciousScheduler.sim.outputResult(job);
-        NodeConsciousScheduler.sim.outputResultForVis(job);
+        int OCStateLevel = job.getOCStateLevel();
+        Set<Integer> coexistingJobs = job.getCoexistingJobs();
+        for (int coexistingJobId: coexistingJobs) {
+            Job coexistingJob = Scheduler.getJobByJobId(coexistingJobId);
+            Scheduler.measureCurrentExecutingTime(currentTime, coexistingJob);
+            int coexistingApparentOCStateLevel = coexistingJob.getApparentOCStateLevel();
+            ++coexistingApparentOCStateLevel;
+            int coexistingOCStateLevel = coexistingJob.getOCStateLevel();
+            assert coexistingApparentOCStateLevel <= coexistingOCStateLevel;
+            coexistingJob.setApparentOCStateLevel(coexistingApparentOCStateLevel);
+            
+            boolean intJobFlag = coexistingJob.isInteracitveJob();
+            
+            if (!intJobFlag) {
+                int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
+                int trueEndTime = Scheduler.calculateNewActualEndTime(currentTime, coexistingJob);
+                Scheduler.printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
+                evs.add(new Event(EventType.END, trueEndTime, coexistingJob));
+                coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);
+                Scheduler.printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
+                evs.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
+            }
+            // TODO: treatment of interactive jobs
+        }
+        job.setActivationState(!activationState);
+        
+        ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
+        ArrayList<Integer> assignNodesNo = calculateAssignNodesNo(usingNodesList);
+        /* TODO: This call is inappropriate. The name must be chanced. */
+        int apparentOCStateLevel = Scheduler.calculateVictimNewOCStateLevel(job, job.getRequiredCoresPerNode(), assignNodesNo, true, interactiveJob);
+        // TODO: acc_int
+        // calc coming int_deactivate
+        // throw
+        job.setApparentOCStateLevel(apparentOCStateLevel);
+        int deactivateTime = Scheduler.calculateNewActualEndTimeForActivation(currentTime, job);
+        
 
-        // Erase the job from executing job list
-        NodeConsciousScheduler.sim.getExecutingJobList().remove(job);
-        // Add the job completed List
-        NodeConsciousScheduler.sim.getCompletedJobList().add(job);
-
-        // Resource refill        
-        NodeConsciousScheduler.sim.freeResources(job);
-
-        // Again call scheduling
-        evs = NodeConsciousScheduler.sim.getSche().scheduleJobsOnEnd(ev);
-
+        job.setPreviousMeasuredTime(currentTime);
+        printThrowDeactivateEvent(currentTime, deactivateTime, job, EventType.INT_DEACTIVATE, 1);
+        evs.add(new Event(EventType.INT_DEACTIVATE, deactivateTime, job));
         
         return evs;
+    }
+    ArrayList<Integer> calculateAssignNodesNo (ArrayList<UsingNode> usingNodeList) {
+        ArrayList<Integer> assignNodesNo = new ArrayList();
+        for (int i = 0; i < usingNodeList.size(); ++i) {
+            int nodeId = usingNodeList.get(i).getNodeNum();
+            assignNodesNo.add(nodeId);
+        }
+        return assignNodesNo;
+    }
+    static void printThrowDeactivateEvent(int currentTime, int deactivationTime, Job job, EventType evt, int tabno) {
+        for (int i = 0; i < tabno; ++i) System.out.print("\t");
+        System.out.println("debug) Throw " + evt + " event: jobId " + job.getJobId() + ", newDeacTime: " + deactivationTime + " at " + currentTime);
     }
 }
 
@@ -177,50 +211,81 @@ class IntDeactivate implements EventHandler {
         ArrayList<Event> evs = new ArrayList<Event>();
         
         // TODO
-        
-        /* Fix the finish time */
         Job job = ev.getJob();
         int jobId = job.getJobId();
         int currentTime = ev.getOccurrenceTime();
-        assert currentTime == job.getEndEventOccuranceTimeNow();
-        int previousMeasuredTime = job.getPreviousMeasuredTime();
-        int mostRecentRunningTime = currentTime - previousMeasuredTime;
-        int OCStateLevel = job.getOCStateLevel();
-        double accumulatedCpuTime = job.getAccumulatedCpuTime();
-        accumulatedCpuTime += (double)mostRecentRunningTime / OCStateLevel;
-        job.setAccumulatedCpuTime(accumulatedCpuTime);
-        if (OCStateLevel == 1) {
-            int runningTimeDed = job.getRunningTimeDed();
-            job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
-        }
-        else {
-            int runningTimeOC = job.getRunningTimeOC();
-            job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
-        }
-        int runningTimeDed = job.getRunningTimeDed();
-        int runningTimeOC = job.getRunningTimeOC();
-        int runningTime = runningTimeDed + runningTimeOC;
-        int finishedTime = runningTime + job.getStartTime();
-        job.setFinishedTime(finishedTime);
-        assert currentTime == finishedTime;
         
-        // Output the result
-        NodeConsciousScheduler.sim.outputResult(job);
-        NodeConsciousScheduler.sim.outputResultForVis(job);
+        boolean interactiveJob = job.isInteracitveJob();
+        assert interactiveJob;
+        boolean activationState = job.isActivationState();
+        assert activationState;
 
-        // Erase the job from executing job list
-        NodeConsciousScheduler.sim.getExecutingJobList().remove(job);
-        // Add the job completed List
-        NodeConsciousScheduler.sim.getCompletedJobList().add(job);
+        Set<Integer> coexistingJobs = job.getCoexistingJobs();
+        for (int coexistingJobId: coexistingJobs) {
+            Job coexistingJob = Scheduler.getJobByJobId(coexistingJobId);
 
-        // Resource refill        
-        NodeConsciousScheduler.sim.freeResources(job);
+            boolean intJobFlag = coexistingJob.isInteracitveJob();
+            if (!intJobFlag) {            
+                Scheduler.measureCurrentExecutingTime(currentTime, coexistingJob);
+            } // TODO: treatment of int jobs
+        }
+        job.setActivationState(!activationState);
+        for (int coexistingJobId: coexistingJobs) {
+            Job coexistingJob = Scheduler.getJobByJobId(coexistingJobId);
+            int coexistingApparentOCStateLevel = coexistingJob.getApparentOCStateLevel();
+            --coexistingApparentOCStateLevel;
+            int coexistingOCStateLevel = coexistingJob.getOCStateLevel();
+            assert coexistingApparentOCStateLevel <= coexistingOCStateLevel;
+            coexistingJob.setApparentOCStateLevel(coexistingApparentOCStateLevel);
+            
+            boolean intJobFlag = coexistingJob.isInteracitveJob();
+            
+            if (!intJobFlag) {
+                int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
+                int trueEndTime = Scheduler.calculateNewActualEndTime(currentTime, coexistingJob);
+                Scheduler.printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
+                evs.add(new Event(EventType.END, trueEndTime, coexistingJob));
+                coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);
+                Scheduler.printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
+                evs.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
+            }
+            // TODO: treatment of interactive jobs
+        }
+        job.setActivationState(activationState);
 
-        // Again call scheduling
-        evs = NodeConsciousScheduler.sim.getSche().scheduleJobsOnEnd(ev);
+        Scheduler.measureCurrentExecutingTimeForActivation(currentTime, job, job.getOccupiedTimeInTimeSlices());
+        double currentAccumulatedComputeQuantityForLatestActivation = job.getCurrentAccumulatedComputeQuantityForLatestActivation();
+        assert job.getCurrentRequiredActivationTime() <= currentAccumulatedComputeQuantityForLatestActivation;
+        currentAccumulatedComputeQuantityForLatestActivation = 0.0;
+        job.setCurrentAccumulatedComputeQuantityForLatestActivation(currentAccumulatedComputeQuantityForLatestActivation);
+        job.setPreviousMeasuredTime(currentTime);
 
-        
+        int currentActivationIndex = job.getCurrentActivationIndex();
+        ArrayList<Integer> activationTimes = job.getActivationTimes();
+        if (currentActivationIndex == activationTimes.size()-1) {
+            int epilogTime = job.getEpilogTIme();
+            int endTime = epilogTime + currentTime;
+            job.setEndEventOccuranceTimeNow(endTime);
+            Scheduler.printThrowENDEvent(currentTime, endTime, job, EventType.END);
+            evs.add(new Event(EventType.END, endTime, job));
+        } else {
+            int idleTime = job.getIdleTimes().get(currentActivationIndex);
+            int activateTime = currentTime + idleTime;
+
+            printThrowActivateEvent(currentTime,activateTime, job, EventType.INT_ACTIVATE, jobId);
+            evs.add(new Event(EventType.INT_ACTIVATE, activateTime, job));
+
+            ++currentActivationIndex;
+            job.setCurrentActivationIndex(currentActivationIndex);            
+        }
+
+        job.setActivationState(!activationState);
+
         return evs;
+    }
+    private void printThrowActivateEvent(int currentTime, int activationTime, Job job, EventType evt, int tabno) {
+        for (int i = 0; i < tabno; ++i) System.out.print("\t");
+        System.out.println("debug) Throw " + evt + " event: jobId " + job.getJobId() + ", newAcTime: " + activationTime + " at " + currentTime);
     }
 }
 

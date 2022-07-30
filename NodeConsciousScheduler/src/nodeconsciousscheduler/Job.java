@@ -49,13 +49,15 @@ public class Job implements Comparable<Job> {
     private double accumulatedCpuTime;
     private int queueNum;
     private int apparentOCStateLevel;
-    private int interacitveJob;
+    private boolean interacitveJob;
     private int interactiveExecuteTime;
     private int prologTime;
     private int epilogTIme;
-    ArrayList<Integer> activationTimes;
-    ArrayList<Integer> idleTimes;
+    private ArrayList<Integer> activationTimes;
+    private ArrayList<Integer> idleTimes;
     private boolean activationState;
+    private int currentActivationIndex;
+    private double currentAccumulatedComputeQuantityForLatestActivation;
     
 
     Job() {}
@@ -112,13 +114,15 @@ public class Job implements Comparable<Job> {
         this.apparentOCStateLevel = 1;
 
         if (accurateIntteractiveJobs) {
-            this.interacitveJob = interacitveJob;
+            this.interacitveJob = interactiveJob;
             this.interactiveExecuteTime = interactiveExecuteTime;
             this.prologTime = prologTime;
             this.epilogTIme = epilogTime;
             this.idleTimes = idleTimes;
             this.activationTimes = activationTimes;
             this.activationState = false;
+            this.currentActivationIndex = 0;
+            this.currentAccumulatedComputeQuantityForLatestActivation = 0.0;
         } else {            
             this.interacitveJob = interacitveJob;
         }
@@ -387,7 +391,7 @@ public class Job implements Comparable<Job> {
         return apparentOCStateLevel;
     }
 
-    public int getInteracitveJob() {
+    public boolean isInteracitveJob() {
         return interacitveJob;
     }
 
@@ -414,6 +418,32 @@ public class Job implements Comparable<Job> {
     public int getInteractiveExecuteTime() {
         return interactiveExecuteTime;
     }
+
+    public ArrayList<Integer> getActivationTimes() {
+        return activationTimes;
+    }
+
+    public int getCurrentActivationIndex() {
+        return currentActivationIndex;
+    }
+
+    public double getCurrentAccumulatedComputeQuantityForLatestActivation() {
+        return currentAccumulatedComputeQuantityForLatestActivation;
+    }
+
+    public void setCurrentAccumulatedComputeQuantityForLatestActivation(double currentAccumulatedComputeQuantityForLatestActivation) {
+        this.currentAccumulatedComputeQuantityForLatestActivation = currentAccumulatedComputeQuantityForLatestActivation;
+    }
     
-    
+    public int getCurrentRequiredActivationTime() {
+        return getActivationTimes().get(getCurrentActivationIndex());
+    }
+
+    public void setCurrentActivationIndex(int currentActivationIndex) {
+        this.currentActivationIndex = currentActivationIndex;
+    }
+
+    public ArrayList<Integer> getIdleTimes() {
+        return idleTimes;
+    }
 }

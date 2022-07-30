@@ -72,6 +72,8 @@ public class FCFSOC extends FCFS {
                 //job.setStartTime(startTime);
                 makeTimeslices(startTime);
                 
+                boolean interJobFlag = job.isInteracitveJob();
+                
                 if (OCStateLevelForJob == 1) {
                     /* 5. Modify the timeSlices */        
                     int expectedEndTime = startTime + job.getRequiredTime();
@@ -79,15 +81,19 @@ public class FCFSOC extends FCFS {
                     job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     job.setOCStateLevel(OCStateLevelForJob);
+                    int apparentOCStateLevelForJob = OCStateLevelForJob;
+                    job.setApparentOCStateLevel(apparentOCStateLevelForJob);
                     /* 6. Modify the resource informaiton */        
                     assignJob(startTime, job, assignNodesNo);
 
                     /* 7. Enqueue the START and END Events */                
                     int trueEndTime = startTime + job.getActualExecuteTime();
                     result.add(new Event(EventType.START, startTime, job));
-                    printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
-                    result.add(new Event(EventType.END, trueEndTime, job));
-                    job.setEndEventOccuranceTimeNow(trueEndTime);
+                    if (!interJobFlag) {
+                        printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
+                        result.add(new Event(EventType.END, trueEndTime, job));
+                        job.setEndEventOccuranceTimeNow(trueEndTime);
+                    }
                 } else {
                     /* If OCStateLevel is greater than 1, */
                     /* we must modify the three points below */
@@ -136,9 +142,10 @@ public class FCFSOC extends FCFS {
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();           
                         Job victimJob = getJobByJobId(victimJobId);
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
+                        int victimApparentNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo, true, interJobFlag);
                         victimJob.getCoexistingJobs().add(opponentJobId);;
 //                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
-                        resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
+                        resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel, victimApparentNewOCStateLevel, interJobFlag);
                         for (Event ev: resultForVictim) {
                             result.add(ev);
                         }
@@ -196,6 +203,8 @@ public class FCFSOC extends FCFS {
                     
                     /* For opponent job */
                     job.setOCStateLevel(OCStateLevelForJob);
+                    int apparentOCStateLevel = calculateVictimNewOCStateLevel(job, job.getRequiredCoresPerNode(), assignNodesNo, true, interJobFlag);
+                    job.setApparentOCStateLevel(apparentOCStateLevel);
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForJob;
                     int expectedEndTime = calculateNewExpectedEndTime(startTime, job);
                     makeTimeslices(expectedEndTime);
@@ -212,9 +221,11 @@ public class FCFSOC extends FCFS {
                     job.setCurrentRatio(ratio);
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
-                    printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
-                    result.add(new Event(EventType.END, trueEndTime, job));
-                    job.setEndEventOccuranceTimeNow(trueEndTime);                   
+                    if (!interJobFlag) {
+                        printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
+                        result.add(new Event(EventType.END, trueEndTime, job));
+                        job.setEndEventOccuranceTimeNow(trueEndTime);          
+                    }
                 }
                 waitingQueue.poll();
                 temporallyScheduledJobList.add(job);
