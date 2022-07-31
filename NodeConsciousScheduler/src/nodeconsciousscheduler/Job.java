@@ -58,6 +58,7 @@ public class Job implements Comparable<Job> {
     private boolean activationState;
     private int currentActivationIndex;
     private double currentAccumulatedComputeQuantityForLatestActivation;
+    private int sumIdleTime;
     
 
     Job() {}
@@ -123,8 +124,12 @@ public class Job implements Comparable<Job> {
             this.activationState = false;
             this.currentActivationIndex = 0;
             this.currentAccumulatedComputeQuantityForLatestActivation = 0.0;
+            this.sumIdleTime = 0;
+            for (int idleTime: idleTimes) {
+                this.sumIdleTime += idleTime;
+            }
         } else {            
-            this.interacitveJob = interacitveJob;
+            this.interacitveJob = false;
         }
     }
     
@@ -445,5 +450,9 @@ public class Job implements Comparable<Job> {
 
     public ArrayList<Integer> getIdleTimes() {
         return idleTimes;
+    }
+
+    public int getSumIdleTime() {
+        return sumIdleTime;
     }
 }

@@ -966,6 +966,7 @@ public abstract class Scheduler {
      
     static void measureCurrentExecutingTime(int currentTime, Job victimJob, int OCStateLevel) {
         int currentApparentOCStateLevel = victimJob.getApparentOCStateLevel();
+        int currentOCStateLevel = victimJob.getOCStateLevel();
 
         int startTime = victimJob.getStartTime();
         if (startTime == UNSTARTED) {
@@ -987,7 +988,7 @@ public abstract class Scheduler {
         victimJob.setCurrentAccumulatedComputeQuantity(currentAccumulatedComputeQuantity);
         
         double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
-        currentAccumulatedComputeQuantityOnlyConsiderMultiplicity += (double)realDeltaTime / currentApparentOCStateLevel;
+        currentAccumulatedComputeQuantityOnlyConsiderMultiplicity += (double)realDeltaTime / currentOCStateLevel;
         victimJob.setCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity(currentAccumulatedComputeQuantityOnlyConsiderMultiplicity);
 
         double accumulatedCpuTime = victimJob.getAccumulatedCpuTime();
@@ -1153,8 +1154,8 @@ public abstract class Scheduler {
 //        assert trueEndTime <= oldTrueEndTime;
 
         //  1-3. Rethrow the END event set the time
-        //if (currentApparentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
-        //if (currentApparentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
         if (currentTime != trueEndTime && currentTime != oldTrueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
@@ -1164,11 +1165,12 @@ public abstract class Scheduler {
         }
     }
     /* This method return the exepeceted end time. */
+    /* Using only OCStateLevel, not considering apparentOCStateLevel */
     protected int calculateNewExpectedEndTime(int currentTime, Job victimJob) {
-        int currentApparentOCStateLevel = victimJob.getApparentOCStateLevel(); // This value is after-updated.
+        int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
         double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
         int requiredTime = victimJob.getRequiredTime();
-        double restRequiredTime = (requiredTime - currentAccumulatedComputeQuantityOnlyConsiderMultiplicity) * currentApparentOCStateLevel;
+        double restRequiredTime = (requiredTime - currentAccumulatedComputeQuantityOnlyConsiderMultiplicity) * currentOCStateLevel;
         double expectedEndTime = currentTime + restRequiredTime;
 
         return (int) ceil(expectedEndTime);
@@ -1338,7 +1340,7 @@ public abstract class Scheduler {
         victimJob.setOCStateLevel(currentOCStateLevel);
         
         /*  1-3. Rethrow the END event set the time */
-        //if (currentApparentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, victimJob));
@@ -1388,8 +1390,8 @@ public abstract class Scheduler {
             victimJob.setOCStateLevel(currentOCStateLevel);
 
             /*  1-3. Rethrow the END event set the time */
-            //if (currentApparentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
-            //if (currentApparentOCStateLevel != OCStateLevel && currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
+            //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
+            //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
             //if (currentTime != trueEndTime && oldTrueEndTime < trueEndTime) {
             boolean interactiveJob = victimJob.isInteracitveJob();
             boolean activationState = victimJob.isActivationState();
@@ -1473,7 +1475,7 @@ public abstract class Scheduler {
         victimJob.setOCStateLevel(currentOCStateLevel);
         
         /*  1-3. Rethrow the END event set the time */
-        //if (currentApparentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, victimJob));
@@ -1820,9 +1822,9 @@ public abstract class Scheduler {
 //        assert trueEndTime <= oldTrueEndTime;
 
         //  1-3. Rethrow the END event set the time
-        //if (currentApparentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
-        //if (currentApparentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
-        if (currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
+        //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+        if (currentTime != trueEndTime && currentTime != oldTrueEndTime && trueEndTime != oldTrueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
             coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);

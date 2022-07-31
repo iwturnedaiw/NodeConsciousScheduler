@@ -90,21 +90,27 @@ class End implements EventHandler {
         double accumulatedCpuTime = job.getAccumulatedCpuTime();
         accumulatedCpuTime += (double)mostRecentRunningTime / OCStateLevel;
         job.setAccumulatedCpuTime(accumulatedCpuTime);
-        if (OCStateLevel == 1) {
-            int runningTimeDed = job.getRunningTimeDed();
-            job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
-        }
-        else {
-            int runningTimeOC = job.getRunningTimeOC();
-            job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
+        
+        boolean interactiveJob = job.isInteracitveJob();
+        if (!interactiveJob) {
+            if (OCStateLevel == 1) {
+                int runningTimeDed = job.getRunningTimeDed();
+                job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
+            } else {
+                int runningTimeOC = job.getRunningTimeOC();
+                job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
+            }
         }
         int runningTimeDed = job.getRunningTimeDed();
         int runningTimeOC = job.getRunningTimeOC();
         int runningTime = runningTimeDed + runningTimeOC;
         int finishedTime = runningTime + job.getStartTime();
+        if (interactiveJob)
+            finishedTime = job.getStartTime() + runningTime + job.getPrologTime() + job.getSumIdleTime() + job.getEpilogTIme();
         job.setFinishedTime(finishedTime);
-        boolean interactiveJob = job.isInteracitveJob();
-        assert interactiveJob || currentTime == finishedTime;
+
+            
+        assert currentTime == finishedTime;
         
         // Output the result
         NodeConsciousScheduler.sim.outputResult(job);
@@ -152,6 +158,7 @@ class IntActivate implements EventHandler {
         for (int coexistingJobId: coexistingJobs) {
             Job coexistingJob = Scheduler.getJobByJobId(coexistingJobId);
             Scheduler.measureCurrentExecutingTime(currentTime, coexistingJob);
+            coexistingJob.setPreviousMeasuredTime(currentTime);
             int coexistingApparentOCStateLevel = coexistingJob.getApparentOCStateLevel();
             ++coexistingApparentOCStateLevel;
             int coexistingOCStateLevel = coexistingJob.getOCStateLevel();
@@ -227,6 +234,7 @@ class IntDeactivate implements EventHandler {
             boolean intJobFlag = coexistingJob.isInteracitveJob();
             if (!intJobFlag) {            
                 Scheduler.measureCurrentExecutingTime(currentTime, coexistingJob);
+                coexistingJob.setPreviousMeasuredTime(currentTime);
             } // TODO: treatment of int jobs
         }
         job.setActivationState(!activationState);
