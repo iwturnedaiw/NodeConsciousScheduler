@@ -612,7 +612,7 @@ public class NodeConsciousScheduler {
         int numOfTimesBetweenActivate = numOfTimesToActivate - 1;
         int idleTimeBetweenActivate = -1;
         if (numOfTimesBetweenActivate != 0) {
-            idleTimeBetweenActivate = (actualExecuteTime - prologTime - epilogTime - interactiveExecuteTime) / numOfTimesBetweenActivate;
+            idleTimeBetweenActivate = (actualExecuteTime - prologTime - epilogTime - interactiveExecuteTime + numOfTimesBetweenActivate - 1) / numOfTimesBetweenActivate;
         } else {
             idleTimeBetweenActivate = 0;
         }
@@ -640,11 +640,25 @@ public class NodeConsciousScheduler {
         ArrayList<Integer> idleTimes = new ArrayList();
         
         int restTime = interactiveExecuteTime;
+        int restIdleTime = actualExecuteTime - (prologTime + epilogTime + interactiveExecuteTime);
         for(int i = 0; i < numOfTimesToActivate; ++i) {
-            activationTimes.add((Integer) min(restTime, executionTimePerActivate));
-            restTime -= executionTimePerActivate;
+            int wExecutionTimePerActivate = executionTimePerActivate;
+            int wIdleTimeBetweenActivate = idleTimeBetweenActivate;
+            if (i >= interactiveExecuteTime % numOfTimesToActivate) {
+                --wExecutionTimePerActivate;
+                --wIdleTimeBetweenActivate;
+            }
+            if (i >= interactiveExecuteTime % numOfTimesBetweenActivate) {
+                --wIdleTimeBetweenActivate;
+            }
+            
+//            activationTimes.add((Integer) min(restTime, executionTimePerActivate));
+            activationTimes.add((Integer) wExecutionTimePerActivate);
+//            restTime -= executionTimePerActivate;
             if (i == numOfTimesToActivate-1) break;
-            idleTimes.add((Integer) idleTimeBetweenActivate);
+//            idleTimes.add((Integer) min(restIdleTime, idleTimeBetweenActivate));
+            idleTimes.add((Integer) wIdleTimeBetweenActivate);
+//            restIdleTime -= idleTimeBetweenActivate;
         }
         assert activationTimes.size() == idleTimes.size() + 1;
         
