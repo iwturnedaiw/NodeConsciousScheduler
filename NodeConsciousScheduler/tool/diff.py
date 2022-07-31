@@ -3,7 +3,7 @@ import csv
 import re
 import sys
 
-COL_NUM_NODENUM=13
+COL_NUM_NODENUM=16
 
 def file_open(file_name):
     
