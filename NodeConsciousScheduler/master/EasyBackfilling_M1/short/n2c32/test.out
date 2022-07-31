@@ -1,2 +1,2 @@
-JobID	userId	groupId	arrivalTime	waitTime	startTime	finishedTime	runnningTime	slowdown	slowdownOC	specifiedRequiredTime	num cores	num nodes	node num(tcore num)
-2	97	-1	99	0	99	199	100	1.0	1.0	200	20	2	0(0,1,2,3,4,5,6,7,8,9)	1(0,1,2,3,4,5,6,7,8,9)	
+JobID	userId	groupId	arrivalTime	waitTime	startTime	finishedTime	originalRunningTime	runnningTime	cpuTimePerCore	slowdown	slowdownOC	specifiedRequiredTime	queueNum	numCores	numNodes	nodeNum(tcoreNum)
+2	97	-1	99	0	99	199	100	100	100.0	1.0	1.0	200	-1	20	2	0(0,1,2,3,4,5,6,7,8,9)	1(0,1,2,3,4,5,6,7,8,9)	

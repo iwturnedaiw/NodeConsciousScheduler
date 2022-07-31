@@ -3,7 +3,7 @@
 LOG=./log/makeMaster_`date +%Y%m%d%H%M`.log
 #CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n1c256 n1c512"
 #CASE="n1c192 n2c64 n4c64 n8c64 n16c64 n1c1024"
-#CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n1c256 n1c512 n1c192 n2c64 n4c64 n8c64 n16c64 n1c1024"
+CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n1c256 n1c512 n1c192 n2c64 n4c64 n8c64 n16c64 n1c1024"
 #CASE="n1c192 n16c64"
 #CASE="n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n1c256 n1c512"
 #CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48"
@@ -11,15 +11,15 @@ LOG=./log/makeMaster_`date +%Y%m%d%H%M`.log
 #CASE="n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n1c256 n1c512 n1c192 n2c64 n4c64 n8c64" #for FCFSOC, M=2. gen02
 #CASE="n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 n1c64 n1c128 n2c64 n4c64 n8c64" #for FCFSOC, M=2. gen03
 #CASE="n8c32 n4c64" #for FCFSOC, M=2. short
-CASE="n8c64"
-#TP="gen01 gen02 gen03 short short1 hpc2n"
-TP="short"
+#CASE="n8c64"
+TP="gen01 gen02 gen03 short short1 hpc2n"
+#TP="short"
 #TP="gen01 hpc2n gen02"
 #TP="gen01 gen02 gen03"
 #TP="gen01"
 #TP="short"
-#M="2 3 4 5 6 7 8"
-M="7"
+M="1 2 3 4 5 6 7 8"
+#M="7"
 #TP="short1"
 #TP="short1"
 DATADIR=./data-set
@@ -28,8 +28,8 @@ MASTER=./master
 TMPBASE=./tmpdir
 FILENAME=./test.out
 #ALGORITHM=EasyBackfilling
-#ALGORITHM="FCFSOC EasyBackfillingOC"
-ALGORITHM="EasyBackfillingOC"
+ALGORITHM="FCFSOC EasyBackfillingOC"
+#ALGORITHM="EasyBackfillingOC"
 #ALGORITHM="FCFSOC"
 #ALGORITHM=EasyBackfillingOC
 #ALGORITHM=FCFSOC
