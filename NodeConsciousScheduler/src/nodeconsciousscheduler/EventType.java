@@ -13,6 +13,6 @@ package nodeconsciousscheduler;
 
 public enum EventType {
     SUBMIT, START, END, DELETE_FROM_BEGINNING, DELETE_FROM_END,
-    INT_ACTIVATE, INT_DEACTIVATE
+    INT_ACTIVATE, INT_DEACTIVATE, DELETE_DEACTIVE
 
 }

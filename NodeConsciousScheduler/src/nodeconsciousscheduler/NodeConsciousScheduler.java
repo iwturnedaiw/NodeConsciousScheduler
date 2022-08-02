@@ -640,15 +640,14 @@ public class NodeConsciousScheduler {
         ArrayList<Integer> idleTimes = new ArrayList();
         
         int restTime = interactiveExecuteTime;
-        int restIdleTime = actualExecuteTime - (prologTime + epilogTime + interactiveExecuteTime);
+        int totalIdleTime = actualExecuteTime - (prologTime + epilogTime + interactiveExecuteTime);
         for(int i = 0; i < numOfTimesToActivate; ++i) {
             int wExecutionTimePerActivate = executionTimePerActivate;
             int wIdleTimeBetweenActivate = idleTimeBetweenActivate;
-            if (i >= interactiveExecuteTime % numOfTimesToActivate) {
+            if (interactiveExecuteTime % numOfTimesToActivate != 0 && i >= interactiveExecuteTime % numOfTimesToActivate) {
                 --wExecutionTimePerActivate;
-                --wIdleTimeBetweenActivate;
             }
-            if (i >= interactiveExecuteTime % numOfTimesBetweenActivate) {
+            if (totalIdleTime % numOfTimesBetweenActivate != 0 && i >= totalIdleTime % numOfTimesBetweenActivate) {
                 --wIdleTimeBetweenActivate;
             }
             

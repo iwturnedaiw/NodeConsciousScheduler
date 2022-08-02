@@ -59,6 +59,7 @@ public class Job implements Comparable<Job> {
     private int currentActivationIndex;
     private double currentAccumulatedComputeQuantityForLatestActivation;
     private int sumIdleTime;
+    private int currentDeactiveTime;
     
 
     Job() {}
@@ -455,4 +456,14 @@ public class Job implements Comparable<Job> {
     public int getSumIdleTime() {
         return sumIdleTime;
     }
+
+    public int getCurrentDeactiveTime() {
+        return currentDeactiveTime;
+    }
+
+    public void setCurrentDeactiveTime(int currentDeactiveTime) {
+        this.currentDeactiveTime = currentDeactiveTime;
+    }
+    
+    
 }

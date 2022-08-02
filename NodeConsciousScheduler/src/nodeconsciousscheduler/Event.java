@@ -120,6 +120,12 @@ public class Event implements Comparable<Event> {
         if (o.eventType == EventType.DELETE_FROM_BEGINNING) {
             return 1;
         }
+        if (this.eventType == EventType.DELETE_DEACTIVE) {
+            return -1;
+        }
+        if (o.eventType == EventType.DELETE_DEACTIVE) {
+            return 1;
+        }
         
         
         return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());

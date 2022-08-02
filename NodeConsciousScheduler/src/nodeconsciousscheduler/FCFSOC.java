@@ -146,7 +146,7 @@ public class FCFSOC extends FCFS {
                         victimJob.getCoexistingJobs().add(opponentJobId);;
 //                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
                         resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel, victimApparentNewOCStateLevel, interJobFlag);
-                        for (Event ev: resultForVictim) {
+                        for (Event ev : resultForVictim) {
                             result.add(ev);
                         }
                         /*
@@ -203,7 +203,7 @@ public class FCFSOC extends FCFS {
                     
                     /* For opponent job */
                     job.setOCStateLevel(OCStateLevelForJob);
-                    int apparentOCStateLevel = calculateVictimNewOCStateLevel(job, job.getRequiredCoresPerNode(), assignNodesNo, true, interJobFlag);
+                    int apparentOCStateLevel = calculateNewOCStateLevel(job, job.getRequiredCoresPerNode(), assignNodesNo, true);
                     job.setApparentOCStateLevel(apparentOCStateLevel);
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForJob;
                     int expectedEndTime = calculateNewExpectedEndTime(startTime, job);

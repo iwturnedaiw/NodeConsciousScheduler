@@ -60,6 +60,8 @@ public class EventQueue extends PriorityQueue {
             evh = new IntActivate();
         } else if (evt == EventType.INT_DEACTIVATE) {
             evh = new IntDeactivate();
+        } else if (evt == EventType.DELETE_DEACTIVE) {
+            evh = new DeleteDeactivate();
         }
         
         assert evh != null;
@@ -121,6 +123,30 @@ public class EventQueue extends PriorityQueue {
         return;
     }
 
+    void deleteDeactiveEvent(Event ev) {
+        Iterator itr = this.iterator();
+        Job job = ev.getJob();
+        int jobId = job.getJobId();
+        int deleteTargetTime = ev.getDeleteTargetTime();
+        int deleteCnt = 0;
+        while(itr.hasNext()) {
+            Event candidateEvent = (Event) itr.next();
+            EventType evt = candidateEvent.getEventType();
+            int occuranceTime = candidateEvent.getOccurrenceTime();
+            Job candidateJob = candidateEvent.getJob();
+            int candidateJobId = candidateJob.getJobId();
+            if (evt == EventType.INT_DEACTIVATE && jobId == candidateJobId && occuranceTime == deleteTargetTime) {                
+                // TODO: if originalEndTime == currentTime, delete the newcomer event
+                // int originalEndTime = candidateEvent.getOccurrenceTime();                                               
+                itr.remove();
+                ++deleteCnt;
+                break;
+            }
+        }
+        assert deleteCnt == 1;
+        return;
+    }
+    
     private void debug() {
         System.out.println("Debug:");
         while(this.size() > 0) {
