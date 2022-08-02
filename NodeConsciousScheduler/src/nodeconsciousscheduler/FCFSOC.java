@@ -203,7 +203,7 @@ public class FCFSOC extends FCFS {
                     
                     /* For opponent job */
                     job.setOCStateLevel(OCStateLevelForJob);
-                    int apparentOCStateLevel = calculateNewOCStateLevel(job, job.getRequiredCoresPerNode(), assignNodesNo, true);
+                    int apparentOCStateLevel = calculateNewOCStateLevelForNewJob(job, job.getRequiredCoresPerNode(), assignNodesNo, true);
                     job.setApparentOCStateLevel(apparentOCStateLevel);
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForJob;
                     int expectedEndTime = calculateNewExpectedEndTime(startTime, job);

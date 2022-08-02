@@ -1761,9 +1761,15 @@ public abstract class Scheduler {
                     OCStateLevelOnTheCore -= numIntJob;
                 }
                 assert OCStateLevelOnTheCore <= currentOCStateLevel;
-                if (!calculateApparentOCStateLevel && !opponentInteractiveJobFlag) {
+                if (calculateApparentOCStateLevel) {
+                    if (opponentInteractiveJobFlag) {
+                        ;;;
+                    } else {
+                        ++OCStateLevelOnTheCore;                        
+                    }
+                } else {
                     ++OCStateLevelOnTheCore;
-                }
+                } 
                 OCStateLevelAlongCores = max(OCStateLevelAlongCores, OCStateLevelOnTheCore);
             }
             OCStateLevelAlongNodes = max(OCStateLevelAlongNodes, OCStateLevelAlongCores);
@@ -1772,7 +1778,7 @@ public abstract class Scheduler {
         return OCStateLevelAlongNodes;
     }
 
-    static int calculateNewOCStateLevel(Job job, int requiredCoresPerNode, ArrayList<Integer> assignNodesNo, boolean calculateApparentOCStateLevel) {
+    static int calculateNewOCStateLevelForNewJob(Job job, int requiredCoresPerNode, ArrayList<Integer> assignNodesNo, boolean calculateApparentOCStateLevel) {
         int newOCStateLevel = UNUPDATED;
         
         int currentOCStateLevel = job.getOCStateLevel();
@@ -1818,9 +1824,94 @@ public abstract class Scheduler {
                     OCStateLevelOnTheCore = max(1, OCStateLevelOnTheCore);
                 }
                 assert OCStateLevelOnTheCore <= currentOCStateLevel;
-                if (!calculateApparentOCStateLevel && !opponentInteractiveJobFlag) {
+                if (calculateApparentOCStateLevel) {
+                    if (opponentInteractiveJobFlag) {
+                        ;;
+                    } else {
+                        ++OCStateLevelOnTheCore;                        
+                    }
+                } else {
                     ++OCStateLevelOnTheCore;
                 }
+                OCStateLevelAlongCores = max(OCStateLevelAlongCores, OCStateLevelOnTheCore);
+            }
+            OCStateLevelAlongNodes = max(OCStateLevelAlongNodes, OCStateLevelAlongCores);
+        }
+        
+        return OCStateLevelAlongNodes;
+    }
+
+    static int calculateNewOCStateLevelForExecutingJob(Job job, boolean calculateApparentOCStateLevel) {
+        int newOCStateLevel = UNUPDATED;
+        
+        int currentOCStateLevel = job.getOCStateLevel();
+        
+        ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
+        
+        int victimJobId = job.getJobId();
+        boolean opponentInteractiveJobFlag = job.isInteracitveJob();
+        
+        ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
+        int requiredCoresPerNode = job.getRequiredCoresPerNode();
+        
+        // 1. Check the all assignNodes
+        int OCStateLevelAlongNodes = UNUPDATED;
+        for (UsingNode usingNode: usingNodesList) {            
+            int nodeId = usingNode.getNodeNum();
+            NodeInfo node = allNodeInfo.get(nodeId);
+            assert nodeId == node.getNodeNum();
+             
+
+            // Check the least requiredCoresPerNode CoreInfos
+            int OCStateLevelAlongCores = UNUPDATED;
+            ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
+            ArrayList<Integer> usingCoreNum = usingNode.getUsingCoreNum();
+            ArrayList<CoreInfo> usingCoreInfo = new ArrayList();
+            
+            for (int idx = 0; idx < occupiedCores.size(); ++idx) {
+                CoreInfo coreInfo = occupiedCores.get(idx);
+                int coreId = coreInfo.getCoreId();
+                if (usingCoreNum.contains(coreId)) {
+                    usingCoreInfo.add(coreInfo);
+                }
+            }
+
+            // debug
+            printOccupiedCores(nodeId, usingCoreInfo);
+            
+            assert usingCoreInfo.size() == requiredCoresPerNode;
+            
+            for (int j = 0; j < requiredCoresPerNode; ++j) {
+                CoreInfo coreInfo = usingCoreInfo.get(j);
+                
+                
+                ArrayList<Integer> jobList = coreInfo.getJobList();
+                int OCStateLevelOnTheCore = jobList.size();
+                if (calculateApparentOCStateLevel) {
+                    int numIntJob = 0;
+                    for (int k = 0; k < jobList.size(); ++k) {
+                        Job vjob = getJobByJobId(jobList.get(k));
+                        boolean intFlag = vjob.isInteracitveJob();
+                        boolean actFlag = vjob.isActivationState();
+                        if (intFlag && !actFlag) {
+                            ++numIntJob;
+                        }
+                    }
+                    OCStateLevelOnTheCore -= numIntJob;
+                    OCStateLevelOnTheCore = max(1, OCStateLevelOnTheCore);
+                }
+                assert OCStateLevelOnTheCore <= currentOCStateLevel;
+                /*
+                if (calculateApparentOCStateLevel) {
+                    if (opponentInteractiveJobFlag) {
+                        ;;
+                    } else {
+                        ++OCStateLevelOnTheCore;                        
+                    }
+                } else {
+                    ++OCStateLevelOnTheCore;
+                }
+                */
                 OCStateLevelAlongCores = max(OCStateLevelAlongCores, OCStateLevelOnTheCore);
             }
             OCStateLevelAlongNodes = max(OCStateLevelAlongNodes, OCStateLevelAlongCores);
@@ -1883,13 +1974,19 @@ public abstract class Scheduler {
         // debug
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
-        coexistingJob.setOCStateLevel(OCStateLevel);
         Set<Integer> coexistingCoexistingJobs = coexistingJob.getCoexistingJobs();
         double ratio = coexistingJob.getCurrentRatio();
         if (endFlag) {
             coexistingCoexistingJobs.remove(endingJobId);
             ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingCoexistingJobs);
+            ArrayList<Integer> nodeList = new ArrayList();
+            for (UsingNode usingNode: coexistingJob.getUsingNodesList()) {
+                nodeList.add(usingNode.getNodeNum());
+            }
+            int apparentOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
+            coexistingJob.setApparentOCStateLevel(apparentOCStateLevel);
         }
+        coexistingJob.setOCStateLevel(OCStateLevel);
         coexistingJob.setCurrentRatio(ratio);
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
         coexistingCoexistingJobs.add(endingJobId);
