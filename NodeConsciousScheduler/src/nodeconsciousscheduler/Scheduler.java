@@ -1729,6 +1729,7 @@ public abstract class Scheduler {
         int newOCStateLevel = UNUPDATED;
         
         int currentOCStateLevel = victimJob.getOCStateLevel();
+        int currentApparentOCStateLevel = victimJob.getApparentOCStateLevel();
         
         ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
         
@@ -1788,8 +1789,13 @@ public abstract class Scheduler {
             }
             OCStateLevelAlongNodes = max(OCStateLevelAlongNodes, OCStateLevelAlongCores);
         }
-        
-        return OCStateLevelAlongNodes;
+        if (calculateApparentOCStateLevel) {
+            newOCStateLevel = max(currentApparentOCStateLevel, OCStateLevelAlongNodes);
+        } else {
+            newOCStateLevel = max(currentOCStateLevel, OCStateLevelAlongNodes);
+        }
+
+        return newOCStateLevel;
     }
 
     static int calculateNewOCStateLevelForNewJob(Job job, int requiredCoresPerNode, ArrayList<Integer> assignNodesNo, boolean calculateApparentOCStateLevel) {
