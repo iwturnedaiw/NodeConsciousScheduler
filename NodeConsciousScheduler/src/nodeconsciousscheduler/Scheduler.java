@@ -1841,7 +1841,6 @@ public abstract class Scheduler {
                         }
                     }
                     OCStateLevelOnTheCore -= numIntJob;
-                    OCStateLevelOnTheCore = max(1, OCStateLevelOnTheCore);
                 }
                 assert OCStateLevelOnTheCore <= currentOCStateLevel;
                 if (calculateApparentOCStateLevel) {
@@ -1853,6 +1852,7 @@ public abstract class Scheduler {
                 } else {
                     ++OCStateLevelOnTheCore;
                 }
+                OCStateLevelOnTheCore = max(1, OCStateLevelOnTheCore);
                 OCStateLevelAlongCores = max(OCStateLevelAlongCores, OCStateLevelOnTheCore);
             }
             OCStateLevelAlongNodes = max(OCStateLevelAlongNodes, OCStateLevelAlongCores);
