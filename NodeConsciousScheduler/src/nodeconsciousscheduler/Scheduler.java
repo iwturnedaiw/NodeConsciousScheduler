@@ -1138,7 +1138,12 @@ public abstract class Scheduler {
         assert coexistingStartTime <= currentTime;
 
         //  1-1. Measure the executing time at current time for each victim jobs.
-        measureCurrentExecutingTime(currentTime, coexistingJob);
+        boolean interactiveJob = coexistingJob.isInteracitveJob();
+        if (!interactiveJob) {
+            measureCurrentExecutingTime(currentTime, coexistingJob);
+        } else {
+            measureCurrentExecutingTimeForActivation(currentTime, coexistingJob, coexistingJob.getApparentOCStateLevel());
+        }
         coexistingJob.setPreviousMeasuredTime(currentTime);
 
         //  1-2. Calculate new trueEndTime
@@ -1148,6 +1153,8 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
         coexistingJob.setOCStateLevel(OCStateLevel);
+        int apparentOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
+        coexistingJob.setApparentOCStateLevel(apparentOCStateLevel);
         double ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingJob.getCoexistingJobs());
         coexistingJob.setCurrentRatio(ratio);
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
@@ -1156,7 +1163,7 @@ public abstract class Scheduler {
         //  1-3. Rethrow the END event set the time
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
-        if (currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+        if (currentTime != trueEndTime && currentTime != oldTrueEndTime && trueEndTime != oldTrueEndTime ){
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
             coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);
@@ -1472,7 +1479,12 @@ public abstract class Scheduler {
         assert (victimStartTime >= 0 && victimStartTime <= currentTime) || victimStartTime == UNSTARTED;
 
         /*  1-1. Measure the executing time at current time for each victim jobs. */
-        measureCurrentExecutingTime(currentTime, victimJob);
+        boolean interactiveJob = victimJob.isInteracitveJob();
+        if (!interactiveJob) {
+            measureCurrentExecutingTime(currentTime, victimJob);
+        } else {
+            measureCurrentExecutingTimeForActivation(currentTime, victimJob, victimJob.getApparentOCStateLevel());
+        }
         victimJob.setPreviousMeasuredTime(currentTime);
 
         /*  1-2. Calculate new trueEndTime */
