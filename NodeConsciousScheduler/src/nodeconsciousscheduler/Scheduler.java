@@ -1495,6 +1495,8 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);
+        int apparentOCStateLevel = calculateNewOCStateLevelForExecutingJob(victimJob, true);
+        victimJob.setApparentOCStateLevel(apparentOCStateLevel);
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         //assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime+1) || (!OCStateLevelIncreasingflag && oldTrueEndTime >= trueEndTime);
         victimJob.setOCStateLevel(currentOCStateLevel);
