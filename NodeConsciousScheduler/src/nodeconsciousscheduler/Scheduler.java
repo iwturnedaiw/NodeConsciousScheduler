@@ -1906,11 +1906,13 @@ public abstract class Scheduler {
                 
                 
                 ArrayList<Integer> jobList = coreInfo.getJobList();
+                assert jobList.contains(victimJobId);
                 int OCStateLevelOnTheCore = jobList.size();
                 if (calculateApparentOCStateLevel) {
                     int numIntJob = 0;
                     for (int k = 0; k < jobList.size(); ++k) {
-                        Job vjob = getJobByJobId(jobList.get(k));
+                        int ji = jobList.get(k);
+                        Job vjob = getJobByJobId(ji);
                         boolean intFlag = vjob.isInteracitveJob();
                         boolean actFlag = vjob.isActivationState();
                         if (intFlag && !actFlag) {

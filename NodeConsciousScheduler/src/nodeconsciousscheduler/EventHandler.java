@@ -155,6 +155,7 @@ class IntActivate implements EventHandler {
         
         int OCStateLevel = job.getOCStateLevel();
         Set<Integer> coexistingJobs = job.getCoexistingJobs();
+        System.out.println("\tActivate jobId: " + jobId + ", victim jobId: " + coexistingJobs);
         for (int coexistingJobId: coexistingJobs) {
             Job coexistingJob = Scheduler.getJobByJobId(coexistingJobId);           
             boolean intJobFlag = coexistingJob.isInteracitveJob();
@@ -165,7 +166,12 @@ class IntActivate implements EventHandler {
                 Scheduler.measureCurrentExecutingTimeForActivation(currentTime, coexistingJob, coexistingJob.getApparentOCStateLevel());
             }
             coexistingJob.setPreviousMeasuredTime(currentTime);
-
+        }
+        job.setActivationState(!activationState);
+        for (int coexistingJobId: coexistingJobs) {
+            Job coexistingJob = Scheduler.getJobByJobId(coexistingJobId);           
+            boolean intJobFlag = coexistingJob.isInteracitveJob();
+            boolean actStateFlag = coexistingJob.isActivationState();
 
             int coexistingApparentOCStateLevel = coexistingJob.getApparentOCStateLevel();
             int newCoexistingApparnteOCStateLevel = Scheduler.calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
@@ -195,8 +201,7 @@ class IntActivate implements EventHandler {
                     evs.add(new Event(EventType.INT_DEACTIVATE, deactivateTime, coexistingJob));
                 }
             }
-        }
-        job.setActivationState(!activationState);
+        }        
         
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
         ArrayList<Integer> assignNodesNo = calculateAssignNodesNo(usingNodesList);
@@ -247,6 +252,7 @@ class IntDeactivate implements EventHandler {
         assert activationState;
 
         Set<Integer> coexistingJobs = job.getCoexistingJobs();
+        System.out.println("\tDeactivate jobId: " + jobId + ", victim jobId: " + coexistingJobs);
         for (int coexistingJobId: coexistingJobs) {
             Job coexistingJob = Scheduler.getJobByJobId(coexistingJobId);
 
@@ -266,7 +272,7 @@ class IntDeactivate implements EventHandler {
             int coexistingOCStateLevel = coexistingJob.getOCStateLevel();
 
             int newCoexistingApparentOCStateLevel = Scheduler.calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
-            assert coexistingApparentOCStateLevel <= newCoexistingApparentOCStateLevel;
+            assert newCoexistingApparentOCStateLevel <= coexistingApparentOCStateLevel;
             assert coexistingApparentOCStateLevel <= coexistingOCStateLevel;
             coexistingJob.setApparentOCStateLevel(newCoexistingApparentOCStateLevel);
             
@@ -305,6 +311,15 @@ class IntDeactivate implements EventHandler {
         job.setCurrentAccumulatedComputeQuantityForLatestActivation(currentAccumulatedComputeQuantityForLatestActivation);
         job.setPreviousMeasuredTime(currentTime);
 
+        job.setActivationState(!activationState);
+
+        int OCStateLevel = job.getOCStateLevel();
+        int apparentOCStateLevel = job.getApparentOCStateLevel();
+        int newApparentOCStateLevel = Scheduler.calculateNewOCStateLevelForExecutingJob(job, true);
+        assert newApparentOCStateLevel <= apparentOCStateLevel;
+        assert newApparentOCStateLevel <= OCStateLevel;
+        job.setApparentOCStateLevel(newApparentOCStateLevel);
+        
         int currentActivationIndex = job.getCurrentActivationIndex();
         ArrayList<Integer> activationTimes = job.getActivationTimes();
         if (currentActivationIndex == activationTimes.size()-1) {
@@ -324,7 +339,6 @@ class IntDeactivate implements EventHandler {
             job.setCurrentActivationIndex(currentActivationIndex);            
         }
 
-        job.setActivationState(!activationState);
 
         return evs;
     }
