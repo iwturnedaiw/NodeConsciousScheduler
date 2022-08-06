@@ -1160,15 +1160,26 @@ public abstract class Scheduler {
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
 //        assert trueEndTime <= oldTrueEndTime;
 
+        boolean actState = coexistingJob.isActivationState();
         //  1-3. Rethrow the END event set the time
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
-        if (currentTime != trueEndTime && currentTime != oldTrueEndTime && trueEndTime != oldTrueEndTime ){
+        if (!interactiveJob && currentTime != trueEndTime && currentTime != oldTrueEndTime && trueEndTime != oldTrueEndTime ){
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
             coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);
             printThrowENDEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
             result.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
+        } else if (interactiveJob && actState) {
+            int oldDeactivateTime = coexistingJob.getCurrentDeactiveTime();
+            int deactivateTime = Scheduler.calculateNewActualEndTimeForActivation(currentTime, coexistingJob);
+            if (oldDeactivateTime < deactivateTime) {
+                printThrowDeactivateEvent(currentTime, deactivateTime, coexistingJob, EventType.DELETE_DEACTIVE, 1);
+                result.add(new Event(EventType.DELETE_DEACTIVE, currentTime, coexistingJob, oldDeactivateTime));
+                coexistingJob.setCurrentDeactiveTime(deactivateTime);
+                printThrowDeactivateEvent(currentTime, deactivateTime, coexistingJob, EventType.INT_DEACTIVATE, 1);
+                result.add(new Event(EventType.INT_DEACTIVATE, currentTime, coexistingJob));
+            }            
         }
     }
     /* This method return the exepeceted end time. */
@@ -1874,6 +1885,7 @@ public abstract class Scheduler {
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
         int requiredCoresPerNode = job.getRequiredCoresPerNode();
         
+        System.out.println("\tJobId: " + victimJobId);
         // 1. Check the all assignNodes
         int OCStateLevelAlongNodes = UNUPDATED;
         for (UsingNode usingNode: usingNodesList) {            
@@ -1897,7 +1909,7 @@ public abstract class Scheduler {
             }
 
             // debug
-            printOccupiedCores(nodeId, usingCoreInfo);
+            printOccupiedCores(nodeId, usingCoreInfo, 2);
             
             assert usingCoreInfo.size() == requiredCoresPerNode;
             
@@ -1955,6 +1967,14 @@ public abstract class Scheduler {
         System.out.println("");
     }
 
+    static void printOccupiedCores(int nodeId, ArrayList<CoreInfo> occupiedCores, int tubnum) {
+        for (int i = 0; i < tubnum; ++i) {
+            System.out.print("\t");            
+        }
+        printOccupiedCores(nodeId, occupiedCores);
+
+    }    
+    
     private void outputResultForVis(Job migratingJob, int currentTime) {
         NodeConsciousScheduler.sim.outputResultForVis(migratingJob, currentTime);
     }

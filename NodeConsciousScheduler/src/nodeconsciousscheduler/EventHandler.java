@@ -203,14 +203,14 @@ class IntActivate implements EventHandler {
             }
         }        
         
-        ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
-        ArrayList<Integer> assignNodesNo = calculateAssignNodesNo(usingNodesList);
-        /* TODO: This call is inappropriate. The name must be chanced. */
-        int apparentOCStateLevel = Scheduler.calculateVictimNewOCStateLevel(job, job.getRequiredCoresPerNode(), assignNodesNo, true, interactiveJob);
+        int apparentOCStateLevel = job.getApparentOCStateLevel();
+        int newApparentOCStateLevel = Scheduler.calculateNewOCStateLevelForExecutingJob(job, true);
         // TODO: acc_int
         // calc coming int_deactivate
         // throw
-        job.setApparentOCStateLevel(apparentOCStateLevel);
+        assert apparentOCStateLevel <= newApparentOCStateLevel;
+        assert newApparentOCStateLevel <= OCStateLevel;
+        job.setApparentOCStateLevel(newApparentOCStateLevel);
         int deactivateTime = Scheduler.calculateNewActualEndTimeForActivation(currentTime, job);
         
 
@@ -306,7 +306,8 @@ class IntDeactivate implements EventHandler {
 
         Scheduler.measureCurrentExecutingTimeForActivation(currentTime, job, job.getOccupiedTimeInTimeSlices());
         double currentAccumulatedComputeQuantityForLatestActivation = job.getCurrentAccumulatedComputeQuantityForLatestActivation();
-        assert job.getCurrentRequiredActivationTime() <= currentAccumulatedComputeQuantityForLatestActivation;
+        // Avoiding Precision problem: + 1e-8
+        assert job.getCurrentRequiredActivationTime() <= currentAccumulatedComputeQuantityForLatestActivation + 1e-8;
         currentAccumulatedComputeQuantityForLatestActivation = 0.0;
         job.setCurrentAccumulatedComputeQuantityForLatestActivation(currentAccumulatedComputeQuantityForLatestActivation);
         job.setPreviousMeasuredTime(currentTime);
@@ -332,7 +333,7 @@ class IntDeactivate implements EventHandler {
             int idleTime = job.getIdleTimes().get(currentActivationIndex);
             int activateTime = currentTime + idleTime;
 
-            printThrowActivateEvent(currentTime,activateTime, job, EventType.INT_ACTIVATE, jobId);
+            printThrowActivateEvent(currentTime,activateTime, job, EventType.INT_ACTIVATE, 1);
             evs.add(new Event(EventType.INT_ACTIVATE, activateTime, job));
 
             ++currentActivationIndex;
