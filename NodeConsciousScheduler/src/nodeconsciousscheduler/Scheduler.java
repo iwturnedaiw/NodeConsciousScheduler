@@ -1178,7 +1178,7 @@ public abstract class Scheduler {
                 result.add(new Event(EventType.DELETE_DEACTIVE, currentTime, coexistingJob, oldDeactivateTime));
                 coexistingJob.setCurrentDeactiveTime(deactivateTime);
                 printThrowDeactivateEvent(currentTime, deactivateTime, coexistingJob, EventType.INT_DEACTIVATE, 1);
-                result.add(new Event(EventType.INT_DEACTIVATE, currentTime, coexistingJob));
+                result.add(new Event(EventType.INT_DEACTIVATE, deactivateTime, coexistingJob));
             }            
         }
     }
@@ -1426,11 +1426,13 @@ public abstract class Scheduler {
             } else if (interactiveJob && activationState) {
                 int oldDeactivateTime = victimJob.getCurrentDeactiveTime();
                 int deactivateTime = calculateNewActualEndTimeForActivation(currentTime, victimJob);
-                printThrowDeactivateEvent(currentTime, deactivateTime, victimJob, EventType.DELETE_DEACTIVE, 1);
-                result.add(new Event(EventType.DELETE_DEACTIVE, currentTime, victimJob, oldDeactivateTime));
-                victimJob.setCurrentDeactiveTime(deactivateTime);
-                printThrowDeactivateEvent(currentTime, deactivateTime, victimJob, EventType.INT_DEACTIVATE, 1);
-                result.add(new Event(EventType.INT_DEACTIVATE, currentTime, victimJob));
+                if (oldDeactivateTime != deactivateTime) {
+                    printThrowDeactivateEvent(currentTime, deactivateTime, victimJob, EventType.DELETE_DEACTIVE, 1);
+                    result.add(new Event(EventType.DELETE_DEACTIVE, currentTime, victimJob, oldDeactivateTime));
+                    victimJob.setCurrentDeactiveTime(deactivateTime);
+                    printThrowDeactivateEvent(currentTime, deactivateTime, victimJob, EventType.INT_DEACTIVATE, 1);
+                    result.add(new Event(EventType.INT_DEACTIVATE, deactivateTime, victimJob));
+                }
             }
         }
         return result;
@@ -1511,15 +1513,26 @@ public abstract class Scheduler {
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         //assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime+1) || (!OCStateLevelIncreasingflag && oldTrueEndTime >= trueEndTime);
         victimJob.setOCStateLevel(currentOCStateLevel);
-        
+
+        boolean actIntFlag = victimJob.isActivationState();
         /*  1-3. Rethrow the END event set the time */
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
-        if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
+        if (!interactiveJob && currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, victimJob));
             victimJob.setEndEventOccuranceTimeNow(trueEndTime);
             printThrowENDEvent(currentTime, trueEndTime, victimJob, EventType.DELETE_FROM_BEGINNING);
             result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
+        } else if (interactiveJob && actIntFlag) {
+            int oldDeactivateTime = victimJob.getCurrentDeactiveTime();
+            int deactivateTime = calculateNewActualEndTimeForActivation(currentTime, victimJob);
+            if (oldDeactivateTime != deactivateTime) {
+                printThrowDeactivateEvent(currentTime, deactivateTime, victimJob, EventType.DELETE_DEACTIVE, 1);
+                result.add(new Event(EventType.DELETE_DEACTIVE, currentTime, victimJob, oldDeactivateTime));
+                victimJob.setCurrentDeactiveTime(deactivateTime);
+                printThrowDeactivateEvent(currentTime, deactivateTime, victimJob, EventType.INT_DEACTIVATE, 1);
+                result.add(new Event(EventType.INT_DEACTIVATE, deactivateTime, victimJob));
+            }
         }
         return result;
     }
@@ -2048,12 +2061,12 @@ public abstract class Scheduler {
         } else if (interactiveJobs && actStateFlag) {
             int oldDeactivateTime = coexistingJob.getCurrentDeactiveTime();
             int deactivateTime = Scheduler.calculateNewActualEndTimeForActivation(currentTime, coexistingJob);
-            if (oldDeactivateTime < deactivateTime) {
+            if (oldDeactivateTime != deactivateTime) {
                 printThrowDeactivateEvent(currentTime, deactivateTime, coexistingJob, EventType.DELETE_DEACTIVE, 1);
                 result.add(new Event(EventType.DELETE_DEACTIVE, currentTime, coexistingJob, oldDeactivateTime));
                 coexistingJob.setCurrentDeactiveTime(deactivateTime);
                 printThrowDeactivateEvent(currentTime, deactivateTime, coexistingJob, EventType.INT_DEACTIVATE, 1);
-                result.add(new Event(EventType.INT_DEACTIVATE, currentTime, coexistingJob));
+                result.add(new Event(EventType.INT_DEACTIVATE, deactivateTime, coexistingJob));
             }            
         }
     }
