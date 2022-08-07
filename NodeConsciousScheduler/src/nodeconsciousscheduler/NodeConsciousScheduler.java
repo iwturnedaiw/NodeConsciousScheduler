@@ -615,6 +615,7 @@ public class NodeConsciousScheduler {
             idleTimeBetweenActivate = (actualExecuteTime - prologTime - epilogTime - interactiveExecuteTime + numOfTimesBetweenActivate - 1) / numOfTimesBetweenActivate;
         } else {
             idleTimeBetweenActivate = 0;
+            epilogTime = actualExecuteTime - prologTime - interactiveExecuteTime;
         }
 
         int sumTime = prologTime + epilogTime + interactiveExecuteTime + idleTimeBetweenActivate * numOfTimesBetweenActivate;
@@ -643,12 +644,8 @@ public class NodeConsciousScheduler {
         int totalIdleTime = actualExecuteTime - (prologTime + epilogTime + interactiveExecuteTime);
         for(int i = 0; i < numOfTimesToActivate; ++i) {
             int wExecutionTimePerActivate = executionTimePerActivate;
-            int wIdleTimeBetweenActivate = idleTimeBetweenActivate;
             if (interactiveExecuteTime % numOfTimesToActivate != 0 && i >= interactiveExecuteTime % numOfTimesToActivate) {
                 --wExecutionTimePerActivate;
-            }
-            if (totalIdleTime % numOfTimesBetweenActivate != 0 && i >= totalIdleTime % numOfTimesBetweenActivate) {
-                --wIdleTimeBetweenActivate;
             }
             
 //            activationTimes.add((Integer) min(restTime, executionTimePerActivate));
@@ -656,6 +653,10 @@ public class NodeConsciousScheduler {
 //            restTime -= executionTimePerActivate;
             if (i == numOfTimesToActivate-1) break;
 //            idleTimes.add((Integer) min(restIdleTime, idleTimeBetweenActivate));
+            int wIdleTimeBetweenActivate = idleTimeBetweenActivate;
+            if (totalIdleTime % numOfTimesBetweenActivate != 0 && i >= totalIdleTime % numOfTimesBetweenActivate) {
+                --wIdleTimeBetweenActivate;
+            }
             idleTimes.add((Integer) wIdleTimeBetweenActivate);
 //            restIdleTime -= idleTimeBetweenActivate;
         }
