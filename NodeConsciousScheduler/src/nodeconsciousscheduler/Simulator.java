@@ -265,6 +265,10 @@ public class Simulator {
         int startTime = job.getStartTime();
         int finishedTime = job.getFinishedTime();
         int runningTime = job.getRunningTimeDed() + job.getRunningTimeOC();
+        boolean interactiveJob = job.isInteracitveJob();
+        if (interactiveJob) {
+            runningTime += job.getPrologTime() + job.getSumIdleTime() + job.getEpilogTIme();            
+        }
         double slowdown = max(1.0, (double) (waitTime + runningTime) /runningTime);
         job.setSlowdown(slowdown);
         int originalRunningTime = job.getActualExecuteTime();
