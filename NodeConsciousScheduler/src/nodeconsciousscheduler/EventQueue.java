@@ -140,6 +140,7 @@ public class EventQueue extends PriorityQueue {
             EventType evt = candidateEvent.getEventType();
             int occuranceTime = candidateEvent.getOccurrenceTime();
             Job candidateJob = candidateEvent.getJob();
+            if (candidateJob == null) continue;
             int candidateJobId = candidateJob.getJobId();
             if (evt == EventType.INT_DEACTIVATE && jobId == candidateJobId && occuranceTime == deleteTargetTime) {                
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
