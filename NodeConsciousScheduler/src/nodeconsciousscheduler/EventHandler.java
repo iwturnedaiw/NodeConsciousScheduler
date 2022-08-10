@@ -10,6 +10,12 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.Constants.DAY_IN_SECOND;
+import static nodeconsciousscheduler.Constants.HOUR_IN_SECOND;
+import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
+import static nodeconsciousscheduler.Constants.START_TIME;
+import nodeconsciousscheduler.Constants.TimeDesc;
+import static nodeconsciousscheduler.Constants.UNUPDATED;
 
 /**
  *
@@ -183,6 +189,34 @@ class DeleteFromEnd implements EventHandler {
         
         
         NodeConsciousScheduler.sim.getEvq().deleteEventFromEnd(ev);
+        
+        return new ArrayList<Event>();
+    }
+}
+
+class MeasuringUtilRatio implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
+        
+        ArrayList<Event> evs = new ArrayList<Event>();
+        
+        int currentTime = ev.getOccurrenceTime();
+        TimeDesc timeDesc = ev.getTimeDesc();
+        NodeConsciousScheduler.sim.calculateUtilRatio(currentTime, timeDesc);
+        
+        int threshold = UNUPDATED;
+        if (timeDesc == TimeDesc.MINUTE) {
+            threshold = MINUTE_IN_SECOND;
+        } else if (timeDesc == TimeDesc.HOUR) {
+            threshold = HOUR_IN_SECOND;
+        } else if (timeDesc == TimeDesc.DAY) {
+            threshold = DAY_IN_SECOND;
+        }
+        
+        if ((currentTime == START_TIME) || (currentTime != START_TIME && NodeConsciousScheduler.sim.getCompletedJobList().size() != NodeConsciousScheduler.sim.getJobList().size())) {
+            int nextArrivalTime = currentTime + threshold;
+            NodeConsciousScheduler.sim.getEvq().enqueueMeasuringEvent(nextArrivalTime, timeDesc);
+        }
         
         return new ArrayList<Event>();
     }

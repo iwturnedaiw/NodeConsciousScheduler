@@ -6,6 +6,7 @@
 
 package nodeconsciousscheduler;
 
+import nodeconsciousscheduler.Constants.TimeDesc;
 import static nodeconsciousscheduler.Constants.UNUSED;
 
 
@@ -19,8 +20,12 @@ public class Event implements Comparable<Event> {
     private int occurrenceTime;
     private Job job;
     private int deleteTargetTime = UNUSED;
+    private TimeDesc timeDesc;
     
     
+    Event() {
+        ;
+    }
     Event(EventType eventType, int occurrenceTime, Job job) {
         this.eventType = eventType;
         this.occurrenceTime = occurrenceTime;
@@ -38,6 +43,13 @@ public class Event implements Comparable<Event> {
     Event(int occurrenceTime, Job job) {
         this.occurrenceTime = occurrenceTime;
         this.job = job;
+    }
+
+    Event(int START_TIME, TimeDesc timeDesc) {
+        this.occurrenceTime = START_TIME;
+        this.timeDesc = timeDesc;
+        this.eventType = EventType.MEASURING_UTIL_RATIO;
+        this.job = null;
     }
     
     public void setEventType(EventType eventType) {
@@ -79,10 +91,20 @@ public class Event implements Comparable<Event> {
         }
         if (this.occurrenceTime > o.occurrenceTime) {
             return 1;
+        } 
+        if (this.eventType == EventType.MEASURING_UTIL_RATIO) {
+            return -1;
         }
+        if (o.eventType == EventType.MEASURING_UTIL_RATIO) {
+            return 1;
+        }        
         //if (this.eventType != EventType.END && this.eventType == o.eventType) {
         if (this.eventType == o.eventType) {
-            return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());            
+            Job job1 = this.getJob();
+            Job job2 = o.getJob();
+            if (job1 != null && job2 != null) {
+                return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());            
+            }
         }
         if (this.eventType == EventType.START) {
             return -1;
@@ -130,4 +152,10 @@ public class Event implements Comparable<Event> {
         
         return Integer.compare(this.getJob().getJobId(), o.getJob().getJobId());
     }
+
+    public TimeDesc getTimeDesc() {
+        return timeDesc;
+    }
+    
+    
 }

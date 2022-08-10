@@ -17,6 +17,7 @@ import java.util.Map;
 class SimulatorConfiguration {
     private ArrayList<Double> thresholdForSlowdown = new ArrayList<Double>();
     private boolean outputMinuteTimeseries;
+    private boolean outputUtilizationRatio;
     private boolean scheduleUsingMemory;
     private boolean crammingMemoryScheduling;
     private boolean considerJobMatching;
@@ -40,6 +41,7 @@ class SimulatorConfiguration {
 
     SimulatorConfiguration(String[] thresholdForSlowdown, 
             boolean outputMinuteTimeseries, 
+            boolean outputUtilizationRatio,
             boolean scheduleUsingMemory, 
             boolean crammingMemoryScheduling, 
             boolean considerJobMatching, 
@@ -60,6 +62,7 @@ class SimulatorConfiguration {
             previousValue = value;
         }
         this.outputMinuteTimeseries = outputMinuteTimeseries;
+        this.outputUtilizationRatio = outputUtilizationRatio;
         this.accurateInteractiveJobs = accurateInteractiveJobs;     
         this.interactiveCPURatio = interacitiveCPURatio;
     }
@@ -106,5 +109,9 @@ class SimulatorConfiguration {
 
     public double getInteractiveCPURatio() {
         return interactiveCPURatio;
+    }
+
+    public boolean isOutputUtilizationRatio() {
+        return outputUtilizationRatio;
     }
 }

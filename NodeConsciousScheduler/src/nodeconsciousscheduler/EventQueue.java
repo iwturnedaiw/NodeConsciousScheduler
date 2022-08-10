@@ -12,6 +12,8 @@ import java.util.ListIterator;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.Constants.START_TIME;
+import nodeconsciousscheduler.Constants.TimeDesc;
 
 /**
  *
@@ -62,6 +64,8 @@ public class EventQueue extends PriorityQueue {
             evh = new IntDeactivate();
         } else if (evt == EventType.DELETE_DEACTIVE) {
             evh = new DeleteDeactivate();
+        } else if (evt == EventType.MEASURING_UTIL_RATIO) {
+            evh = new MeasuringUtilRatio();
         }
         
         assert evh != null;
@@ -86,6 +90,7 @@ public class EventQueue extends PriorityQueue {
             EventType evt = candidateEvent.getEventType();            
             int occuranceTime = candidateEvent.getOccurrenceTime();            
             Job candidateJob = candidateEvent.getJob();
+            if (candidateJob == null) continue;
             int candidateJobId = candidateJob.getJobId();
             if (evt == EventType.END && jobId == candidateJobId && occuranceTime == deleteTargetTime) {
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
@@ -110,6 +115,7 @@ public class EventQueue extends PriorityQueue {
             EventType evt = candidateEvent.getEventType();
             int occuranceTime = candidateEvent.getOccurrenceTime();
             Job candidateJob = candidateEvent.getJob();
+            if (candidateJob == null) continue;
             int candidateJobId = candidateJob.getJobId();
             if (evt == EventType.END && jobId == candidateJobId && occuranceTime == deleteTargetTime) {                
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
@@ -168,6 +174,19 @@ public class EventQueue extends PriorityQueue {
             }
         }
     }
+
+    void enqueueMeasuringEvent(int arrivalTime, boolean outputMinuteBoolean) {
+        if (outputMinuteBoolean) {
+            enqueueMeasuringEvent(arrivalTime, TimeDesc.MINUTE);
+        }
+        enqueueMeasuringEvent(arrivalTime, TimeDesc.HOUR);
+        enqueueMeasuringEvent(arrivalTime, TimeDesc.DAY);
+    }
+    void enqueueMeasuringEvent(int arrivalTime, TimeDesc timeDesc) {
+        Event ev = new Event(arrivalTime, timeDesc);
+        this.add(ev);
+    }
+    
 }
 
 

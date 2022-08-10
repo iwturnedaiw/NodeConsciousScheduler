@@ -206,7 +206,7 @@ public class NodeConsciousScheduler {
 //            NodeInfo nodeInfo = new NodeInfo(i, numCores);
             NodeInfo nodeInfo = new NodeInfo(i, numCores, NodeConsciousScheduler.memory);
             nodeInfoList.add(nodeInfo);
-        }            
+        }
 
         return nodeInfoList;
     }
@@ -484,6 +484,7 @@ public class NodeConsciousScheduler {
         NodeConsciousScheduler.ignoreIncompleteMemoryData = Boolean.parseBoolean(configurations.getProperty("IGNORE_INCOMPLETE_MEMORY_DATA"));
         NodeConsciousScheduler.memoryDataPerCore = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_CORE"));
         NodeConsciousScheduler.outputResultsInDetail = Boolean.parseBoolean(configurations.getProperty("OUTPUT_RESULTS_IN_DETAIL"));
+        boolean outputUtilizationRatio = Boolean.parseBoolean(configurations.getProperty("OUTPUT_UTILIZATION_RATIO"));
         NodeConsciousScheduler.memoryDataPerNode = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_NODE"));
         NodeConsciousScheduler.considerMemoryForNodeNum = Boolean.parseBoolean(configurations.getProperty("CONSIDER_MEMORY_FOR_JOB_NODENUM"));
         boolean considerJobMatching = Boolean.parseBoolean(configurations.getProperty("CONSIDER_JOB_MATCHING"));
@@ -495,6 +496,7 @@ public class NodeConsciousScheduler {
         
         return new SimulatorConfiguration(slowdownThresholds, 
                 outputMinuteTimeseries, 
+                outputUtilizationRatio,
                 scheduleUsingMemory, 
                 crammingMemoryScheduling, 
                 considerJobMatching, 
