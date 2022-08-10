@@ -69,7 +69,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                     int trueEndTime = startTime + job.getActualExecuteTime();
                     result.add(new Event(EventType.START, startTime, job));
-                    printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
+                    printThrownEvent(currentTime, trueEndTime, job, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, job));
                     job.setEndEventOccuranceTimeNow(trueEndTime);
                 } else {
@@ -143,7 +143,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         victimJob.setOCStateLevel(OCStateLevelForBackfillJob);
                         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);                        
 
-                        printThrowENDEvent(currentTime, trueEndTime, victimJob);
+                        printThrownEvent(currentTime, trueEndTime, victimJob);
                         result.add(new Event(EventType.END, trueEndTime, victimJob));
                         result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
                         */
@@ -194,7 +194,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     job.setCurrentRatio(calculateMaxDegradationRatioForVictim(job, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
-                    printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
+                    printThrownEvent(currentTime, trueEndTime, job, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, job));          
                     job.setEndEventOccuranceTimeNow(trueEndTime);
                 }
@@ -388,7 +388,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     
                     int trueEndTime = startTime + backfillJob.getActualExecuteTime();
                     result.add(new Event(EventType.START, startTime, backfillJob));
-                    printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
+                    printThrownEvent(currentTime, trueEndTime, backfillJob, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));
                     backfillJob.setEndEventOccuranceTimeNow(trueEndTime);
                 } else {
@@ -455,7 +455,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     backfillJob.setCurrentRatio(calculateMaxDegradationRatioForVictim(backfillJob, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, backfillJob);
                     result.add(new Event(EventType.START, startTime, backfillJob));
-                    printThrowENDEvent(currentTime, trueEndTime, backfillJob, EventType.END);
+                    printThrownEvent(currentTime, trueEndTime, backfillJob, EventType.END);
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));
                     backfillJob.setEndEventOccuranceTimeNow(trueEndTime);
                 }
