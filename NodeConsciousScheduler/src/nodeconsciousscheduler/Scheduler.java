@@ -965,7 +965,7 @@ public abstract class Scheduler {
     }
      
     static void measureCurrentExecutingTime(int currentTime, Job victimJob, int OCStateLevel) {
-        int currentApparentOCStateLevel = victimJob.getApparentOCStateLevel();
+        int currentNetOCStateLevel = victimJob.getNetOCStateLevel();
         int currentOCStateLevel = victimJob.getOCStateLevel();
 
         int startTime = victimJob.getStartTime();
@@ -984,7 +984,7 @@ public abstract class Scheduler {
         double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int realDeltaTime = currentTime - previousMeasuredTime;
         double ratio = victimJob.getCurrentRatio();
-        currentAccumulatedComputeQuantity += (double)realDeltaTime / currentApparentOCStateLevel / ratio;
+        currentAccumulatedComputeQuantity += (double)realDeltaTime / currentNetOCStateLevel / ratio;
         victimJob.setCurrentAccumulatedComputeQuantity(currentAccumulatedComputeQuantity);
         
         double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
@@ -992,7 +992,7 @@ public abstract class Scheduler {
         victimJob.setCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity(currentAccumulatedComputeQuantityOnlyConsiderMultiplicity);
 
         double accumulatedCpuTime = victimJob.getAccumulatedCpuTime();
-        accumulatedCpuTime += (double)(realDeltaTime) / currentApparentOCStateLevel;
+        accumulatedCpuTime += (double)(realDeltaTime) / currentNetOCStateLevel;
         victimJob.setAccumulatedCpuTime(accumulatedCpuTime);
         
         if (OCStateLevel == 1) {
@@ -1017,7 +1017,7 @@ public abstract class Scheduler {
             return;
         }
         
-        int currentApparentOCStateLevel = job.getApparentOCStateLevel();
+        int currentNetOCStateLevel = job.getNetOCStateLevel();
 
         int startTime = job.getStartTime();
         if (startTime == UNSTARTED) {
@@ -1039,7 +1039,7 @@ public abstract class Scheduler {
         double currentAccumulatedComputeQuantityForLatestActivation = job.getCurrentAccumulatedComputeQuantityForLatestActivation();
 
         double ratio = job.getCurrentRatio();
-        currentAccumulatedComputeQuantityForLatestActivation += (double)realDeltaTime / currentApparentOCStateLevel / ratio;
+        currentAccumulatedComputeQuantityForLatestActivation += (double)realDeltaTime / currentNetOCStateLevel / ratio;
         job.setCurrentAccumulatedComputeQuantityForLatestActivation(currentAccumulatedComputeQuantityForLatestActivation);
         
         int currentOCStateLevel = job.getOCStateLevel();
@@ -1048,7 +1048,7 @@ public abstract class Scheduler {
         job.setCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity(currentAccumulatedComputeQuantityOnlyConsiderMultiplicity);
 
         double accumulatedCpuTime = job.getAccumulatedCpuTime();
-        accumulatedCpuTime += (double)(realDeltaTime) / currentApparentOCStateLevel;
+        accumulatedCpuTime += (double)(realDeltaTime) / currentNetOCStateLevel;
         job.setAccumulatedCpuTime(accumulatedCpuTime);
         
         if (OCStateLevel == 1) {
@@ -1083,10 +1083,10 @@ public abstract class Scheduler {
 
     static int calculateNewActualEndTime(int startTime, Job victimJob) {
         /* calculate new actual End Time */
-        int currentApparentOCStateLevel = victimJob.getApparentOCStateLevel(); // This value is after-updated.
+        int currentNetOCStateLevel = victimJob.getNetOCStateLevel(); // This value is after-updated.
         double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int actualExecuteTime = victimJob.getActualExecuteTime();
-        double restActualExecuteTime = (actualExecuteTime - currentAccumulatedComputeQuantity) * currentApparentOCStateLevel;      
+        double restActualExecuteTime = (actualExecuteTime - currentAccumulatedComputeQuantity) * currentNetOCStateLevel;      
         //double ratio = 1.0;
         /*
         if (OCStateLevel >= 2 && NodeConsciousScheduler.sim.isConsiderJobMatching()) {
@@ -1107,15 +1107,15 @@ public abstract class Scheduler {
         assert interactiveJob;
         
         /* calculate new actual End Time */
-        int currentApparentOCStateLevel = job.getApparentOCStateLevel(); // This value is after-updated.
+        int currentNetOCStateLevel = job.getNetOCStateLevel(); // This value is after-updated.
 
         int currentActivationIndex = job.getCurrentActivationIndex();
         double currentAccumulatedComputeQuantityForLatestActivation = job.getCurrentAccumulatedComputeQuantityForLatestActivation();
         int actualExecuteTimeForLatestActivation = job.getActivationTimes().get(currentActivationIndex);
-        double restActualExecuteTimeForLastestActivation = (actualExecuteTimeForLatestActivation - currentAccumulatedComputeQuantityForLatestActivation) * currentApparentOCStateLevel;
+        double restActualExecuteTimeForLastestActivation = (actualExecuteTimeForLatestActivation - currentAccumulatedComputeQuantityForLatestActivation) * currentNetOCStateLevel;
         
         // TODO: This is not accurate
-        // Must calculate the accurate ratio when calculating apparentOCStateLevel
+        // Must calculate the accurate ratio when calculating netOCStateLevel
         double ratio = job.getCurrentRatio();
         restActualExecuteTimeForLastestActivation *= ratio;
         double deactivateTime = startTime + restActualExecuteTimeForLastestActivation;
@@ -1153,7 +1153,7 @@ public abstract class Scheduler {
         if (!interactiveJob) {
             measureCurrentExecutingTime(currentTime, coexistingJob);
         } else {
-            measureCurrentExecutingTimeForActivation(currentTime, coexistingJob, coexistingJob.getApparentOCStateLevel());
+            measureCurrentExecutingTimeForActivation(currentTime, coexistingJob, coexistingJob.getNetOCStateLevel());
         }
         coexistingJob.setPreviousMeasuredTime(currentTime);
 
@@ -1164,8 +1164,8 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
         coexistingJob.setOCStateLevel(OCStateLevel);
-        int apparentOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
-        coexistingJob.setApparentOCStateLevel(apparentOCStateLevel);
+        int netOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
+        coexistingJob.setNetOCStateLevel(netOCStateLevel);
         double ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingJob.getCoexistingJobs());
         coexistingJob.setCurrentRatio(ratio);
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
@@ -1194,7 +1194,7 @@ public abstract class Scheduler {
         }
     }
     /* This method return the exepeceted end time. */
-    /* Using only OCStateLevel, not considering apparentOCStateLevel */
+    /* Using only OCStateLevel, not considering netOCStateLevel */
     protected int calculateNewExpectedEndTime(int currentTime, Job victimJob) {
         int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
         double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
@@ -1344,7 +1344,7 @@ public abstract class Scheduler {
         return modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevel, OCStateLevel);
     }
     
-    protected ArrayList<Event> modifyTheENDEventTimeForTheJobByJobId(int currentTime, int victimJobId, int OCStateLevel, int apparentOCStateLevel) {
+    protected ArrayList<Event> modifyTheENDEventTimeForTheJobByJobId(int currentTime, int victimJobId, int OCStateLevel, int netOCStateLevel) {
         ArrayList<Event> result = new ArrayList<Event>();
 
         /* 1. Modify the victim job's end time in event queue */
@@ -1363,7 +1363,7 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);
-        victimJob.setApparentOCStateLevel(apparentOCStateLevel);
+        victimJob.setNetOCStateLevel(netOCStateLevel);
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         assert oldTrueEndTime <= trueEndTime;
         victimJob.setOCStateLevel(currentOCStateLevel);
@@ -1385,7 +1385,7 @@ public abstract class Scheduler {
         return modifyTheENDEventTimeForTheJob(currentTime, victimJob, OCStateLevel, OCStateLevel, false);
     }
     
-    protected ArrayList<Event> modifyTheENDEventTimeForTheJob(int currentTime, Job victimJob, int OCStateLevel, int apparentOCStateLevel, boolean opponentInteractiveJobFlag) {
+    protected ArrayList<Event> modifyTheENDEventTimeForTheJob(int currentTime, Job victimJob, int OCStateLevel, int netOCStateLevel, boolean opponentInteractiveJobFlag) {
         ArrayList<Event> result = new ArrayList<Event>();
 
         /* 1. Modify the victim job's end time in event queue */
@@ -1398,7 +1398,7 @@ public abstract class Scheduler {
         if (!interactiveJob) {
             measureCurrentExecutingTime(currentTime, victimJob);
         } else {
-            measureCurrentExecutingTimeForActivation(currentTime, victimJob, victimJob.getApparentOCStateLevel());
+            measureCurrentExecutingTimeForActivation(currentTime, victimJob, victimJob.getNetOCStateLevel());
         }   
         victimJob.setPreviousMeasuredTime(currentTime);
 
@@ -1409,7 +1409,7 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);
-        victimJob.setApparentOCStateLevel(apparentOCStateLevel);                        
+        victimJob.setNetOCStateLevel(netOCStateLevel);                        
 
         /* TODO: must calculate ratio among activated jobs */
         double ratio = calculateMaxDegradationRatioForVictim(victimJob, victimJob.getCoexistingJobs());
@@ -1503,7 +1503,7 @@ public abstract class Scheduler {
         if (!interactiveJob) {
             measureCurrentExecutingTime(currentTime, victimJob);
         } else {
-            measureCurrentExecutingTimeForActivation(currentTime, victimJob, victimJob.getApparentOCStateLevel());
+            measureCurrentExecutingTimeForActivation(currentTime, victimJob, victimJob.getNetOCStateLevel());
         }
         victimJob.setPreviousMeasuredTime(currentTime);
 
@@ -1515,8 +1515,8 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);
-        int apparentOCStateLevel = calculateNewOCStateLevelForExecutingJob(victimJob, true);
-        victimJob.setApparentOCStateLevel(apparentOCStateLevel);
+        int netOCStateLevel = calculateNewOCStateLevelForExecutingJob(victimJob, true);
+        victimJob.setNetOCStateLevel(netOCStateLevel);
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         //assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime+1) || (!OCStateLevelIncreasingflag && oldTrueEndTime >= trueEndTime);
         victimJob.setOCStateLevel(currentOCStateLevel);
@@ -1756,11 +1756,11 @@ public abstract class Scheduler {
         return calculateVictimNewOCStateLevel(victimJob, requiredCoresPerNode, assignNodesNo, false, false);
     }
 
-    static int calculateVictimNewOCStateLevel(Job victimJob, int requiredCoresPerNode, ArrayList<Integer> assignNodesNo, boolean calculateApparentOCStateLevel, boolean opponentInteractiveJobFlag) {
+    static int calculateVictimNewOCStateLevel(Job victimJob, int requiredCoresPerNode, ArrayList<Integer> assignNodesNo, boolean calculateNetOCStateLevel, boolean opponentInteractiveJobFlag) {
         int newOCStateLevel = UNUPDATED;
         
         int currentOCStateLevel = victimJob.getOCStateLevel();
-        int currentApparentOCStateLevel = victimJob.getApparentOCStateLevel();
+        int currentNetOCStateLevel = victimJob.getNetOCStateLevel();
         
         ArrayList<NodeInfo> allNodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo();
         
@@ -1794,7 +1794,7 @@ public abstract class Scheduler {
                 
                 ArrayList<Integer> jobList = coreInfo.getJobList();
                 int OCStateLevelOnTheCore = jobList.size();
-                if (calculateApparentOCStateLevel) {
+                if (calculateNetOCStateLevel) {
                     int numIntJob = 0;
                     for (int k = 0; k < jobList.size(); ++k) {
                         Job vjob = getJobByJobId(jobList.get(k));
@@ -1807,7 +1807,7 @@ public abstract class Scheduler {
                     OCStateLevelOnTheCore -= numIntJob;
                 }
                 assert OCStateLevelOnTheCore <= currentOCStateLevel;
-                if (calculateApparentOCStateLevel) {
+                if (calculateNetOCStateLevel) {
                     if (opponentInteractiveJobFlag) {
                         ;;;
                     } else {
@@ -1820,8 +1820,8 @@ public abstract class Scheduler {
             }
             OCStateLevelAlongNodes = max(OCStateLevelAlongNodes, OCStateLevelAlongCores);
         }
-        if (calculateApparentOCStateLevel) {
-            newOCStateLevel = max(currentApparentOCStateLevel, OCStateLevelAlongNodes);
+        if (calculateNetOCStateLevel) {
+            newOCStateLevel = max(currentNetOCStateLevel, OCStateLevelAlongNodes);
         } else {
             newOCStateLevel = max(currentOCStateLevel, OCStateLevelAlongNodes);
         }
@@ -1829,7 +1829,7 @@ public abstract class Scheduler {
         return newOCStateLevel;
     }
 
-    static int calculateNewOCStateLevelForNewJob(Job job, int requiredCoresPerNode, ArrayList<Integer> assignNodesNo, boolean calculateApparentOCStateLevel) {
+    static int calculateNewOCStateLevelForNewJob(Job job, int requiredCoresPerNode, ArrayList<Integer> assignNodesNo, boolean calculateNetOCStateLevel) {
         int newOCStateLevel = UNUPDATED;
         
         int currentOCStateLevel = job.getOCStateLevel();
@@ -1861,7 +1861,7 @@ public abstract class Scheduler {
                 
                 ArrayList<Integer> jobList = coreInfo.getJobList();
                 int OCStateLevelOnTheCore = jobList.size();
-                if (calculateApparentOCStateLevel) {
+                if (calculateNetOCStateLevel) {
                     int numIntJob = 0;
                     for (int k = 0; k < jobList.size(); ++k) {
                         Job vjob = getJobByJobId(jobList.get(k));
@@ -1874,7 +1874,7 @@ public abstract class Scheduler {
                     OCStateLevelOnTheCore -= numIntJob;
                 }
                 assert OCStateLevelOnTheCore <= currentOCStateLevel;
-                if (calculateApparentOCStateLevel) {
+                if (calculateNetOCStateLevel) {
                     if (opponentInteractiveJobFlag) {
                         ;;
                     } else {
@@ -1892,7 +1892,7 @@ public abstract class Scheduler {
         return OCStateLevelAlongNodes;
     }
 
-    static int calculateNewOCStateLevelForExecutingJob(Job job, boolean calculateApparentOCStateLevel) {
+    static int calculateNewOCStateLevelForExecutingJob(Job job, boolean calculateNetOCStateLevel) {
         int newOCStateLevel = UNUPDATED;
         
         int currentOCStateLevel = job.getOCStateLevel();
@@ -1940,7 +1940,7 @@ public abstract class Scheduler {
                 ArrayList<Integer> jobList = coreInfo.getJobList();
                 assert jobList.contains(victimJobId);
                 int OCStateLevelOnTheCore = jobList.size();
-                if (calculateApparentOCStateLevel) {
+                if (calculateNetOCStateLevel) {
                     int numIntJob = 0;
                     for (int k = 0; k < jobList.size(); ++k) {
                         int ji = jobList.get(k);
@@ -1956,7 +1956,7 @@ public abstract class Scheduler {
                 }
                 assert OCStateLevelOnTheCore <= currentOCStateLevel;
                 /*
-                if (calculateApparentOCStateLevel) {
+                if (calculateNetOCStateLevel) {
                     if (opponentInteractiveJobFlag) {
                         ;;
                     } else {
@@ -2045,8 +2045,8 @@ public abstract class Scheduler {
             for (UsingNode usingNode: coexistingJob.getUsingNodesList()) {
                 nodeList.add(usingNode.getNodeNum());
             }
-            int apparentOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
-            coexistingJob.setApparentOCStateLevel(apparentOCStateLevel);
+            int netOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
+            coexistingJob.setNetOCStateLevel(netOCStateLevel);
         }
         coexistingJob.setOCStateLevel(OCStateLevel);
         coexistingJob.setCurrentRatio(ratio);
@@ -2301,7 +2301,7 @@ public abstract class Scheduler {
             if (!intJobFlag) {
                 measureCurrentExecutingTime(currentTime, coexistingJob);
             } else if (actStateFlag) {
-                measureCurrentExecutingTimeForActivation(currentTime, coexistingJob, coexistingJob.getApparentOCStateLevel());
+                measureCurrentExecutingTimeForActivation(currentTime, coexistingJob, coexistingJob.getNetOCStateLevel());
             }
             coexistingJob.setPreviousMeasuredTime(currentTime);
         }
@@ -2311,12 +2311,12 @@ public abstract class Scheduler {
             boolean intJobFlag = coexistingJob.isInteracitveJob();
             boolean actStateFlag = coexistingJob.isActivationState();
 
-            int coexistingApparentOCStateLevel = coexistingJob.getApparentOCStateLevel();
-            int newCoexistingApparnteOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
+            int coexistingNetOCStateLevel = coexistingJob.getNetOCStateLevel();
+            int newCoexistingNetOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
             int coexistingOCStateLevel = coexistingJob.getOCStateLevel();
-            assert coexistingApparentOCStateLevel <= newCoexistingApparnteOCStateLevel;
-            assert coexistingApparentOCStateLevel <= coexistingOCStateLevel;
-            coexistingJob.setApparentOCStateLevel(newCoexistingApparnteOCStateLevel);
+            assert coexistingNetOCStateLevel <= newCoexistingNetOCStateLevel;
+            assert coexistingNetOCStateLevel <= coexistingOCStateLevel;
+            coexistingJob.setNetOCStateLevel(newCoexistingNetOCStateLevel);
             
             if (!intJobFlag) {
                 int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
@@ -2341,14 +2341,14 @@ public abstract class Scheduler {
             }
         }        
         
-        int apparentOCStateLevel = job.getApparentOCStateLevel();
-        int newApparentOCStateLevel = calculateNewOCStateLevelForExecutingJob(job, true);
+        int netOCStateLevel = job.getNetOCStateLevel();
+        int newNetOCStateLevel = calculateNewOCStateLevelForExecutingJob(job, true);
         // TODO: acc_int
         // calc coming int_deactivate
         // throw
-        assert apparentOCStateLevel <= newApparentOCStateLevel;
-        assert newApparentOCStateLevel <= OCStateLevel;
-        job.setApparentOCStateLevel(newApparentOCStateLevel);
+        assert netOCStateLevel <= newNetOCStateLevel;
+        assert newNetOCStateLevel <= OCStateLevel;
+        job.setNetOCStateLevel(newNetOCStateLevel);
         int deactivateTime = calculateNewActualEndTimeForActivation(currentTime, job);
         
 
@@ -2390,13 +2390,13 @@ public abstract class Scheduler {
         job.setActivationState(!activationState);
         for (int coexistingJobId: coexistingJobs) {
             Job coexistingJob = getJobByJobId(coexistingJobId);
-            int coexistingApparentOCStateLevel = coexistingJob.getApparentOCStateLevel();
+            int coexistingNetOCStateLevel = coexistingJob.getNetOCStateLevel();
             int coexistingOCStateLevel = coexistingJob.getOCStateLevel();
 
-            int newCoexistingApparentOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
-            assert newCoexistingApparentOCStateLevel <= coexistingApparentOCStateLevel;
-            assert coexistingApparentOCStateLevel <= coexistingOCStateLevel;
-            coexistingJob.setApparentOCStateLevel(newCoexistingApparentOCStateLevel);
+            int newCoexistingNetOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
+            assert newCoexistingNetOCStateLevel <= coexistingNetOCStateLevel;
+            assert coexistingNetOCStateLevel <= coexistingOCStateLevel;
+            coexistingJob.setNetOCStateLevel(newCoexistingNetOCStateLevel);
             
             boolean intJobFlag = coexistingJob.isInteracitveJob();
             boolean actStateFlag = coexistingJob.isActivationState();
@@ -2437,11 +2437,11 @@ public abstract class Scheduler {
         job.setActivationState(!activationState);
 
         int OCStateLevel = job.getOCStateLevel();
-        int apparentOCStateLevel = job.getApparentOCStateLevel();
-        int newApparentOCStateLevel = calculateNewOCStateLevelForExecutingJob(job, true);
-        assert newApparentOCStateLevel <= apparentOCStateLevel;
-        assert newApparentOCStateLevel <= OCStateLevel;
-        job.setApparentOCStateLevel(newApparentOCStateLevel);
+        int netOCStateLevel = job.getNetOCStateLevel();
+        int newNetOCStateLevel = calculateNewOCStateLevelForExecutingJob(job, true);
+        assert newNetOCStateLevel <= netOCStateLevel;
+        assert newNetOCStateLevel <= OCStateLevel;
+        job.setNetOCStateLevel(newNetOCStateLevel);
         
         int currentActivationIndex = job.getCurrentActivationIndex();
         ArrayList<Integer> activationTimes = job.getActivationTimes();

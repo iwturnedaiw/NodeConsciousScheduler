@@ -90,12 +90,12 @@ class End implements EventHandler {
         if (!interactiveJob) {
             int previousMeasuredTime = job.getPreviousMeasuredTime();
             int mostRecentRunningTime = currentTime - previousMeasuredTime;
-            int OCStateLevel = job.getApparentOCStateLevel();
+            int netOCStateLevel = job.getNetOCStateLevel();
             double accumulatedCpuTime = job.getAccumulatedCpuTime();
-            accumulatedCpuTime += (double) mostRecentRunningTime / OCStateLevel;
+            accumulatedCpuTime += (double) mostRecentRunningTime / netOCStateLevel;
             job.setAccumulatedCpuTime(accumulatedCpuTime);
 
-            if (OCStateLevel == 1) {
+            if (netOCStateLevel == 1) {
                 int runningTimeDed = job.getRunningTimeDed();
                 job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
             } else {

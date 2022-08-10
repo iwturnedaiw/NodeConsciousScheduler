@@ -81,8 +81,8 @@ public class FCFSOC extends FCFS {
                     job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     job.setOCStateLevel(OCStateLevelForJob);
-                    int apparentOCStateLevelForJob = OCStateLevelForJob;
-                    job.setApparentOCStateLevel(apparentOCStateLevelForJob);
+                    int netOCStateLevelForJob = OCStateLevelForJob;
+                    job.setNetOCStateLevel(netOCStateLevelForJob);
                     /* 6. Modify the resource informaiton */        
                     assignJob(startTime, job, assignNodesNo);
 
@@ -142,10 +142,10 @@ public class FCFSOC extends FCFS {
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();           
                         Job victimJob = getJobByJobId(victimJobId);
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
-                        int victimApparentNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo, true, interJobFlag);
+                        int victimNewNetOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo, true, interJobFlag);
                         victimJob.getCoexistingJobs().add(opponentJobId);;
 //                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
-                        resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel, victimApparentNewOCStateLevel, interJobFlag);
+                        resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel, victimNewNetOCStateLevel, interJobFlag);
                         for (Event ev : resultForVictim) {
                             result.add(ev);
                         }
@@ -203,8 +203,8 @@ public class FCFSOC extends FCFS {
                     
                     /* For opponent job */
                     job.setOCStateLevel(OCStateLevelForJob);
-                    int apparentOCStateLevel = calculateNewOCStateLevelForNewJob(job, job.getRequiredCoresPerNode(), assignNodesNo, true);
-                    job.setApparentOCStateLevel(apparentOCStateLevel);
+                    int netOCStateLevel = calculateNewOCStateLevelForNewJob(job, job.getRequiredCoresPerNode(), assignNodesNo, true);
+                    job.setNetOCStateLevel(netOCStateLevel);
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForJob;
                     int expectedEndTime = calculateNewExpectedEndTime(startTime, job);
                     makeTimeslices(expectedEndTime);

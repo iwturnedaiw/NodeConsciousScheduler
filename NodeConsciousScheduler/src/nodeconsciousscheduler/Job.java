@@ -48,7 +48,7 @@ public class Job implements Comparable<Job> {
     private double currentRatio;
     private double accumulatedCpuTime;
     private int queueNum;
-    private int apparentOCStateLevel;
+    private int netOCStateLevel;
     private boolean interacitveJob;
     private int interactiveExecuteTime;
     private int prologTime;
@@ -113,7 +113,7 @@ public class Job implements Comparable<Job> {
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
         this.queueNum = queueNum;
-        this.apparentOCStateLevel = 1;
+        this.netOCStateLevel = 1;
 
         if (accurateIntteractiveJobs) {
             this.interacitveJob = interactiveJob;
@@ -393,8 +393,8 @@ public class Job implements Comparable<Job> {
         return queueNum;
     }
 
-    public int getApparentOCStateLevel() {
-        return apparentOCStateLevel;
+    public int getNetOCStateLevel() {
+        return netOCStateLevel;
     }
 
     public boolean isInteracitveJob() {
@@ -413,8 +413,8 @@ public class Job implements Comparable<Job> {
         return activationState;
     }
 
-    public void setApparentOCStateLevel(int apparentOCStateLevel) {
-        this.apparentOCStateLevel = apparentOCStateLevel;
+    public void setNetOCStateLevel(int netOCStateLevel) {
+        this.netOCStateLevel = netOCStateLevel;
     }
 
     public void setActivationState(boolean activationState) {

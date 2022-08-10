@@ -1409,15 +1409,15 @@ public class Simulator {
                 double coreUtilzation = 0.0;
                 for (Integer jobId: coreInfo.getJobList()) {
                     Job job = jobMap.get(jobId);
-                    int apparentOCStateLevel = job.getApparentOCStateLevel();
+                    int netOCStateLevel = job.getNetOCStateLevel();
                     boolean interactiveJob = job.isInteracitveJob();
                     if (interactiveJob) {
                         boolean actStateFlag = job.isActivationState();
                         if (actStateFlag) {
-                            coreUtilzation += (double) 1.0/apparentOCStateLevel;
+                            coreUtilzation += (double) 1.0/netOCStateLevel;
                         }
                     } else {
-                        coreUtilzation += (double) 1.0/apparentOCStateLevel;
+                        coreUtilzation += (double) 1.0/netOCStateLevel;
                     }
                 }                
                 assert coreUtilzation <= 1;
