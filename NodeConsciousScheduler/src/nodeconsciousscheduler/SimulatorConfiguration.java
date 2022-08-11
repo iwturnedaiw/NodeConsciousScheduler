@@ -26,6 +26,8 @@ class SimulatorConfiguration {
     private double thresholdForAffinitySchedule;
     private boolean accurateInteractiveJobs;
     private double interactiveCPURatio;
+    private double prologTimeRatio;
+    private double epilogTimeRatio;
     
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory) {
         this.scheduleUsingMemory = scheduleUsingMemory;
@@ -48,7 +50,9 @@ class SimulatorConfiguration {
             boolean usingAffinityForSchedule, 
             double thresholdForAffinitySchedule,
             boolean accurateInteractiveJobs, 
-            double interacitiveCPURatio) {
+            double interacitiveCPURatio,
+            double prologTimeRatio,
+            double epilogTimeRatio) {
         this.scheduleUsingMemory = scheduleUsingMemory;
         this.considerJobMatching = considerJobMatching;
         this.crammingMemoryScheduling = crammingMemoryScheduling;
@@ -65,6 +69,8 @@ class SimulatorConfiguration {
         this.outputUtilizationRatio = outputUtilizationRatio;
         this.accurateInteractiveJobs = accurateInteractiveJobs;     
         this.interactiveCPURatio = interacitiveCPURatio;
+        this.prologTimeRatio = prologTimeRatio;
+        this.epilogTimeRatio = epilogTimeRatio;
     }
     
     public ArrayList<Double> getThresholdForSlowdown() {
@@ -113,5 +119,13 @@ class SimulatorConfiguration {
 
     public boolean isOutputUtilizationRatio() {
         return outputUtilizationRatio;
+    }
+
+    public double getPrologTimeRatio() {
+        return prologTimeRatio;
+    }
+
+    public double getEpilogTimeRatio() {
+        return epilogTimeRatio;
     }
 }

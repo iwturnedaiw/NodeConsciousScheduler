@@ -28,6 +28,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.CONFIGURATION_FILE;
 import static nodeconsciousscheduler.Constants.DATASET_DIRECTORY;
+import static nodeconsciousscheduler.Constants.NOTSPECIFIED;
+import static nodeconsciousscheduler.Constants.NOTSPECIFIED_STR;
 import static nodeconsciousscheduler.Constants.UNSPECIFIED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import nodeconsciousscheduler.ScheduleAlgorithm;
@@ -118,6 +120,8 @@ public class NodeConsciousScheduler {
         
         boolean accurateInteractiveJobs = simConf.isAccurateInteractiveJobs();
         double interactiveCPURatio = simConf.getInteractiveCPURatio();
+        double prologTimeRatio = simConf.getPrologTimeRatio();
+        double epilogTimeRatio = simConf.getEpilogTimeRatio();
         if (accurateInteractiveJobs && interactiveQueueNumber == -1) {
             System.out.println("Configuration Error. INTERACTIVE_QUEUE_NUMBER must be set.");
             System.exit(1);            
@@ -126,6 +130,19 @@ public class NodeConsciousScheduler {
             System.out.println("Configuration Error. INTERACTIVE_CPU_RATIO must be set between 0 < r < 1.");
             System.exit(1);            
         }
+        if (accurateInteractiveJobs && ( (prologTimeRatio < 0) || (prologTimeRatio >= 1))) {
+            System.out.println("Configuration Error. PROLOG_TIME_RATIO must be set between 0 <= r < 1.");
+            System.exit(1);            
+        }
+        if (accurateInteractiveJobs && ( (epilogTimeRatio < 0) || (epilogTimeRatio >= 1))) {
+            System.out.println("Configuration Error. EPILOG_TIME_RATIO must be set between 0 <= r < 1.");
+            System.exit(1);            
+        }
+        if (accurateInteractiveJobs && ( prologTimeRatio + interactiveCPURatio + epilogTimeRatio >= 1)) {
+            System.out.println("Configuration Error. The sum of PROLOG_TIME_RATIO, INTERACTIVE_CPU_RATIO, and EPILOG_TIME_RATIO must be set between 0 < r < 1.");
+            System.exit(1);            
+        }
+        
         
         // Workload Trace Setting
         /*        
@@ -141,7 +158,7 @@ public class NodeConsciousScheduler {
         */      
         ArrayList<Job> jobList = new ArrayList<Job>();
         try {
-            jobList = readSWFFile(fname, scheduleUsingMemory, considerJobMatching, accurateInteractiveJobs, interactiveCPURatio);
+            jobList = readSWFFile(fname, scheduleUsingMemory, considerJobMatching, accurateInteractiveJobs, interactiveCPURatio, prologTimeRatio, epilogTimeRatio);
         } catch (IOException ex) {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -215,7 +232,9 @@ public class NodeConsciousScheduler {
             boolean scheduleUsingMemory, 
             boolean considerJobMatching,
             boolean accurateInteractiveJobs,
-            double interactiveCPURatio) throws IOException {
+            double configCPURatio,
+            double configPrologTimeRatio,
+            double configEpilogTimeRatio) throws IOException {
         boolean ignoreIncompleteMemoryData = NodeConsciousScheduler.ignoreIncompleteMemoryData;
         int interactiveQueueNumber = NodeConsciousScheduler.interactiveQueueNumber;
 
@@ -321,13 +340,13 @@ public class NodeConsciousScheduler {
             assert submitTime >= 0;
             int actualExecuteTime = Integer.parseInt(values[3]);
             // actual time is unspecified
-            if (actualExecuteTime == Constants.NOTSPECIFIED) {
+            if (actualExecuteTime == NOTSPECIFIED) {
                 actualExecuteTime = Integer.parseInt(values[5]);
                 notSpecifiedActural++;
             }
  
             // actual and required time is unspecified            
-            if (actualExecuteTime == Constants.NOTSPECIFIED) {
+            if (actualExecuteTime == NOTSPECIFIED) {
                 canNotExecuteDueCpuTime++;
                 continue;
             }
@@ -361,7 +380,7 @@ public class NodeConsciousScheduler {
                 continue;
             }
 
-            if (!nodeSpecifiedFlag) {
+            if (!nodeSpecifiedFlag || requiredNodes == NOTSPECIFIED) {
 /*
                 // Can execute single node
                 if (requiredCores <= NodeConsciousScheduler.numCores) {
@@ -429,19 +448,29 @@ public class NodeConsciousScheduler {
             int queueNum = Integer.parseInt(values[14]);
             
             boolean interactiveJob = false;                
-            int interactiveExecuteTime = -1;
+            int interactiveExecuteTime = NOTSPECIFIED;
+            double prologTimeRatio = NOTSPECIFIED;
+            double epilogTimeRatio = NOTSPECIFIED;
             ArrayList<Integer> activationTimes = new ArrayList();
             ArrayList<Integer> idleTimes = new ArrayList();
             int prologTime = -1;
             int epilogTime = -1;
             if (accurateInteractiveJobs && (queueNum == NodeConsciousScheduler.interactiveQueueNumber) ) {
-                 InteractiveJobInfoPack ij = simpleInteractiveModel(jobId, actualExecuteTime, interactiveCPURatio);
-                 interactiveJob = ij.isInteractiveJob();
-                 interactiveExecuteTime = ij.getInteractiveExecuteTime();
-                 activationTimes = ij.getActivationTimes();
-                 prologTime = ij.getPrologTime();
-                 epilogTime = ij.getEpilogTime();
-                 idleTimes = ij.getIdleTimes();
+                double interactiveCPURatio = Double.parseDouble(safeGetElement(values, 21));
+                prologTimeRatio = Double.parseDouble(safeGetElement(values, 22));
+                epilogTimeRatio = Double.parseDouble(safeGetElement(values, 23));
+
+                interactiveCPURatio = checkAndCorrectRatio(interactiveCPURatio, configCPURatio);
+                prologTimeRatio = checkAndCorrectRatio(prologTimeRatio, configPrologTimeRatio);
+                epilogTimeRatio = checkAndCorrectRatio(epilogTimeRatio, configEpilogTimeRatio);
+                assert interactiveCPURatio + prologTimeRatio + epilogTimeRatio <= 1.0;
+                InteractiveJobInfoPack ij = simpleInteractiveModel(jobId, actualExecuteTime, interactiveCPURatio, prologTimeRatio, epilogTimeRatio);
+                interactiveJob = ij.isInteractiveJob();
+                interactiveExecuteTime = ij.getInteractiveExecuteTime();
+                activationTimes = ij.getActivationTimes();
+                prologTime = ij.getPrologTime();
+                epilogTime = ij.getEpilogTime();
+                idleTimes = ij.getIdleTimes();
                 /* next job initialization */
             }
 
@@ -493,6 +522,8 @@ public class NodeConsciousScheduler {
         NodeConsciousScheduler.interactiveQueueNumber = Integer.parseInt(configurations.getProperty("INTERACTIVE_QUEUE_NUMBER"));
         boolean accurateInteractiveJobs = Boolean.parseBoolean(configurations.getProperty("ACCURATE_INTERACTIVE_JOBS"));
         double interacitiveCPURatio = Double.parseDouble(configurations.getProperty("INTERACTIVE_CPU_RATIO"));
+        double prologTimeRatio = Double.parseDouble(configurations.getProperty("PROLOG_TIME_RATIO"));
+        double epilogTimeRatio = Double.parseDouble(configurations.getProperty("EPILOG_TIME_RATIO"));
         
         return new SimulatorConfiguration(slowdownThresholds, 
                 outputMinuteTimeseries, 
@@ -503,7 +534,9 @@ public class NodeConsciousScheduler {
                 usingAffinityForSchedule, 
                 thresholdForAffinitySchedule, 
                 accurateInteractiveJobs, 
-                interacitiveCPURatio);
+                interacitiveCPURatio,
+                prologTimeRatio,
+                epilogTimeRatio);
     }
 
     private static int checkCanExecuteMultipleNodes(int requiredCores, int requiredMemeory, boolean scheduleUsingMemory) {
@@ -597,13 +630,13 @@ public class NodeConsciousScheduler {
         
     }
         
-    private static InteractiveJobInfoPack simpleInteractiveModel(int jobId, int actualExecuteTime, double interactiveCPURatio) {
+    private static InteractiveJobInfoPack simpleInteractiveModel(int jobId, int actualExecuteTime, double interactiveCPURatio, double prologTimeRatio, double epilogTimeRatio) {
         int interactiveExecuteTime = (int) Math.ceil(actualExecuteTime * interactiveCPURatio);
 
-        /* 0.2, 0.1, 0.1 are hard-coded following multiply. */
+        /* 0.2  is hard-coded following multiply. */
         int executionTimePerActivate = (int) Math.ceil(interactiveExecuteTime * 0.2);
-        int prologTime = (int) Math.ceil(actualExecuteTime * 0.1);
-        int epilogTime = (int) Math.ceil(actualExecuteTime * 0.1);
+        int prologTime = (int) Math.ceil(actualExecuteTime * prologTimeRatio);
+        int epilogTime = (int) Math.ceil(actualExecuteTime * epilogTimeRatio);
 
         if (actualExecuteTime <= prologTime + epilogTime) {
             prologTime = 0;
@@ -665,6 +698,20 @@ public class NodeConsciousScheduler {
         assert activationTimes.size() == idleTimes.size() + 1;
         
         return new InteractiveJobInfoPack(true, interactiveExecuteTime, activationTimes, prologTime, epilogTime, idleTimes);
+    }
+
+    private static double checkAndCorrectRatio(double ratio, double configRatio) {
+        double ret = ratio;
+        if (!((0 < ratio) && (ratio < 1.0))) {
+            ret = configRatio;
+        }
+        return ret;
+    }
+
+    private static String safeGetElement(String[] values, int i) {
+        if (values.length >= i + 1) return values[i];
+        
+        return NOTSPECIFIED_STR;
     }
 }
 
