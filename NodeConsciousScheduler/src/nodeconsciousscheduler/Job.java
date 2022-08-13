@@ -9,6 +9,7 @@ package nodeconsciousscheduler;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import static nodeconsciousscheduler.Constants.NOTACTIVATED;
 import static nodeconsciousscheduler.Constants.NOT_FINISHED;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
 
@@ -414,6 +415,9 @@ public class Job implements Comparable<Job> {
     }
 
     public void setNetOCStateLevel(int netOCStateLevel) {
+        if (this.interacitveJob && !this.activationState) {
+            netOCStateLevel = NOTACTIVATED;
+        }
         this.netOCStateLevel = netOCStateLevel;
     }
 

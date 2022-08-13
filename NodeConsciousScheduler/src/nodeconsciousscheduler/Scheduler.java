@@ -8,9 +8,6 @@ package nodeconsciousscheduler;
 
 import static java.lang.Math.ceil;
 import static java.lang.Math.max;
-import static java.lang.Math.max;
-import static java.lang.Math.max;
-import static java.lang.Math.max;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.NodeChangeEvent;
 import static nodeconsciousscheduler.Constants.BLANK_JOBID;
+import static nodeconsciousscheduler.Constants.NOTACTIVATED;
 import static nodeconsciousscheduler.Constants.NOT_FINISHED;
 import static nodeconsciousscheduler.Constants.UNSPECIFIED;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
@@ -1901,6 +1899,11 @@ public abstract class Scheduler {
         
         int victimJobId = job.getJobId();
         boolean opponentInteractiveJobFlag = job.isInteracitveJob();
+        boolean activatedFlag = job.isActivationState();
+        
+        if (opponentInteractiveJobFlag && !activatedFlag) {
+            return NOTACTIVATED;
+        }
         
         ArrayList<UsingNode> usingNodesList = job.getUsingNodesList();
         int requiredCoresPerNode = job.getRequiredCoresPerNode();
