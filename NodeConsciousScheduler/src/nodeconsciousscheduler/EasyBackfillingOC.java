@@ -667,7 +667,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     // 0. Check memory hard-limit
                     long freeMemory = ts.getAvailableMemory().get(j);
                     node.setFreeMemory(freeMemory);
-                    if (freeMemory < requiredMemoryPerNode) {
+                    if (scheduleUsingMemory && (freeMemory < requiredMemoryPerNode)) {
                         checkFlag[j] = false;
                         continue;
                     }
