@@ -493,7 +493,26 @@ public class NodeConsciousScheduler {
                     }
                     idleTimes.add(Integer.parseInt(safeGetElement(values, offset + 2 * i + 1)));
                 }
-                assert activationTimes.size() == idleTimes.size() + 1;
+                assert (activationTimes.size() == 0 && idleTimes.size() == 0) ||activationTimes.size() == idleTimes.size() + 1;
+            }
+            
+            if (accurateInteractiveJobs && queueNum == NodeConsciousScheduler.interactiveQueueNumber) {
+                int sum = 0;
+                sum = prologTime + epilogTime;
+                for (int i = 0; i < activationTimes.size(); ++i) {
+                    sum += activationTimes.get(i);
+                }
+                for (int i = 0; i < idleTimes.size(); ++i) {
+                    sum += idleTimes.get(i);
+                }
+                if (sum == 0 && actualExecuteTime == 1) {
+                    prologTime = 1;
+                    sum = 1;
+                }
+                if (sum != actualExecuteTime) {
+                    int a = 1;
+                }
+                assert sum == actualExecuteTime;
             }
 
             boolean addFlag = checkJobProperty(submitTime, actualExecuteTime, specifiedExecuteTime, requiredNodes, ppn, scheduleUsingMemory, requiredMemory);

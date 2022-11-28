@@ -2293,6 +2293,15 @@ public abstract class Scheduler {
         boolean interactiveJob = job.isInteracitveJob();
         boolean activationState = job.isActivationState();
         assert !activationState;
+
+        if (checkNoActivationJob(job)) {
+            int epilogTime = job.getEpilogTIme();
+            int endTime = epilogTime + currentTime;
+            job.setEndEventOccuranceTimeNow(endTime);
+            printThrownEvent(currentTime, endTime, job, EventType.END);
+            evs.add(new Event(EventType.END, endTime, job));
+            return evs;
+        }
         
         int OCStateLevel = job.getOCStateLevel();
         Set<Integer> coexistingJobs = job.getCoexistingJobs();
@@ -2465,6 +2474,10 @@ public abstract class Scheduler {
             job.setCurrentActivationIndex(currentActivationIndex);            
         }
         return evs;
+    }
+
+    private boolean checkNoActivationJob(Job job) {
+        return job.getActivationTimes().size() == 0 && job.getIdleTimes().size() == 0;
     }
 
 }
