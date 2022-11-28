@@ -25,6 +25,7 @@ class SimulatorConfiguration {
     private boolean usingAffinityForSchedule;
     private double thresholdForAffinitySchedule;
     private boolean accurateInteractiveJobs;
+    private int interactiveJobsRecordsType = Constants.UNSPECIFIED;
     private double interactiveCPURatio;
     private double prologTimeRatio;
     private double epilogTimeRatio;
@@ -50,6 +51,7 @@ class SimulatorConfiguration {
             boolean usingAffinityForSchedule, 
             double thresholdForAffinitySchedule,
             boolean accurateInteractiveJobs, 
+            int interactiveJobsRecordsType,
             double interacitiveCPURatio,
             double prologTimeRatio,
             double epilogTimeRatio) {
@@ -68,6 +70,7 @@ class SimulatorConfiguration {
         this.outputMinuteTimeseries = outputMinuteTimeseries;
         this.outputUtilizationRatio = outputUtilizationRatio;
         this.accurateInteractiveJobs = accurateInteractiveJobs;     
+        this.interactiveJobsRecordsType = interactiveJobsRecordsType;     
         this.interactiveCPURatio = interacitiveCPURatio;
         this.prologTimeRatio = prologTimeRatio;
         this.epilogTimeRatio = epilogTimeRatio;
@@ -128,4 +131,9 @@ class SimulatorConfiguration {
     public double getEpilogTimeRatio() {
         return epilogTimeRatio;
     }
+
+    public int getInteractiveJobsRecordsType() {
+        return interactiveJobsRecordsType;
+    }
+    
 }

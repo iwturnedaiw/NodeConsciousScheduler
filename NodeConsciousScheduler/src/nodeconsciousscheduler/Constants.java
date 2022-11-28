@@ -20,6 +20,10 @@ public class Constants {
     static int BLANK_JOBID = -1;
     static int NOTSPECIFIED = -1;
     static int NOTACTIVATED = 1;
+
+    static int INT_SIMPLE_MODEL = 0;
+    static int THREE_PHASE_MODEL = 1;
+    
     static String NOTSPECIFIED_STR = "-1";
     static String CONFIGURATION_FILE = "configuration.properties";
     static String RESULT_DIRECTORY = "result";
