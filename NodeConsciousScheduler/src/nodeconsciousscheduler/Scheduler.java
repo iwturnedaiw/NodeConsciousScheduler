@@ -1182,7 +1182,7 @@ public abstract class Scheduler {
         } else if (interactiveJob && actState) {
             int oldDeactivateTime = coexistingJob.getCurrentDeactiveTime();
             int deactivateTime = Scheduler.calculateNewActualEndTimeForActivation(currentTime, coexistingJob);
-            if (oldDeactivateTime < deactivateTime) {
+            if (oldDeactivateTime != deactivateTime) {
                 printThrownEvent(currentTime, deactivateTime, coexistingJob, EventType.DELETE_DEACTIVE, 1);
                 result.add(new Event(EventType.DELETE_DEACTIVE, currentTime, coexistingJob, oldDeactivateTime));
                 coexistingJob.setCurrentDeactiveTime(deactivateTime);
