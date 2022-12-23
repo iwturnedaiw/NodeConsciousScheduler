@@ -40,6 +40,10 @@ public class Constants {
     static String INSTANT_UTILIZATION_RATIO_HOUR_OUTPUT = "instant_utilization_ratio_hour.out";
     static String INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT = "instant_utilization_ratio_minute.out";
 
+    static String INSTANT_WASTED_RESOURCE_DAY_OUTPUT = "instant_wasted_resource_day.out";
+    static String INSTANT_WASTED_RESOURCE_HOUR_OUTPUT = "instant_wasted_resource_hour.out";
+    static String INSTANT_WASTED_RESOURCE_MINUTE_OUTPUT = "instant_wasted_resource_minute.out";
+    
     static String INSTANT_OCCUPANCY_DAY_OUTPUT = "instant_occupancy_day.out";
     static String INSTANT_OCCUPANCY_HOUR_OUTPUT = "instant_occupancy_hour.out";
     static String INSTANT_OCCUPANCY_MINUTE_OUTPUT = "instant_occupancy_minute.out";

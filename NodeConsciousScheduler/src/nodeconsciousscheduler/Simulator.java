@@ -60,6 +60,9 @@ import static nodeconsciousscheduler.Constants.INSTANT_OCCUPANCY_OC_MINUTE_OUTPU
 import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_WASTED_RESOURCE_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_WASTED_RESOURCE_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_WASTED_RESOURCE_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
 import static nodeconsciousscheduler.Constants.OCCUPANCY_OUTPUT;
 import static nodeconsciousscheduler.Constants.RESULT_DIRECTORY;
@@ -101,6 +104,9 @@ public class Simulator {
     private PrintWriter pwForUtilMinute;
     private PrintWriter pwForUtilHour;
     private PrintWriter pwForUtilDay;
+    private PrintWriter pwForWastedResourceMinute;
+    private PrintWriter pwForWastedResourceHour;
+    private PrintWriter pwForWastedResourceDay;
     private Path p;
     ArrayList<Double> thresholdForSlowdown;
     private boolean outputMinuteBoolean;
@@ -123,11 +129,11 @@ public class Simulator {
         this.scheAlgo = scheAlgo;
         this.outputUtilizationRatio = simConf.isOutputUtilizationRatio();
         initScheduler(scheAlgo);
+        this.outputMinuteBoolean = simConf.isOutputMinuteTimeseries();
         makeEventQueue();
         this.executingJobList = new ArrayList<Job>();
         this.completedJobList = new ArrayList<Job>();
         this.thresholdForSlowdown = simConf.getThresholdForSlowdown();
-        this.outputMinuteBoolean = simConf.isOutputMinuteTimeseries();
         this.scheduleUsingMemory = simConf.isScheduleUsingMemory();
         this.crammingMemoryScheduling = simConf.isCrammingMemoryScheduling();
         this.considerJobMatching = simConf.isConsiderJobMatching();
@@ -156,7 +162,8 @@ public class Simulator {
         evq = (EventQueue) pq;
         
         if (isOutputUtilizationRatio()) {
-            evq.enqueueMeasuringEvent(START_TIME, this.outputMinuteBoolean);
+            evq.enqueueUtilizationMeasuringEvent(START_TIME, this.outputMinuteBoolean);
+            evq.enqueueWastedResourceMeasuringEvent(START_TIME, this.outputMinuteBoolean);
         }
         
         for (int i = 0; i < jobList.size(); ++i) {
@@ -264,6 +271,9 @@ public class Simulator {
         String fileNameUtilHour = INSTANT_UTILIZATION_RATIO_HOUR_OUTPUT;
         String fileNameUtilDay = INSTANT_UTILIZATION_RATIO_DAY_OUTPUT;
         String fileNameUtilMinute = INSTANT_UTILIZATION_RATIO_MINUTE_OUTPUT;
+        String fileNameWastedResourceHour = INSTANT_WASTED_RESOURCE_HOUR_OUTPUT;
+        String fileNameWastedResourceDay = INSTANT_WASTED_RESOURCE_DAY_OUTPUT;
+        String fileNameWastedResourceMinute = INSTANT_WASTED_RESOURCE_MINUTE_OUTPUT;        
         try {
             this.pw = new PrintWriter(this.p + "/" + fileName);
             pw.println("JobID\tuserId\tgroupId\tarrivalTime\twaitTime\tstartTime\tfinishedTime\toriginalRunningTime\trunnningTime\tcpuTimePerCore\tslowdown\tslowdownOC\tspecifiedRequiredTime\tqueueNum\tnumCores\tnumNodes\tnodeNum(tcoreNum)");
@@ -273,9 +283,15 @@ public class Simulator {
                 this.pwForUtilDay = new PrintWriter(this.p + "/" + fileNameUtilDay);
                 writeUtilFileHeader(pwForUtilHour);
                 writeUtilFileHeader(pwForUtilDay);
+                this.pwForWastedResourceHour = new PrintWriter(this.p + "/" + fileNameWastedResourceHour);
+                this.pwForWastedResourceDay = new PrintWriter(this.p + "/" + fileNameWastedResourceDay);
+                writeUtilFileHeader(pwForWastedResourceHour);
+                writeUtilFileHeader(pwForWastedResourceDay);
                 if (outputMinuteBoolean) {
                     this.pwForUtilMinute = new PrintWriter(this.p + "/" + fileNameUtilMinute);
                     writeUtilFileHeader(pwForUtilMinute);
+                    this.pwForWastedResourceMinute = new PrintWriter(this.p + "/" + fileNameWastedResourceMinute);
+                    writeUtilFileHeader(pwForWastedResourceMinute);
                 }
             }
             
@@ -467,8 +483,12 @@ public class Simulator {
         if (outputUtilizationRatio) {
             pwForUtilHour.close();
             pwForUtilDay.close();
+            pwForWastedResourceHour.close();
+            pwForWastedResourceDay.close();
             if (outputMinuteBoolean) {
                 pwForUtilMinute.close();
+                pwForWastedResourceMinute.close();
+
             }
         }
     }
@@ -1461,6 +1481,77 @@ public class Simulator {
 
     }
 
+    void calculateWastedResource(int currentTime, TimeDesc timeDesc) {
+
+        ArrayList<Double> wastedResourceUtilizations = new ArrayList();
+        double averageWastedUtilizationAmongNodes = 0.0;
+        for(NodeInfo nodeInfo: allNodesInfo) {
+            int nodeNum = nodeInfo.getNodeNum();
+            int coreNum = nodeInfo.getNumCores();
+            double wastedNodeUtilization = 0.0;
+            for(CoreInfo coreInfo: nodeInfo.getOccupiedCores()) {
+                double coreUtilzation = 0.0;
+                double wastedUtilization = 1.0;
+                ArrayList<Integer> jobIds = coreInfo.getJobList();
+                if (jobIds.isEmpty()) {
+                    coreUtilzation = 1.0;
+                } else {
+                    for (Integer jobId: jobIds) {
+                        Job job = jobMap.get(jobId);
+                        int netOCStateLevel = job.getNetOCStateLevel();
+                        boolean interactiveJob = job.isInteracitveJob();
+                        if (interactiveJob) {
+                            boolean actStateFlag = job.isActivationState();
+                            if (actStateFlag) {
+                                coreUtilzation += (double) 1.0/netOCStateLevel;
+                            }
+                        } else {
+                            coreUtilzation += (double) 1.0/netOCStateLevel;
+                        }
+                    }
+                }
+                assert coreUtilzation <= 1;
+                wastedUtilization -= coreUtilzation;
+                wastedNodeUtilization += wastedUtilization;
+            }
+            assert wastedNodeUtilization <= coreNum; 
+            wastedNodeUtilization /= (double)coreNum;
+            averageWastedUtilizationAmongNodes += wastedNodeUtilization;
+            wastedResourceUtilizations.add(nodeNum, wastedNodeUtilization*100);
+        }
+        int numNodes = allNodesInfo.size();
+        averageWastedUtilizationAmongNodes /= numNodes;
+        wastedResourceUtilizations.add(numNodes, averageWastedUtilizationAmongNodes*100);
+
+        PrintWriter pwWork = null;
+        int threshold = UNUPDATED;
+        if (timeDesc == TimeDesc.MINUTE) {
+            pwWork = this.pwForWastedResourceMinute;
+            threshold = MINUTE_IN_SECOND;
+        } else if (timeDesc == TimeDesc.HOUR) {
+            pwWork = this.pwForWastedResourceHour;
+            threshold = HOUR_IN_SECOND;
+        } else if (timeDesc == TimeDesc.DAY) {
+            pwWork = this.pwForWastedResourceDay;
+            threshold = DAY_IN_SECOND;            
+        }
+
+        int count = currentTime/threshold;
+        pwWork.print(count + "\t");
+        for (int i = 0; i < wastedResourceUtilizations.size(); ++i) {
+            Double util = wastedResourceUtilizations.get(i);
+            pwWork.print(util);
+            if (i != wastedResourceUtilizations.size()-1) {
+                pwWork.print("\t");
+            } else {
+                pwWork.print("\n");
+            }
+        }
+        
+        
+
+    }
+    
     private void writeUtilFileHeader(PrintWriter pwWork) {
         for (int j = 0; j < NodeConsciousScheduler.numNodes; ++j) {
             pwWork.print("\t" + j);

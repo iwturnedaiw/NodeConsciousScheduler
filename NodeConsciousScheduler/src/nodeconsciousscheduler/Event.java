@@ -45,10 +45,10 @@ public class Event implements Comparable<Event> {
         this.job = job;
     }
 
-    Event(int START_TIME, TimeDesc timeDesc) {
+    Event(int START_TIME, TimeDesc timeDesc, EventType evt) {
         this.occurrenceTime = START_TIME;
         this.timeDesc = timeDesc;
-        this.eventType = EventType.MEASURING_UTIL_RATIO;
+        this.eventType = evt;
         this.job = null;
     }
     
@@ -97,7 +97,13 @@ public class Event implements Comparable<Event> {
         }
         if (o.eventType == EventType.MEASURING_UTIL_RATIO) {
             return 1;
-        }        
+        }         
+        if (this.eventType == EventType.MEASURING_WASTED_RESOURCE) {
+            return -1;
+        }
+        if (o.eventType == EventType.MEASURING_WASTED_RESOURCE) {
+            return 1;
+        }
         //if (this.eventType != EventType.END && this.eventType == o.eventType) {
         if (this.eventType == o.eventType) {
             Job job1 = this.getJob();

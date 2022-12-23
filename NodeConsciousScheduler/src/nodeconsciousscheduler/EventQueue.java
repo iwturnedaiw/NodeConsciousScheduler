@@ -66,6 +66,8 @@ public class EventQueue extends PriorityQueue {
             evh = new DeleteDeactivate();
         } else if (evt == EventType.MEASURING_UTIL_RATIO) {
             evh = new MeasuringUtilRatio();
+        } else if (evt == EventType.MEASURING_WASTED_RESOURCE) {
+            evh = new MeasuringWastedResource();
         }
         
         assert evh != null;
@@ -176,15 +178,28 @@ public class EventQueue extends PriorityQueue {
         }
     }
 
-    void enqueueMeasuringEvent(int arrivalTime, boolean outputMinuteBoolean) {
+    void enqueueUtilizationMeasuringEvent(int arrivalTime, boolean outputMinuteBoolean) {
         if (outputMinuteBoolean) {
-            enqueueMeasuringEvent(arrivalTime, TimeDesc.MINUTE);
+            enqueueUtilizationMeasuringEvent(arrivalTime, TimeDesc.MINUTE);
         }
-        enqueueMeasuringEvent(arrivalTime, TimeDesc.HOUR);
-        enqueueMeasuringEvent(arrivalTime, TimeDesc.DAY);
+        enqueueUtilizationMeasuringEvent(arrivalTime, TimeDesc.HOUR);
+        enqueueUtilizationMeasuringEvent(arrivalTime, TimeDesc.DAY);
     }
-    void enqueueMeasuringEvent(int arrivalTime, TimeDesc timeDesc) {
-        Event ev = new Event(arrivalTime, timeDesc);
+    void enqueueUtilizationMeasuringEvent(int arrivalTime, TimeDesc timeDesc) {
+        Event ev = new Event(arrivalTime, timeDesc, EventType.MEASURING_UTIL_RATIO);
+        this.add(ev);
+    }
+
+    void enqueueWastedResourceMeasuringEvent(int arrivalTime, boolean outputMinuteBoolean) {
+        if (outputMinuteBoolean) {
+            enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.MINUTE);
+        }
+        enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.HOUR);
+        enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.DAY);
+    }
+ 
+    void enqueueWastedResourceMeasuringEvent(int arrivalTime, TimeDesc timeDesc) {
+        Event ev = new Event(arrivalTime, timeDesc, EventType.MEASURING_WASTED_RESOURCE);
         this.add(ev);
     }
     
