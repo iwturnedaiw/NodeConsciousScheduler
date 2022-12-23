@@ -144,8 +144,8 @@ public class NodeConsciousScheduler {
             System.exit(1);            
         }
 
-        if (!accurateInteractiveJobs || interactiveJobsRecordsType == Constants.UNSPECIFIED) {
-            System.out.println("Configuration Error. The sum of PROLOG_TIME_RATIO, INTERACTIVE_CPU_RATIO, and EPILOG_TIME_RATIO must be set between 0 < r < 1.");
+        if (accurateInteractiveJobs && interactiveJobsRecordsType == Constants.UNSPECIFIED) {
+            System.out.println("Configuration Error. INTERACTIVE_JOBS_RECORDS_TYPE must be specified when ACCURATE_INTERACTIVE_JOBS is true");
             System.exit(1);            
         }
         
