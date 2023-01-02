@@ -43,7 +43,8 @@ public class Constants {
     static String INSTANT_WASTED_RESOURCE_DAY_OUTPUT = "instant_wasted_resource_day.out";
     static String INSTANT_WASTED_RESOURCE_HOUR_OUTPUT = "instant_wasted_resource_hour.out";
     static String INSTANT_WASTED_RESOURCE_MINUTE_OUTPUT = "instant_wasted_resource_minute.out";
-    
+    static String INSTANT_WASTED_RESOURCE_SECOND_OUTPUT = "instant_wasted_resource_second.out";
+
     static String INSTANT_OCCUPANCY_DAY_OUTPUT = "instant_occupancy_day.out";
     static String INSTANT_OCCUPANCY_HOUR_OUTPUT = "instant_occupancy_hour.out";
     static String INSTANT_OCCUPANCY_MINUTE_OUTPUT = "instant_occupancy_minute.out";
@@ -100,13 +101,16 @@ public class Constants {
     static String EXECUTING_MEMORY_RESOURCES_PER_HOUR_OUTPUT = "executing_memory_resources_hour.out";
     static String EXECUTING_MEMORY_RESOURCES_PER_MINUTE_OUTPUT = "executing_memory_resources_minute.out";
     
+    static String WASTED_RESOURCE_OF_SYSTEM = "wasted_resources_of_system.out";
+    
     static int DAY_IN_SECOND = 60 * 60 * 24;
     static int HOUR_IN_SECOND = 60 * 60;
     static int MINUTE_IN_SECOND = 60;
+    static int SECOND = 1;
     
     static int NOT_FINISHED = 2 << 30;
     static int START_TIME = 0;
     public enum TimeDesc {
-        MINUTE, HOUR, DAY
+        SECOND, MINUTE, HOUR, DAY
     }
 }

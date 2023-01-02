@@ -6,6 +6,7 @@
 
 package nodeconsciousscheduler;
 
+import static java.lang.Integer.min;
 import static java.lang.Math.ceil;
 import static java.lang.Math.max;
 import java.util.ArrayList;
@@ -13,6 +14,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
@@ -36,6 +39,8 @@ public abstract class Scheduler {
     protected LinkedList<TimeSlice> timeSlices;
     protected LinkedList<TimeSlice> completedTimeSlices;
     ArrayList<Job> temporallyScheduledJobList;
+    protected List<Double> wastedResources;
+    protected int previousCalcTime = 0;
     
     abstract protected ArrayList<Event> scheduleJobsStartAt(int currentTime);
     abstract protected ArrayList<Event> checkCoexistingJobsOCStateAndModifyENDEventAndTimeSlices(Event ev);
@@ -50,6 +55,11 @@ public abstract class Scheduler {
         this.timeSlices.add(new TimeSlice());
         this.completedTimeSlices = new LinkedList<TimeSlice>();    
         this.temporallyScheduledJobList = new ArrayList<Job>();
+        this.wastedResources = new ArrayList<Double>();
+        int numNodes = NodeConsciousScheduler.numNodes;
+        for (int i = 0; i < numNodes; ++i) {
+            this.wastedResources.add((double)0.0);
+        }
     }
     
     protected boolean existSliceStartAt(int currentTime, LinkedList<TimeSlice> timeSlices) {
@@ -102,7 +112,44 @@ public abstract class Scheduler {
         
         return;
     }
-     
+    
+    protected void calcWastedResource(int currentTime) {
+        int previousCalcTime = getPreviousCalcTime();
+        
+        assert previousCalcTime <= currentTime;
+        if (currentTime == previousCalcTime) {
+            return;
+        }
+        
+        int numNodes = NodeConsciousScheduler.numNodes;
+        for (TimeSlice ts: timeSlices) {
+            int startTime = ts.getStartTime();
+            int endTime = ts.getEndTime();
+            int duration = ts.getDuration();
+            
+            if (currentTime <= startTime) {
+                break;
+            }
+            
+            assert startTime <= currentTime;
+            
+            int rightEnd = min(currentTime, endTime);
+
+            int durationBtPreviousCalc = rightEnd - startTime;
+            
+
+            for (int nodeId = 0; nodeId < numNodes; ++nodeId) {
+                double wastedResource = wastedResources.get(nodeId);
+                double currentWasteResourceRatio = calcInstantWasteRatioOnNode(nodeId);
+                double addedWastedResource = currentWasteResourceRatio * durationBtPreviousCalc;
+                wastedResource += addedWastedResource;
+                wastedResources.set(nodeId, wastedResource);
+            }
+        }
+        setPreviousCalcTime(currentTime);
+        return;
+    }
+    
     protected void completeOldSlices(int currentTime) {
         int size = timeSlices.size();
         
@@ -133,6 +180,46 @@ public abstract class Scheduler {
                 ts.refillResources(job);
             }
         }
+    }
+    
+    private double calcInstantWasteRatioOnNode(int nodeId) {
+        double wastedResourceRatioOnNode = 0.0; //retValue;
+        NodeInfo nodeInfo = NodeConsciousScheduler.sim.getAllNodesInfo().get(nodeId);
+        Map<Integer, Job> jobMap = NodeConsciousScheduler.sim.getJobMap();        
+        int numCore = NodeConsciousScheduler.numCores;
+        List<CoreInfo> coreInfos = nodeInfo.getOccupiedCores();        
+        for (CoreInfo ci: coreInfos) {
+            int coreId = ci.getCoreId();
+            double wastedResourceRatioOnCore = 0.0;
+            double utilizationRatioOnCore = 0.0;
+            List<Integer> jobList = ci.getJobList();
+            int numDeactiveJob = 0;
+            for (Integer jobId: jobList) {
+                Job job = jobMap.get(jobId);
+                int netOCStateLevel = job.getNetOCStateLevel();
+                boolean interactiveJob = job.isInteracitveJob();
+                if (!interactiveJob) {
+                    utilizationRatioOnCore += 1.0/netOCStateLevel;
+                } else {
+                    boolean actState = job.isActivationState();
+                    if (actState) {
+                        utilizationRatioOnCore += 1.0/netOCStateLevel;
+                    } else {
+                        ++numDeactiveJob;
+                    }
+                }
+            }
+            if (utilizationRatioOnCore < 1.0) {
+                wastedResourceRatioOnCore = 1.0 - utilizationRatioOnCore;
+            }
+            if (numDeactiveJob == jobList.size()) {
+                wastedResourceRatioOnCore = 0.0;                
+            }
+            
+            wastedResourceRatioOnNode += wastedResourceRatioOnCore;
+        }
+        wastedResourceRatioOnNode /= numCore;
+        return wastedResourceRatioOnNode;
     }
 
     protected Set<Integer> searchVictimJobs(int startTime, Job job, ArrayList<Integer> assignNodesNo) {
@@ -369,6 +456,7 @@ public abstract class Scheduler {
         // TODO
         // unifyTimeSlices(currentTime);
         makeTimeslices(currentTime);
+        calcWastedResource(currentTime);
         completeOldSlices(currentTime);
         
         enqueue(ev);
@@ -2293,6 +2381,8 @@ public abstract class Scheduler {
         boolean interactiveJob = job.isInteracitveJob();
         boolean activationState = job.isActivationState();
         assert !activationState;
+        
+        calcWastedResource(currentTime);
 
         if (checkNoActivationJob(job)) {
             int epilogTime = job.getEpilogTIme();
@@ -2385,6 +2475,8 @@ public abstract class Scheduler {
         boolean activationState = job.isActivationState();
         assert activationState;
 
+        calcWastedResource(currentTime);
+        
         Set<Integer> coexistingJobs = job.getCoexistingJobs();
         System.out.println("\tDeactivate jobId: " + jobId + ", victim jobId: " + coexistingJobs);
         for (int coexistingJobId: coexistingJobs) {
@@ -2480,4 +2572,15 @@ public abstract class Scheduler {
         return job.getActivationTimes().size() == 0 && job.getIdleTimes().size() == 0;
     }
 
+    public int getPreviousCalcTime() {
+        return previousCalcTime;
+    }
+
+    public void setPreviousCalcTime(int previousCalcTime) {
+        this.previousCalcTime = previousCalcTime;
+    }
+
+    public List<Double> getWastedResources() {
+        return wastedResources;
+    }
 }

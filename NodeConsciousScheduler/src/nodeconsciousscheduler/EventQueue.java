@@ -190,9 +190,12 @@ public class EventQueue extends PriorityQueue {
         this.add(ev);
     }
 
-    void enqueueWastedResourceMeasuringEvent(int arrivalTime, boolean outputMinuteBoolean) {
+    void enqueueWastedResourceMeasuringEvent(int arrivalTime, boolean outputMinuteBoolean, boolean outputSecondWastedResources) {
         if (outputMinuteBoolean) {
             enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.MINUTE);
+        }
+        if (outputSecondWastedResources) {
+            enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.SECOND);            
         }
         enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.HOUR);
         enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.DAY);

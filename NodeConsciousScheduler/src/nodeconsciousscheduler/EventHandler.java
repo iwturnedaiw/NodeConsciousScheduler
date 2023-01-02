@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.DAY_IN_SECOND;
 import static nodeconsciousscheduler.Constants.HOUR_IN_SECOND;
 import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
+import static nodeconsciousscheduler.Constants.SECOND;
 import static nodeconsciousscheduler.Constants.START_TIME;
 import nodeconsciousscheduler.Constants.TimeDesc;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
@@ -87,6 +88,8 @@ class End implements EventHandler {
         assert currentTime == job.getEndEventOccuranceTimeNow();
         boolean interactiveJob = job.isInteracitveJob();
 
+        NodeConsciousScheduler.sim.getSche().calcWastedResource(currentTime);
+        
         if (!interactiveJob) {
             int previousMeasuredTime = job.getPreviousMeasuredTime();
             int mostRecentRunningTime = currentTime - previousMeasuredTime;
@@ -239,6 +242,8 @@ class MeasuringWastedResource implements EventHandler {
             threshold = HOUR_IN_SECOND;
         } else if (timeDesc == TimeDesc.DAY) {
             threshold = DAY_IN_SECOND;
+        } else if (timeDesc == TimeDesc.SECOND) {
+            threshold = SECOND;
         }
         
         if ((currentTime == START_TIME) || (currentTime != START_TIME && NodeConsciousScheduler.sim.getCompletedJobList().size() != NodeConsciousScheduler.sim.getJobList().size())) {
