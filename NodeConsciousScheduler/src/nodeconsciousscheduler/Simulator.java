@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import static java.lang.Math.min;
 import static java.lang.StrictMath.max;
-import static java.lang.StrictMath.max;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -85,6 +84,10 @@ import static nodeconsciousscheduler.Constants.WAITING_MEMORY_RESOURCES_PER_MINU
 import static nodeconsciousscheduler.Constants.WAITING_RESOURCES_PER_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.WAITING_RESOURCES_PER_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.WAITING_RESOURCES_PER_MINUTE_OUTPUT;
+import static nodeconsciousscheduler.Constants.WASTED_RESOURCE_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.WASTED_RESOURCE_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.WASTED_RESOURCE_MINUTE_OUTPUT;
+
 
 /**
  *
@@ -365,7 +368,10 @@ public class Simulator {
         outputInstatntOccupancy(INSTANT_OCCUPANCY_HOUR_OUTPUT, HOUR_IN_SECOND, false);
         outputInstatntOccupancy(INSTANT_OCCUPANCY_OC_DAY_OUTPUT, DAY_IN_SECOND, true);
         outputInstatntOccupancy(INSTANT_OCCUPANCY_OC_HOUR_OUTPUT, HOUR_IN_SECOND, true);
-                
+
+        outputWastedResource(WASTED_RESOURCE_HOUR_OUTPUT, HOUR_IN_SECOND);
+        outputWastedResource(WASTED_RESOURCE_DAY_OUTPUT, DAY_IN_SECOND);
+        
         if (scheduleUsingMemory) {
             outputInstatntMemoryUtilizationRatio(INSTANT_OCCUPANCY_MEMORY_DAY_OUTPUT, DAY_IN_SECOND);
             outputInstatntMemoryUtilizationRatio(INSTANT_OCCUPANCY_MEMORY_HOUR_OUTPUT, HOUR_IN_SECOND);
@@ -383,6 +389,7 @@ public class Simulator {
             outputInstatntOccupancy(INSTANT_OCCUPANCY_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
             outputInstatntMemoryUtilizationRatio(INSTANT_OCCUPANCY_MEMORY_MINUTE_OUTPUT, MINUTE_IN_SECOND);
             outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_MINUTE_OUTPUT, ARRIVAL_JOB_PER_MINUTE_OUTPUT, START_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT, FINISHED_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT, WAITING_RESOURCES_PER_MINUTE_OUTPUT, EXECUTING_RESOURCES_PER_MINUTE_OUTPUT, WAITING_MEMORY_RESOURCES_PER_MINUTE_OUTPUT, EXECUTING_MEMORY_RESOURCES_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+            outputWastedResource(WASTED_RESOURCE_MINUTE_OUTPUT, MINUTE_IN_SECOND);
         }
         
         return;
@@ -634,7 +641,36 @@ public class Simulator {
             Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
         }        
     }
+  
+    private void outputWastedResource(String fileName, int MODE) {
+        try {
+            PrintWriter pwWastedResource;
+            pwWastedResource = new PrintWriter(this.p + "/" + fileName);
 
+            ArrayList<Double> result = new ArrayList<Double>();
+            result.addAll(calcWastedResource(MODE));
+            
+            for (int j = 0; j < NodeConsciousScheduler.numNodes; ++j) {
+                pwWastedResource.print("\t" + j);
+            }
+            pwWastedResource.println("\tAve.");
+            
+            
+            double totalUtilizationRatio = 0.0;
+            for (int i = 0; i < result.size() - 1; ++i) {
+                Double ret = result.get(i);
+                pwWastedResource.print("\t" + ret);
+                totalUtilizationRatio += ret;
+
+            }
+            pwWastedResource.println("\t" + totalUtilizationRatio / NodeConsciousScheduler.numNodes);
+
+            pwWastedResource.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
+        }        
+    }
+    
     private ArrayList<ArrayList<Double>> calcInstantUtilizationRatio(int THRESHOLD, boolean OCFlag) {
         ArrayList<ArrayList<Double>> result = new ArrayList<ArrayList<Double>>();
         LinkedList<TimeSlice> completedTimeSlices = this.sche.completedTimeSlices;
@@ -653,7 +689,13 @@ public class Simulator {
         }
         return result;
     }
-
+ 
+    private ArrayList<Double> calcWastedResource(int THRESHOLD) {
+        ArrayList<Double> result = new ArrayList<Double>();
+        result.addAll(calcWastedResourcePerNodeFromTs());
+        return result;
+    }
+    
     private ArrayList<Double> calcUtilizationAtTs(TimeSlice ts, boolean OCFlag) {
         ArrayList<Double> result = new ArrayList<Double>(); 
         ArrayList<Integer> availableCores = ts.getAvailableCores();
@@ -664,6 +706,31 @@ public class Simulator {
         return result;
     }
 
+    private ArrayList<Double> calcWastedResourcePerNodeFromTs() {
+        LinkedList<TimeSlice> completedTimeSlices = this.sche.completedTimeSlices;
+        int numNode = NodeConsciousScheduler.numNodes;
+        int numCore = NodeConsciousScheduler.numCores;
+
+        ArrayList<Double> result = new ArrayList<Double>();
+        for (int i = 0; i < numNode; ++i) {
+            double allocateTime = 0.0;
+            result.add(allocateTime);
+        }
+
+        int timeSliceSize = completedTimeSlices.size();
+        for (TimeSlice ts: completedTimeSlices) {
+            ArrayList<Integer> availableCores = ts.getAvailableCores();
+            int duration = ts.getDuration();
+            for (int i = 0; i < numNode; ++i) {
+                int numRuuningCore = min(numCore - availableCores.get(i), numCore);
+                double allocateTime = result.get(i);
+                allocateTime += numRuuningCore * duration;
+                result.set(i, allocateTime);
+            }
+        }
+        return result;
+    }
+    
     private void outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(String fileNameWaiting, String fileNameArrival, String fileNameStart, String fileNameCumulativeStart, String fileNameFinished, String fileNameCumulativeFinished, String fileNameWaitingRscs, String fileNameExecutingRscs, String fileNameWaitingMemRscs, String fileNameExecutingMemRscs, int MODE) {
             PairIntegers pairResult = new PairIntegers();
             pairResult = calcWaitingAndNewArrivalJobAndStartJob(MODE);
@@ -1491,10 +1558,11 @@ public class Simulator {
             double wastedNodeUtilization = 0.0;
             for(CoreInfo coreInfo: nodeInfo.getOccupiedCores()) {
                 double coreUtilzation = 0.0;
-                double wastedUtilization = 1.0;
+                double wastedUtilization = 0.0;
+                int numDeactiveInteractiveJob = 0;
                 ArrayList<Integer> jobIds = coreInfo.getJobList();
                 if (jobIds.isEmpty()) {
-                    coreUtilzation = 1.0;
+                    wastedUtilization = 0.0;
                 } else {
                     for (Integer jobId: jobIds) {
                         Job job = jobMap.get(jobId);
@@ -1504,14 +1572,22 @@ public class Simulator {
                             boolean actStateFlag = job.isActivationState();
                             if (actStateFlag) {
                                 coreUtilzation += (double) 1.0/netOCStateLevel;
+                            } else {
+                                ++numDeactiveInteractiveJob;
                             }
                         } else {
                             coreUtilzation += (double) 1.0/netOCStateLevel;
                         }
                     }
+                    assert coreUtilzation <= 1;
+                    assert numDeactiveInteractiveJob <= jobIds.size();
+                    if (coreUtilzation < 1.0) {
+                        wastedUtilization += (double) (1.0 - coreUtilzation);
+                    }
+                    if (numDeactiveInteractiveJob == jobIds.size()) {
+                        wastedUtilization = 0.0;
+                    }                    
                 }
-                assert coreUtilzation <= 1;
-                wastedUtilization -= coreUtilzation;
                 wastedNodeUtilization += wastedUtilization;
             }
             assert wastedNodeUtilization <= coreNum; 
