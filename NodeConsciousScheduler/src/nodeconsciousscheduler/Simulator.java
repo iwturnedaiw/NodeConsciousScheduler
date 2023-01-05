@@ -64,6 +64,7 @@ import static nodeconsciousscheduler.Constants.INSTANT_WASTED_RESOURCE_DAY_OUTPU
 import static nodeconsciousscheduler.Constants.INSTANT_WASTED_RESOURCE_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.INSTANT_WASTED_RESOURCE_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.INSTANT_WASTED_RESOURCE_SECOND_OUTPUT;
+import static nodeconsciousscheduler.Constants.INSTANT_WASTED_RESOURCE_TIMESERIES_OUTPUT;
 import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
 import static nodeconsciousscheduler.Constants.OCCUPANCY_OUTPUT;
 import static nodeconsciousscheduler.Constants.RESULT_DIRECTORY;
@@ -115,6 +116,8 @@ public class Simulator {
     private PrintWriter pwForWastedResourceHour;
     private PrintWriter pwForWastedResourceDay;
     private PrintWriter pwForWastedResourceSecond;
+    private PrintWriter pwForWastedResourceTimeseries;
+
     private Path p;
     ArrayList<Double> thresholdForSlowdown;
     private boolean outputMinuteBoolean;
@@ -286,6 +289,7 @@ public class Simulator {
         String fileNameWastedResourceDay = INSTANT_WASTED_RESOURCE_DAY_OUTPUT;
         String fileNameWastedResourceMinute = INSTANT_WASTED_RESOURCE_MINUTE_OUTPUT;        
         String fileNameWastedResourceSecond = INSTANT_WASTED_RESOURCE_SECOND_OUTPUT;        
+        String fileNameWastedResourceTimeseries = INSTANT_WASTED_RESOURCE_TIMESERIES_OUTPUT;        
 
         try {
             this.pw = new PrintWriter(this.p + "/" + fileName);
@@ -310,6 +314,8 @@ public class Simulator {
                     this.pwForWastedResourceSecond = new PrintWriter(this.p + "/" + fileNameWastedResourceSecond);
                     writeUtilFileHeader(pwForWastedResourceSecond);
                 }
+                this.pwForWastedResourceTimeseries = new PrintWriter(this.p + "/" + fileNameWastedResourceTimeseries);
+                writeUtilFileHeader(pwForWastedResourceTimeseries);
             }
             
         } catch (FileNotFoundException ex) {
@@ -519,11 +525,12 @@ public class Simulator {
             } catch (FileNotFoundException ex) {
                 Logger.getLogger(Simulator.class.getName()).log(Level.SEVERE, null, ex);
             }
+            pwForWastedResourceTimeseries.close();
         }
     }
     
-    void flushWastedResourcesRatio() throws FileNotFoundException {
-                List<Double> wastedResources = sche.getWastedResources();
+    void flushWastedResourcesRatio() throws FileNotFoundException {               
+        List<Double> wastedResources = sche.getWastedResources();
         PrintWriter pwWasted;
         String fileName = WASTED_RESOURCE_OF_SYSTEM;
         pwWasted = new PrintWriter(this.p + "/" + fileName);
@@ -1691,4 +1698,25 @@ public class Simulator {
         }
         pwWork.println("\tAve.");
     }
+
+    void flushCurrentWastedResourceToFile(int currentTime, List<Double> wastedResources) {
+        double sum = 0.0;
+        int i = 0;
+        int numNode = NodeConsciousScheduler.numNodes;
+        pwForWastedResourceTimeseries.print(currentTime);
+        pwForWastedResourceTimeseries.print("\t");
+        for (Double wr: wastedResources) {
+            pwForWastedResourceTimeseries.print(wr);
+            sum += wr;
+            pwForWastedResourceTimeseries.print("\t");
+            if (i == numNode - 1) {
+                wr /= numNode;
+                pwForWastedResourceTimeseries.print(sum);
+                pwForWastedResourceTimeseries.print("\n");
+            }
+            ++i;
+        }
+    }
+
+
 }

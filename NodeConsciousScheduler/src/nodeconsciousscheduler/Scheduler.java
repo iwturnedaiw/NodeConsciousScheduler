@@ -123,6 +123,8 @@ public abstract class Scheduler {
         
         int numNodes = NodeConsciousScheduler.numNodes;
         for (TimeSlice ts: timeSlices) {
+            double wastedRatioForDebug = 0.0;
+            
             int startTime = ts.getStartTime();
             int endTime = ts.getEndTime();
             int duration = ts.getDuration();
@@ -131,11 +133,16 @@ public abstract class Scheduler {
                 break;
             }
             
+            if (endTime < previousCalcTime ) {
+                continue;
+            }
+            
             assert startTime <= currentTime;
             
+            int leftEnd = max(startTime, previousCalcTime);
             int rightEnd = min(currentTime, endTime);
-
-            int durationBtPreviousCalc = rightEnd - startTime;
+            
+            int durationBtPreviousCalc = rightEnd - leftEnd;
             
 
             for (int nodeId = 0; nodeId < numNodes; ++nodeId) {
@@ -144,9 +151,13 @@ public abstract class Scheduler {
                 double addedWastedResource = currentWasteResourceRatio * durationBtPreviousCalc;
                 wastedResource += addedWastedResource;
                 wastedResources.set(nodeId, wastedResource);
+                wastedRatioForDebug += currentWasteResourceRatio;
             }
         }
         setPreviousCalcTime(currentTime);
+        
+        //NodeConsciousScheduler.sim.flushCurrentWastedResourceToFile(currentTime, wastedResources);
+        
         return;
     }
     

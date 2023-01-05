@@ -44,6 +44,8 @@ public class Constants {
     static String INSTANT_WASTED_RESOURCE_HOUR_OUTPUT = "instant_wasted_resource_hour.out";
     static String INSTANT_WASTED_RESOURCE_MINUTE_OUTPUT = "instant_wasted_resource_minute.out";
     static String INSTANT_WASTED_RESOURCE_SECOND_OUTPUT = "instant_wasted_resource_second.out";
+    
+    static String INSTANT_WASTED_RESOURCE_TIMESERIES_OUTPUT = "instant_wasted_resource_timeseries.out";
 
     static String INSTANT_OCCUPANCY_DAY_OUTPUT = "instant_occupancy_day.out";
     static String INSTANT_OCCUPANCY_HOUR_OUTPUT = "instant_occupancy_hour.out";
