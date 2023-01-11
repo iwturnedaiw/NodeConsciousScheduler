@@ -129,6 +129,7 @@ public class Simulator {
     private double thresholdForAffinitySchedule;
     private boolean outputUtilizationRatio;
     private boolean outputSecondWastedResources;
+    private int scheduleConsiderJobType;
 
     
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
@@ -154,6 +155,7 @@ public class Simulator {
         this.jobMatchingTable = simConf.getJobMatchingTable();
         this.usingAffinityForSchedule = simConf.isUsingAffinityForSchedule();
         this.thresholdForAffinitySchedule = simConf.getThresholdForAffinitySchedule();
+        this.scheduleConsiderJobType = simConf.getScheduleConsiderJobType();
         this.p = obtainPath();
         try {
             initOutputResult();

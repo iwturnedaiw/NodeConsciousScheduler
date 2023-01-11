@@ -30,6 +30,7 @@ class SimulatorConfiguration {
     private double prologTimeRatio;
     private double epilogTimeRatio;
     private boolean outputSecondWastedResources;
+    private int scheduleConsiderJobType;
     
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory) {
         this.scheduleUsingMemory = scheduleUsingMemory;
@@ -56,7 +57,8 @@ class SimulatorConfiguration {
             double interacitiveCPURatio,
             double prologTimeRatio,
             double epilogTimeRatio,
-            boolean outputSecondWastedResources) {
+            boolean outputSecondWastedResources,
+            int scheduleConsiderJobType) {
         this.scheduleUsingMemory = scheduleUsingMemory;
         this.considerJobMatching = considerJobMatching;
         this.crammingMemoryScheduling = crammingMemoryScheduling;
@@ -77,6 +79,7 @@ class SimulatorConfiguration {
         this.prologTimeRatio = prologTimeRatio;
         this.epilogTimeRatio = epilogTimeRatio;
         this.outputSecondWastedResources = outputSecondWastedResources;
+        this.scheduleConsiderJobType = scheduleConsiderJobType;
     }
     
     public ArrayList<Double> getThresholdForSlowdown() {
@@ -141,5 +144,9 @@ class SimulatorConfiguration {
 
     public boolean isOutputSecondWastedResources() {
         return outputSecondWastedResources;
+    }
+
+    public int getScheduleConsiderJobType() {
+        return scheduleConsiderJobType;
     }
 }

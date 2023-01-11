@@ -567,6 +567,7 @@ public class NodeConsciousScheduler {
         double prologTimeRatio = Double.parseDouble(configurations.getProperty("PROLOG_TIME_RATIO"));
         double epilogTimeRatio = Double.parseDouble(configurations.getProperty("EPILOG_TIME_RATIO"));
         boolean outputSecondWastedResources = Boolean.parseBoolean(configurations.getProperty("OUTPUT_SECOND_WASTED_RESOURCES"));
+        int scheduleConsiderJobType = Integer.parseInt(configurations.getProperty("SCHEDULE_CONSIDER_JOB_TYPE"));
         
         return new SimulatorConfiguration(slowdownThresholds, 
                 outputMinuteTimeseries, 
@@ -581,7 +582,8 @@ public class NodeConsciousScheduler {
                 interacitiveCPURatio,
                 prologTimeRatio,
                 epilogTimeRatio,
-                outputSecondWastedResources);
+                outputSecondWastedResources,
+                scheduleConsiderJobType);
     }
 
     private static int checkCanExecuteMultipleNodes(int requiredCores, int requiredMemeory, boolean scheduleUsingMemory) {
