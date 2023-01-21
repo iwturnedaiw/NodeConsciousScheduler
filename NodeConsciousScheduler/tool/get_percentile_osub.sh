@@ -4,7 +4,7 @@
 NODE=150
 ALGO=EasyBackfillingOC
 NAME=UniLu-Gaia-2014-1
-COUNT=count.sh
+COUNT=count_job.sh
 t=h
 M=`seq 1 8`
 RESULT_DIR=../
