@@ -30,6 +30,7 @@ import static nodeconsciousscheduler.Constants.CONFIGURATION_FILE;
 import static nodeconsciousscheduler.Constants.DATASET_DIRECTORY;
 import static nodeconsciousscheduler.Constants.NOTSPECIFIED;
 import static nodeconsciousscheduler.Constants.NOTSPECIFIED_STR;
+import nodeconsciousscheduler.Constants.ScheduleConsiderJobType;
 import static nodeconsciousscheduler.Constants.UNSPECIFIED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import nodeconsciousscheduler.ScheduleAlgorithm;

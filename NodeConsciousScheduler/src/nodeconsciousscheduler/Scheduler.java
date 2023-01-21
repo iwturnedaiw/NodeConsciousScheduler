@@ -25,6 +25,8 @@ import java.util.prefs.NodeChangeEvent;
 import static nodeconsciousscheduler.Constants.BLANK_JOBID;
 import static nodeconsciousscheduler.Constants.NOTACTIVATED;
 import static nodeconsciousscheduler.Constants.NOT_FINISHED;
+import static nodeconsciousscheduler.Constants.START_COUNT;
+import nodeconsciousscheduler.Constants.ScheduleConsiderJobType;
 import static nodeconsciousscheduler.Constants.UNSPECIFIED;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
@@ -259,6 +261,11 @@ public abstract class Scheduler {
             ArrayList<CoreInfo> occupiedCores = node.getOccupiedCores();
             if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
                 calculatePriorityForCores(occupiedCores, job);
+            }
+            ScheduleConsiderJobType scjt = NodeConsciousScheduler.sim.getScheduleConsiderJobType();
+            if (scjt == ScheduleConsiderJobType.BATCH_INT) {
+                boolean intJob = job.isInteracitveJob();
+                calculatePriorityForCores(occupiedCores, job, scjt, intJob);
             }
             Collections.sort(occupiedCores);
             for (int j = 0; j < numCores; ++j) {
@@ -1704,10 +1711,12 @@ public abstract class Scheduler {
 
         int migratingJobId = UNUPDATED;
         double currentLeastRatio = 1 << 30;
+        int currentLeastCount = 1 << 30;
         for (int i = 0; i < candidateMigratingJobs.size(); ++i) {
             int tmpMigratingJobId = candidateMigratingJobs.get(i);
             assert maxCoreInfo.getJobList().contains(tmpMigratingJobId);
-            int tmpMigratingJobGroup = NodeConsciousScheduler.sim.getJobMap().get(tmpMigratingJobId).getMatchingGroup();
+            Job tmpMigratingJob = NodeConsciousScheduler.sim.getJobMap().get(tmpMigratingJobId);
+            int tmpMigratingJobGroup = tmpMigratingJob.getMatchingGroup();
             
             if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
                 double localRatio = UNSPECIFIED;
@@ -1721,7 +1730,36 @@ public abstract class Scheduler {
                     migratingJobId = tmpMigratingJobId;
                 }
             }
-            migratingJobId = tmpMigratingJobId;
+            ScheduleConsiderJobType scjt = NodeConsciousScheduler.sim.getScheduleConsiderJobType();
+            if (scjt != ScheduleConsiderJobType.NOTHING) {
+                boolean preferBatchInt = scjt == ScheduleConsiderJobType.BATCH_INT;
+                boolean migrateJobIsIntJob = tmpMigratingJob.isInteracitveJob();
+                
+                boolean targetJobIsIntJob = false;
+                if (preferBatchInt && migrateJobIsIntJob) {
+                    targetJobIsIntJob = false;
+                } else if (preferBatchInt && !migrateJobIsIntJob) {
+                    targetJobIsIntJob = true;
+                } else if (!preferBatchInt && migrateJobIsIntJob) {
+                    targetJobIsIntJob = true;
+                } else if (!preferBatchInt && !migrateJobIsIntJob) {
+                    targetJobIsIntJob = false;
+                } 
+                
+                int localCount = START_COUNT;
+                for (Integer victimJobId: minCoreInfo.getJobList()) {
+                    Job victimJob = NodeConsciousScheduler.sim.getJobMap().get(victimJobId);
+                    boolean victimIntJob = victimJob.isInteracitveJob();
+                    if ( (targetJobIsIntJob && victimIntJob) || (!targetJobIsIntJob && !victimIntJob)) {
+                        ++localCount;
+                    }
+                }
+                if (localCount < currentLeastCount) {
+                    currentLeastCount = localCount;
+                    migratingJobId = tmpMigratingJobId;
+                }                
+            }
+
             /*            
             if (!minCoreInfo.getJobList().contains(tmpMigratingJobId)) {
                 break;
@@ -2275,6 +2313,37 @@ public abstract class Scheduler {
         }
     }
 
+    private void calculatePriorityForCores(ArrayList<CoreInfo> occupiedCores, Job job, ScheduleConsiderJobType scjt, Boolean intJob) {
+        assert NodeConsciousScheduler.sim.getScheduleConsiderJobType() != ScheduleConsiderJobType.NOTHING;
+
+        boolean targetJobIsIntJob = false;
+        
+        if (intJob && scjt == ScheduleConsiderJobType.INT_INT) {
+            targetJobIsIntJob = true;
+        } else if (intJob && scjt == ScheduleConsiderJobType.BATCH_INT){
+            targetJobIsIntJob = false;            
+        } else if (!intJob && scjt == ScheduleConsiderJobType.BATCH_INT) {
+            targetJobIsIntJob = true;
+        } else if (!intJob && scjt == ScheduleConsiderJobType.INT_INT) {
+            targetJobIsIntJob = false;
+        }
+        
+        
+        for (CoreInfo ci: occupiedCores) {
+            ci.setPriority(UNSPECIFIED);
+        }
+        
+        
+        for (CoreInfo ci: occupiedCores) {
+            int coreId = ci.getCoreId();
+            ArrayList<Integer> currentExecutingJobIds = ci.getJobList();
+            
+            int numTargetJobType = countTargetJobType(targetJobIsIntJob, currentExecutingJobIds);
+
+            ci.setPriority((double)1/numTargetJobType);
+        }
+    }    
+    
     /* This method calculates the worst ratio if a new job overcommits with n coexisting jobs. */
     /* The ratio is the worst one of 2*(n+1) values.  */
     protected double calculateMaxDegradationRatio(Job victimJob, Set<Integer> coexistingJobs) {    
@@ -2593,5 +2662,19 @@ public abstract class Scheduler {
 
     public List<Double> getWastedResources() {
         return wastedResources;
+    }
+
+    private int countTargetJobType(boolean targetJobIsIntJob, ArrayList<Integer> currentExecutingJobIds) {
+        int count = START_COUNT;
+
+        for (int coexistingJobId: currentExecutingJobIds) {
+            Job coexistingJob = getJobByJobId(coexistingJobId);
+            boolean intJob = coexistingJob.isInteracitveJob();
+            if ( (targetJobIsIntJob && intJob) || (!targetJobIsIntJob && !intJob) ) {
+                ++count;
+            }
+        }
+        if (count == START_COUNT) count = -1;
+        return count;
     }
 }

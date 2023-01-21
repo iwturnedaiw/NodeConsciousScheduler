@@ -112,7 +112,12 @@ public class Constants {
     
     static int NOT_FINISHED = 2 << 30;
     static int START_TIME = 0;
+    static int START_COUNT = 0;
     public enum TimeDesc {
         SECOND, MINUTE, HOUR, DAY
+    }
+    
+    public enum ScheduleConsiderJobType {
+        NOTHING, INT_INT, BATCH_INT,
     }
 }

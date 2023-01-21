@@ -77,6 +77,7 @@ import static nodeconsciousscheduler.Constants.START_JOB_PER_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.START_JOB_PER_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.START_JOB_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.START_TIME;
+import nodeconsciousscheduler.Constants.ScheduleConsiderJobType;
 import nodeconsciousscheduler.Constants.TimeDesc;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_DAY_OUTPUT;
@@ -129,7 +130,7 @@ public class Simulator {
     private double thresholdForAffinitySchedule;
     private boolean outputUtilizationRatio;
     private boolean outputSecondWastedResources;
-    private int scheduleConsiderJobType;
+    private ScheduleConsiderJobType scheduleConsiderJobType;
 
     
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
@@ -1720,5 +1721,8 @@ public class Simulator {
         }
     }
 
+    public ScheduleConsiderJobType getScheduleConsiderJobType() {
+        return scheduleConsiderJobType;
+    }
 
 }

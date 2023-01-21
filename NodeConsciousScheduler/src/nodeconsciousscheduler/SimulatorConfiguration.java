@@ -9,6 +9,7 @@ package nodeconsciousscheduler;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import nodeconsciousscheduler.Constants.ScheduleConsiderJobType;
 
 /**
  *
@@ -30,7 +31,7 @@ class SimulatorConfiguration {
     private double prologTimeRatio;
     private double epilogTimeRatio;
     private boolean outputSecondWastedResources;
-    private int scheduleConsiderJobType;
+    private Constants.ScheduleConsiderJobType scheduleConsiderJobType;
     
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory) {
         this.scheduleUsingMemory = scheduleUsingMemory;
@@ -79,7 +80,13 @@ class SimulatorConfiguration {
         this.prologTimeRatio = prologTimeRatio;
         this.epilogTimeRatio = epilogTimeRatio;
         this.outputSecondWastedResources = outputSecondWastedResources;
-        this.scheduleConsiderJobType = scheduleConsiderJobType;
+        if (scheduleConsiderJobType == 0) {
+            this.scheduleConsiderJobType = ScheduleConsiderJobType.NOTHING;
+        } else if (scheduleConsiderJobType == 1) {
+            this.scheduleConsiderJobType = ScheduleConsiderJobType.BATCH_INT;
+        } else if (scheduleConsiderJobType == 2) {
+            this.scheduleConsiderJobType = ScheduleConsiderJobType.INT_INT;
+        }
     }
     
     public ArrayList<Double> getThresholdForSlowdown() {
@@ -146,7 +153,7 @@ class SimulatorConfiguration {
         return outputSecondWastedResources;
     }
 
-    public int getScheduleConsiderJobType() {
+    public Constants.ScheduleConsiderJobType getScheduleConsiderJobType() {
         return scheduleConsiderJobType;
     }
 }
