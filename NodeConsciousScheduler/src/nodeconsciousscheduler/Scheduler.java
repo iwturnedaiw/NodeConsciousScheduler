@@ -1717,6 +1717,7 @@ public abstract class Scheduler {
             assert maxCoreInfo.getJobList().contains(tmpMigratingJobId);
             Job tmpMigratingJob = NodeConsciousScheduler.sim.getJobMap().get(tmpMigratingJobId);
             int tmpMigratingJobGroup = tmpMigratingJob.getMatchingGroup();
+            ScheduleConsiderJobType scjt = NodeConsciousScheduler.sim.getScheduleConsiderJobType();
             
             if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
                 double localRatio = UNSPECIFIED;
@@ -1729,9 +1730,7 @@ public abstract class Scheduler {
                     currentLeastRatio = localRatio;
                     migratingJobId = tmpMigratingJobId;
                 }
-            }
-            ScheduleConsiderJobType scjt = NodeConsciousScheduler.sim.getScheduleConsiderJobType();
-            if (scjt != ScheduleConsiderJobType.NOTHING) {
+            } else if (scjt != ScheduleConsiderJobType.NOTHING) {
                 boolean preferBatchInt = scjt == ScheduleConsiderJobType.BATCH_INT;
                 boolean migrateJobIsIntJob = tmpMigratingJob.isInteracitveJob();
                 
@@ -1758,6 +1757,8 @@ public abstract class Scheduler {
                     currentLeastCount = localCount;
                     migratingJobId = tmpMigratingJobId;
                 }                
+            } else {
+                    migratingJobId = tmpMigratingJobId;
             }
 
             /*            
