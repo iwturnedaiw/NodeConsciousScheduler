@@ -120,4 +120,8 @@ public class Constants {
     public enum ScheduleConsiderJobType {
         NOTHING, INT_INT, BATCH_INT,
     }
+    
+    public enum OsubOverheadModelType {
+        NOTHING, CONST, CONSIDER_MULT, 
+    }
 }

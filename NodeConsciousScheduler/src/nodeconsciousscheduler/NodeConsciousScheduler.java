@@ -569,6 +569,8 @@ public class NodeConsciousScheduler {
         double epilogTimeRatio = Double.parseDouble(configurations.getProperty("EPILOG_TIME_RATIO"));
         boolean outputSecondWastedResources = Boolean.parseBoolean(configurations.getProperty("OUTPUT_SECOND_WASTED_RESOURCES"));
         int scheduleConsiderJobType = Integer.parseInt(configurations.getProperty("SCHEDULE_CONSIDER_JOB_TYPE"));
+        int osubOverheadModelType = Integer.parseInt(configurations.getProperty("OSUB_OVERHEAD_MODEL_TYPE"));
+        double osubOverheadConst = Double.parseDouble(configurations.getProperty("OSUB_OVERHEAD_CONST"));
         
         return new SimulatorConfiguration(slowdownThresholds, 
                 outputMinuteTimeseries, 
@@ -584,7 +586,9 @@ public class NodeConsciousScheduler {
                 prologTimeRatio,
                 epilogTimeRatio,
                 outputSecondWastedResources,
-                scheduleConsiderJobType);
+                scheduleConsiderJobType,
+                osubOverheadModelType,
+                osubOverheadConst);
     }
 
     private static int checkCanExecuteMultipleNodes(int requiredCores, int requiredMemeory, boolean scheduleUsingMemory) {

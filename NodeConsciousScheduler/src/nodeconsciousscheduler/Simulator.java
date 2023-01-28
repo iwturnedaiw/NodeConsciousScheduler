@@ -79,6 +79,7 @@ import static nodeconsciousscheduler.Constants.START_JOB_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.START_TIME;
 import nodeconsciousscheduler.Constants.ScheduleConsiderJobType;
 import nodeconsciousscheduler.Constants.TimeDesc;
+import nodeconsciousscheduler.Constants.OsubOverheadModelType;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_HOUR_OUTPUT;
@@ -131,6 +132,8 @@ public class Simulator {
     private boolean outputUtilizationRatio;
     private boolean outputSecondWastedResources;
     private ScheduleConsiderJobType scheduleConsiderJobType;
+    private OsubOverheadModelType osubOverheadModelType;
+    private double osubOverheadConst;
 
     
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
@@ -157,6 +160,10 @@ public class Simulator {
         this.usingAffinityForSchedule = simConf.isUsingAffinityForSchedule();
         this.thresholdForAffinitySchedule = simConf.getThresholdForAffinitySchedule();
         this.scheduleConsiderJobType = simConf.getScheduleConsiderJobType();
+        this.osubOverheadModelType = simConf.getOsubOverheadModelType();
+        if (this.osubOverheadModelType == OsubOverheadModelType.CONST) {
+            this.osubOverheadConst = simConf.getOsubOverheadConst();
+        }
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -1725,4 +1732,11 @@ public class Simulator {
         return scheduleConsiderJobType;
     }
 
+    public OsubOverheadModelType getOsubOverheadModelType() {
+        return osubOverheadModelType;
+    }
+
+    public double getOsubOverheadConst() {
+        return osubOverheadConst;
+    }
 }
