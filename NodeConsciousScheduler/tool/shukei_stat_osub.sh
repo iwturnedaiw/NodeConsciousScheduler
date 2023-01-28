@@ -32,7 +32,7 @@ shukei () {
         elif [ $ARG -eq 5 ] && [ $ARG2 -eq 3 ]; then
           cat ./*_${TP}_${algo}*_n${node}c${CORE}_MEM_OFF_M${m}/test.out | awk '{if ($14 == "0") {a+=1; b+=$5}}; END{print a, b, b/a}' 
         elif [ $ARG -eq 10 ] && [ $ARG2 -eq 0 ]; then
-          cat ./*_${TP}_${algo}*_n${node}c${CORE}_MEM_OFF_M${m}/test.out | awk '{a=$7; b+=$10*$15}; END{print b, a, b/a/N/C}' N=$node C=$CORE
+          cat ./*_${TP}_${algo}*_n${node}c${CORE}_MEM_OFF_M${m}/test.out | awk '{OFMT="%.f"} {a=$7; b+=$10*$15}; END{print b, a, b/a/N/C}' N=$node C=$CORE
         fi
       done
     done
@@ -75,7 +75,9 @@ COMMENTOUT
 NODE="150"
 #TP="KIT-FH2-2016-1"
 #TP="UniLu-Gaia-2014-1"
-TP="UniLu-Gaia-2014-1_alloced"
+TP="UniLu-Gaia-2014-1_6500_alloced"
+#TP="UniLu-Gaia-2014-1_15942_alloced"
+#TP="UniLu-Gaia-2014-1_25365_alloced"
 M="1 2 3 4 5 6 7 8"
 echo "### OC system"
 echo "### maximumSlowdown"
