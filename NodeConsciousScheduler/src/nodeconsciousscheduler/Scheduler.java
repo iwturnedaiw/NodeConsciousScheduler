@@ -1238,7 +1238,7 @@ public abstract class Scheduler {
         double currentAccumulatedComputeQuantityForLatestActivation = job.getCurrentAccumulatedComputeQuantityForLatestActivation();
         int actualExecuteTimeForLatestActivation = job.getActivationTimes().get(currentActivationIndex);
         double restActualExecuteTimeForLastestActivation = (actualExecuteTimeForLatestActivation - currentAccumulatedComputeQuantityForLatestActivation) * currentNetOCStateLevel;
-        
+        restActualExecuteTimeForLastestActivation = max(restActualExecuteTimeForLastestActivation, 0);
         // TODO: This is not accurate
         // Must calculate the accurate ratio when calculating netOCStateLevel
         double jobAffinityRatio = job.getJobAffinityRatio();
