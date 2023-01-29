@@ -46,7 +46,8 @@ public class Job implements Comparable<Job> {
     private int groupId;
     private long maxMemory;
     private int matchingGroup;
-    private double currentRatio;
+    private double jobAffinityRatio;
+    private double osubOverheadRatio;
     private double accumulatedCpuTime;
     private int queueNum;
     private int netOCStateLevel;
@@ -102,7 +103,8 @@ public class Job implements Comparable<Job> {
         this.groupId = groupId;
         this.maxMemory = maxMemory;
         this.matchingGroup = matchingGroup;
-        this.currentRatio = 1.0;
+        this.jobAffinityRatio = 1.0;
+        this.osubOverheadRatio = 1.0;
         
         this.startTime = -1;
         this.finishedTime = NOT_FINISHED;
@@ -366,12 +368,12 @@ public class Job implements Comparable<Job> {
         this.matchingGroup = matchingGroup;
     }
 
-    public double getCurrentRatio() {
-        return currentRatio;
+    public double getJobAffinityRatio() {
+        return jobAffinityRatio;
     }
 
-    public void setCurrentRatio(double currentRatio) {
-        this.currentRatio = currentRatio;
+    public void setJobAffinityRatio(double jobAffinityRatio) {
+        this.jobAffinityRatio = jobAffinityRatio;
     }
 
     public double getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity() {
@@ -468,6 +470,12 @@ public class Job implements Comparable<Job> {
     public void setCurrentDeactiveTime(int currentDeactiveTime) {
         this.currentDeactiveTime = currentDeactiveTime;
     }
-    
-    
+
+    public double getOsubOverheadRatio() {
+        return osubOverheadRatio;
+    }
+
+    public void setOsubOverheadRatio(double osubOverheadRatio) {
+        this.osubOverheadRatio = osubOverheadRatio;
+    }
 }

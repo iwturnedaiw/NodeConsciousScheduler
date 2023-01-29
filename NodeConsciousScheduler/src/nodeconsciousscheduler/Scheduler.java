@@ -1087,8 +1087,9 @@ public abstract class Scheduler {
         // TODO: should be double, but now int.        
         double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int realDeltaTime = currentTime - previousMeasuredTime;
-        double ratio = victimJob.getCurrentRatio();
-        currentAccumulatedComputeQuantity += (double)realDeltaTime / currentNetOCStateLevel / ratio;
+        double jobAffinityRatio = victimJob.getJobAffinityRatio();
+        double osubOvhRatio = victimJob.getOsubOverheadRatio();
+        currentAccumulatedComputeQuantity += (double)realDeltaTime / currentNetOCStateLevel / jobAffinityRatio / osubOvhRatio;
         victimJob.setCurrentAccumulatedComputeQuantity(currentAccumulatedComputeQuantity);
         
         double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
@@ -1142,8 +1143,9 @@ public abstract class Scheduler {
         int realDeltaTime = currentTime - previousMeasuredTime;
         double currentAccumulatedComputeQuantityForLatestActivation = job.getCurrentAccumulatedComputeQuantityForLatestActivation();
 
-        double ratio = job.getCurrentRatio();
-        currentAccumulatedComputeQuantityForLatestActivation += (double)realDeltaTime / currentNetOCStateLevel / ratio;
+        double jobAffinityRatio = job.getJobAffinityRatio();
+        double osubOvhRatio = job.getOsubOverheadRatio();
+        currentAccumulatedComputeQuantityForLatestActivation += (double)realDeltaTime / currentNetOCStateLevel / jobAffinityRatio / osubOvhRatio;
         job.setCurrentAccumulatedComputeQuantityForLatestActivation(currentAccumulatedComputeQuantityForLatestActivation);
         
         int currentOCStateLevel = job.getOCStateLevel();
@@ -1198,8 +1200,9 @@ public abstract class Scheduler {
             ratio = calculateMaxDegradationRatioForVictim(victimJob, coexistingJobs);
         }
         */
-        double ratio = victimJob.getCurrentRatio();
-        restActualExecuteTime *= ratio;
+        double jobAffinityRatio = victimJob.getJobAffinityRatio();
+        double osubOvhRatio = victimJob.getOsubOverheadRatio();
+        restActualExecuteTime *= (jobAffinityRatio * osubOvhRatio);
         double trueEndTime = startTime + restActualExecuteTime;
 
         return (int) ceil(trueEndTime);
@@ -1220,8 +1223,9 @@ public abstract class Scheduler {
         
         // TODO: This is not accurate
         // Must calculate the accurate ratio when calculating netOCStateLevel
-        double ratio = job.getCurrentRatio();
-        restActualExecuteTimeForLastestActivation *= ratio;
+        double jobAffinityRatio = job.getJobAffinityRatio();
+        double osubOvhRatio = job.getOsubOverheadRatio();
+        restActualExecuteTimeForLastestActivation *= (jobAffinityRatio * osubOvhRatio);
         double deactivateTime = startTime + restActualExecuteTimeForLastestActivation;
 
         return (int) ceil(deactivateTime);
@@ -1271,7 +1275,8 @@ public abstract class Scheduler {
         int netOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
         coexistingJob.setNetOCStateLevel(netOCStateLevel);
         double ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingJob.getCoexistingJobs());
-        coexistingJob.setCurrentRatio(ratio);
+        coexistingJob.setJobAffinityRatio(ratio);
+        coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
 //        assert trueEndTime <= oldTrueEndTime;
 
@@ -1468,6 +1473,8 @@ public abstract class Scheduler {
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);
         victimJob.setNetOCStateLevel(netOCStateLevel);
+        victimJob.setJobAffinityRatio(calculateMaxDegradationRatio(victimJob, victimJob.getCoexistingJobs()));
+        victimJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(victimJob));
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         assert oldTrueEndTime <= trueEndTime;
         victimJob.setOCStateLevel(currentOCStateLevel);
@@ -1517,7 +1524,8 @@ public abstract class Scheduler {
 
         /* TODO: must calculate ratio among activated jobs */
         double ratio = calculateMaxDegradationRatioForVictim(victimJob, victimJob.getCoexistingJobs());
-        victimJob.setCurrentRatio(ratio);
+        victimJob.setJobAffinityRatio(ratio);
+        victimJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(victimJob));
         
         if (opponentInteractiveJobFlag) {
             ;;
@@ -1621,6 +1629,8 @@ public abstract class Scheduler {
         victimJob.setOCStateLevel(OCStateLevel);
         int netOCStateLevel = calculateNewOCStateLevelForExecutingJob(victimJob, true);
         victimJob.setNetOCStateLevel(netOCStateLevel);
+        victimJob.setJobAffinityRatio(calculateMaxDegradationRatio(victimJob, victimJob.getCoexistingJobs()));
+        victimJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(victimJob));
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         //assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime+1) || (!OCStateLevelIncreasingflag && oldTrueEndTime >= trueEndTime);
         victimJob.setOCStateLevel(currentOCStateLevel);
@@ -1851,7 +1861,8 @@ public abstract class Scheduler {
         migratingJobCoexistingJob.removeAll(deletedCoexistingJobs);
         
         double ratio = calculateMaxDegradationRatioForVictim(migratingJob, migratingJobCoexistingJob);
-        migratingJob.setCurrentRatio(ratio);
+        migratingJob.setJobAffinityRatio(ratio);
+        migratingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(migratingJob));
         
         return result;
     }
@@ -2156,6 +2167,25 @@ public abstract class Scheduler {
         return ratio;
     }
 
+    protected double calculateOsubOverheadRatioForVictim(Job victimJob) {    
+        Constants.OsubOverheadModelType oomt = NodeConsciousScheduler.sim.getOsubOverheadModelType();
+        boolean consideOsubOverhead = (oomt != Constants.OsubOverheadModelType.NOTHING);
+        if (!consideOsubOverhead) return 1.0;
+
+        double ratio = 0;
+        
+        int netOCStateLevel = victimJob.getNetOCStateLevel();
+        if (netOCStateLevel == 1) {
+            ratio = 1.0;
+        } else if (oomt == Constants.OsubOverheadModelType.CONST) {         
+            ratio = NodeConsciousScheduler.sim.getOsubOverheadConst();
+        } else if (oomt == Constants.OsubOverheadModelType.CONSIDER_MULT) {
+            // TODO
+            ratio = NodeConsciousScheduler.sim.getOsubOverheadConst();
+        }
+        if (ratio == 0) ratio = 1.0;
+        return ratio;
+    }
 
     protected void modifyTheENDEventTime(Job coexistingJob, int coexistingJobId, int currentTime, int OCStateLevel, ArrayList<Event> result, boolean endFlag, int endingJobId) {
         int coexistingStartTime = coexistingJob.getStartTime();
@@ -2178,7 +2208,7 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
         Set<Integer> coexistingCoexistingJobs = coexistingJob.getCoexistingJobs();
-        double ratio = coexistingJob.getCurrentRatio();
+        double ratio = coexistingJob.getJobAffinityRatio();
         if (endFlag) {
             coexistingCoexistingJobs.remove(endingJobId);
             ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingCoexistingJobs);
@@ -2190,7 +2220,8 @@ public abstract class Scheduler {
             coexistingJob.setNetOCStateLevel(netOCStateLevel);
         }
         coexistingJob.setOCStateLevel(OCStateLevel);
-        coexistingJob.setCurrentRatio(ratio);
+        coexistingJob.setJobAffinityRatio(ratio);
+        coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
         coexistingCoexistingJobs.add(endingJobId);
 //        assert trueEndTime <= oldTrueEndTime;
@@ -2500,6 +2531,8 @@ public abstract class Scheduler {
             assert coexistingNetOCStateLevel <= newCoexistingNetOCStateLevel;
             assert coexistingNetOCStateLevel <= coexistingOCStateLevel;
             coexistingJob.setNetOCStateLevel(newCoexistingNetOCStateLevel);
+            coexistingJob.setJobAffinityRatio(calculateMaxDegradationRatio(coexistingJob, coexistingJob.getCoexistingJobs()));
+            coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
             
             if (!intJobFlag) {
                 int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
@@ -2532,6 +2565,8 @@ public abstract class Scheduler {
         assert netOCStateLevel <= newNetOCStateLevel;
         assert newNetOCStateLevel <= OCStateLevel;
         job.setNetOCStateLevel(newNetOCStateLevel);
+        job.setJobAffinityRatio(calculateMaxDegradationRatio(job, coexistingJobs));
+        job.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(job));
         int deactivateTime = calculateNewActualEndTimeForActivation(currentTime, job);
         
 
@@ -2582,6 +2617,8 @@ public abstract class Scheduler {
             assert newCoexistingNetOCStateLevel <= coexistingNetOCStateLevel;
             assert coexistingNetOCStateLevel <= coexistingOCStateLevel;
             coexistingJob.setNetOCStateLevel(newCoexistingNetOCStateLevel);
+            coexistingJob.setJobAffinityRatio(calculateMaxDegradationRatio(coexistingJob, coexistingJob.getCoexistingJobs()));
+            coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
             
             boolean intJobFlag = coexistingJob.isInteracitveJob();
             boolean actStateFlag = coexistingJob.isActivationState();
@@ -2627,6 +2664,8 @@ public abstract class Scheduler {
         assert newNetOCStateLevel <= netOCStateLevel;
         assert newNetOCStateLevel <= OCStateLevel;
         job.setNetOCStateLevel(newNetOCStateLevel);
+        job.setJobAffinityRatio(calculateMaxDegradationRatio(job, coexistingJobs));
+        job.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(job));
         
         int currentActivationIndex = job.getCurrentActivationIndex();
         ArrayList<Integer> activationTimes = job.getActivationTimes();

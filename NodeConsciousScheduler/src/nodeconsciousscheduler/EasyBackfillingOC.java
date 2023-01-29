@@ -175,7 +175,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForBackfillJob;
-                    job.setCurrentRatio(calculateMaxDegradationRatioForVictim(job, victimJobs));
+                    job.setJobAffinityRatio(calculateMaxDegradationRatioForVictim(job, victimJobs));
+                    job.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(job));
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
                     if (!interJobFlag) {
@@ -337,7 +338,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     Set<Integer> tmpCoexistingJobs = cloneCoexistingJobs(victimJob.getCoexistingJobs());
                     tmpCoexistingJobs.add(backfillJobId);
                     double tmpRatio = calculateMaxDegradationRatioForVictim(victimJob, tmpCoexistingJobs);
-                    if (tmpRatio > victimJob.getCurrentRatio()) {
+                    if (tmpRatio > victimJob.getJobAffinityRatio()) {
                         backfillFlag = false;
                         break;
                     }
@@ -443,7 +444,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
 
                     backfillJob.setPreviousMeasuredTime(startTime);
-                    backfillJob.setCurrentRatio(calculateMaxDegradationRatioForVictim(backfillJob, victimJobs));
+                    backfillJob.setJobAffinityRatio(calculateMaxDegradationRatioForVictim(backfillJob, victimJobs));
+                    backfillJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(backfillJob));
                     int trueEndTime = calculateNewActualEndTime(startTime, backfillJob);
                     result.add(new Event(EventType.START, startTime, backfillJob));
                     boolean interactiveJob = backfillJob.isInteracitveJob();

@@ -218,7 +218,8 @@ public class FCFSOC extends FCFS {
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForJob;
                     double ratio = calculateMaxDegradationRatioForVictim(job, victimJobs);
-                    job.setCurrentRatio(ratio);
+                    job.setJobAffinityRatio(ratio);
+                    job.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(job));
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
                     if (!interJobFlag) {
