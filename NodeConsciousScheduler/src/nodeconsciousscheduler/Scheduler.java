@@ -381,12 +381,23 @@ public abstract class Scheduler {
                     for (int j = 0; j < usingNodes.size(); ++j) {
                         usingNodeIds.add(usingNodes.get(j).getNodeNum());
                     }
-                    if (occupiedTimeInTimeSeries <= currentTime && occupiedTimeInTimeSeries < endEventOccuranceTimeNow && usingNodeIds.contains(i)) {
-                        int jobId = job.getJobId();
-                        System.out.println("Job " + jobId + ": slows down more than requested time... it needs to be modified timeslices information");
-                        existSlowsDownJob = true;
-                        modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, endEventOccuranceTimeNow, i, job);
-                        modifiedJobInTimeSlices.add(job);
+                    if (occupiedTimeInTimeSeries <= currentTime && usingNodeIds.contains(i)) {
+                        boolean intJob = job.isInteracitveJob();
+                        boolean actState = job.isActivationState();
+                        int currentDetectiveTime = job.getCurrentDeactiveTime();
+                        if ( (occupiedTimeInTimeSeries < endEventOccuranceTimeNow) |
+                             (intJob && actState && occupiedTimeInTimeSeries < currentDetectiveTime)
+                           ) {
+                            int jobId = job.getJobId();
+                            System.out.println("Job " + jobId + ": slows down more than requested time... it needs to be modified timeslices information");
+                            existSlowsDownJob = true;
+                            int updateTimeSliceValue = endEventOccuranceTimeNow;
+                            if (endEventOccuranceTimeNow == 0 && intJob && actState) {
+                                updateTimeSliceValue = currentDetectiveTime;
+                            }
+                            modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, updateTimeSliceValue, i, job);
+                            modifiedJobInTimeSlices.add(job);                                
+                            }
                     }
                 }
                 assert existMultipleEventSameTime || existSlowsDownJob;
@@ -396,8 +407,14 @@ public abstract class Scheduler {
         }
         for (Job job: modifiedJobInTimeSlices) {
             int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
-            int newOccupiedTimeInTimeSlices = endEventOccuranceTimeNow;
-            job.setOccupiedTimeInTimeSlices(newOccupiedTimeInTimeSlices);
+            int updateTimeSliceValue = endEventOccuranceTimeNow;
+            boolean intJob = job.isInteracitveJob();
+            boolean actState = job.isActivationState();
+            int currentDetectiveTime = job.getCurrentDeactiveTime();                    
+            if (endEventOccuranceTimeNow == 0 && intJob && actState) {
+                updateTimeSliceValue = currentDetectiveTime;
+            }
+            job.setOccupiedTimeInTimeSlices(updateTimeSliceValue);
         }
         
         // Executing Job List
@@ -1193,6 +1210,7 @@ public abstract class Scheduler {
         double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int actualExecuteTime = victimJob.getActualExecuteTime();
         double restActualExecuteTime = (actualExecuteTime - currentAccumulatedComputeQuantity) * currentNetOCStateLevel;      
+        restActualExecuteTime = max(restActualExecuteTime, 0);
         //double ratio = 1.0;
         /*
         if (OCStateLevel >= 2 && NodeConsciousScheduler.sim.isConsiderJobMatching()) {
@@ -1309,6 +1327,7 @@ public abstract class Scheduler {
         double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
         int requiredTime = victimJob.getRequiredTime();
         double restRequiredTime = (requiredTime - currentAccumulatedComputeQuantityOnlyConsiderMultiplicity) * currentOCStateLevel;
+        restRequiredTime = max(restRequiredTime, 1);
         double expectedEndTime = currentTime + restRequiredTime;
 
         return (int) ceil(expectedEndTime);
