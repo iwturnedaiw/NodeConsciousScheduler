@@ -279,12 +279,32 @@ public class EasyBackfillingOC extends EasyBackfilling {
         assignFirstJobTemporally(tmpTimeSlices, tmpAllNodesInfo, startTimeFirstJob, firstJob, canExecuteTmpNodes);
 
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
+        System.out.println("debug) Queue length: " + tailWaitingQueue.size());
+        ArrayList<Integer> cancelJobExecutionTimeList = new ArrayList<Integer>();
+        ArrayList<Integer> cancelJobRequiredCoresList = new ArrayList<Integer>();
+
         while (tailWaitingQueue.size() > 0) {
             TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
             assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;            
             Job backfillJob = tailWaitingQueue.poll();
             int backfillJobId = backfillJob.getJobId();
+            int backfillRequiredTime = backfillJob.getRequiredTime();
+            int backfillRequiredCores = backfillJob.getRequiredCores();
+            
+            boolean cancelFlag = false;
+            for (int j = 0; j < cancelJobExecutionTimeList.size(); ++j) {
+                int cancelJobExecutionTime = cancelJobExecutionTimeList.get(j);
+                int cancelJobRequiredCores = cancelJobRequiredCoresList.get(j);
+                if (cancelJobExecutionTime <= backfillRequiredTime &&
+                    cancelJobRequiredCores <= backfillRequiredCores) {
+                    cancelFlag = true;
+                    break;
+                }
+            } 
+            if (cancelFlag) {
+                continue;
+            }
 
             canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, startTimeFirstJob, assignTmpNodesNo);
 
@@ -305,14 +325,17 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 int startTime = currentTime;
                 Set<Integer> victimJobs = new HashSet<Integer>();
                 victimJobs = searchVictimJobs(startTime, backfillJob, assignNodesNo);
+                
+                System.out.println("\tdebug) candidate backfill jobId: " + backfillJobId);
+                System.out.println("\tdebug) victimJobs: " + victimJobs);
 
-                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
-                        double ratio = calculateMaxDegradationRatio(backfillJob, victimJobs);
-                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
-                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY FOR BACKFILL JOB !!!!!!");
-                            break;
-                        }
-                    }
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {                        
+                    double ratio = calculateMaxDegradationRatio(backfillJob, victimJobs);  
+                    if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {                    
+                        System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY FOR BACKFILL JOB !!!!!!");                        
+                        break;                        
+                    }                    
+                }
                 
                 boolean backfillFlag = true;
                 // Check whether victim jobs will slow and delay the start time of first job.
@@ -330,6 +353,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                     if (victimNewOCStateLevel > victimCurrentOCStateLevel) {
                         backfillFlag = false;
+                        cancelJobExecutionTimeList.add(backfillRequiredTime);
+                        cancelJobRequiredCoresList.add(backfillRequiredCores);
+
                         break;
                     }
 
@@ -346,7 +372,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 
                 if (!backfillFlag) continue;
 
-                System.out.println("Succeed Backfill Job: " + backfillJobId + ", at " + currentTime);
+                System.out.println("Succeed Backfill Job: " + backfillJobId + ", at " + currentTime + ", queueSize: " + tailWaitingQueue.size());
                 
                 Iterator itr = waitingQueue.iterator();
                 while (itr.hasNext()) {

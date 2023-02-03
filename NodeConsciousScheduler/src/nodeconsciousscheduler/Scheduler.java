@@ -382,25 +382,59 @@ public abstract class Scheduler {
                         usingNodeIds.add(usingNodes.get(j).getNodeNum());
                     }
                     if (occupiedTimeInTimeSeries <= currentTime && usingNodeIds.contains(i)) {
-                        boolean intJob = job.isInteracitveJob();
-                        boolean actState = job.isActivationState();
                         int currentDetectiveTime = job.getCurrentDeactiveTime();
-                        if ( (occupiedTimeInTimeSeries < endEventOccuranceTimeNow) |
-                             (intJob && actState && occupiedTimeInTimeSeries < currentDetectiveTime)
-                           ) {
+                        if (occupiedTimeInTimeSeries < endEventOccuranceTimeNow) {
                             int jobId = job.getJobId();
                             System.out.println("Job " + jobId + ": slows down more than requested time... it needs to be modified timeslices information");
                             existSlowsDownJob = true;
                             int updateTimeSliceValue = endEventOccuranceTimeNow;
-                            if (endEventOccuranceTimeNow == 0 && intJob && actState) {
-                                updateTimeSliceValue = currentDetectiveTime;
-                            }
                             modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, updateTimeSliceValue, i, job);
                             modifiedJobInTimeSlices.add(job);                                
-                            }
+                        }
                     }
                 }
-                assert existMultipleEventSameTime || existSlowsDownJob;
+                boolean existIntermittenceInteractiveJob = false;
+                for (int k = 0; k < executingJobList.size(); ++k) {
+                    Job job = executingJobList.get(k);
+                    boolean intJob = job.isInteracitveJob();
+                    if (!intJob) {
+                        continue;
+                    }
+                    
+                    int occupiedTimeInTimeSeries = job.getOccupiedTimeInTimeSlices();
+                    ArrayList<UsingNode> usingNodes = job.getUsingNodesList();
+                    ArrayList<Integer> usingNodeIds = new ArrayList<Integer>();
+                    for (int j = 0; j < usingNodes.size(); ++j) {
+                        usingNodeIds.add(usingNodes.get(j).getNodeNum());
+                    }
+
+                    boolean actState = job.isActivationState();
+                    int currentDetectiveTime = job.getCurrentDeactiveTime();
+                    int nextActivationTime = job.getNextActivationTime();
+
+                    
+                    if ( ( occupiedTimeInTimeSeries <= currentTime && usingNodeIds.contains(i) ) &&
+                         ( ( actState && occupiedTimeInTimeSeries < currentDetectiveTime) ||
+                           ( !actState && occupiedTimeInTimeSeries <= nextActivationTime))
+                       )
+                    {                    
+                        int jobId = job.getJobId();                     
+                        System.out.println("Job " + jobId + ": interactive job, ... it needs to be modified timeslices information");
+                        existIntermittenceInteractiveJob = true;
+                        int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
+                        if (endEventOccuranceTimeNow == 0) {                            
+                            int updateTimeSliceValue;
+                            if (actState) {
+                                updateTimeSliceValue = currentDetectiveTime;
+                            } else {
+                                updateTimeSliceValue = nextActivationTime;
+                            }
+                            modifyTimeSlicesDueToInteractiveJob(currentTime, occupiedTimeInTimeSeries, updateTimeSliceValue, i, job);
+                            modifiedJobInTimeSlices.add(job);                            
+                        }                                               
+                    }
+                }                
+                assert existMultipleEventSameTime || existSlowsDownJob || existIntermittenceInteractiveJob;
             } else {
                 ret1 = false;
             }
@@ -410,9 +444,14 @@ public abstract class Scheduler {
             int updateTimeSliceValue = endEventOccuranceTimeNow;
             boolean intJob = job.isInteracitveJob();
             boolean actState = job.isActivationState();
-            int currentDetectiveTime = job.getCurrentDeactiveTime();                    
-            if (endEventOccuranceTimeNow == 0 && intJob && actState) {
-                updateTimeSliceValue = currentDetectiveTime;
+            int currentDetectiveTime = job.getCurrentDeactiveTime();
+            int nextActivationTime = job.getNextActivationTime();
+            if (endEventOccuranceTimeNow == 0 && intJob) {
+                if (actState) {
+                    updateTimeSliceValue = currentDetectiveTime;
+                } else {
+                    updateTimeSliceValue = nextActivationTime;
+                }
             }
             job.setOccupiedTimeInTimeSlices(updateTimeSliceValue);
         }
@@ -2702,7 +2741,8 @@ public abstract class Scheduler {
             evs.add(new Event(EventType.INT_ACTIVATE, activateTime, job));
 
             ++currentActivationIndex;
-            job.setCurrentActivationIndex(currentActivationIndex);            
+            job.setCurrentActivationIndex(currentActivationIndex);
+            job.setNextActivationTime(activateTime);
         }
         return evs;
     }
@@ -2735,5 +2775,66 @@ public abstract class Scheduler {
         }
         if (count == START_COUNT) count = -1;
         return count;
+    }
+
+    private void modifyTimeSlicesDueToInteractiveJob(int currentTime, int occupiedTimeInTimeSeries, int updateTimeSliceValue, int i, Job job) {
+        modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, updateTimeSliceValue, i, job);
+    }
+
+    ArrayList<Event> updateVictimJobOCStateLevel(int currentTime, Job job) {
+        Set<Integer> coexistingJobs = job.getCoexistingJobs();
+        ArrayList<Event> evs = new ArrayList<Event>();
+
+        for (int coexistingJobId : coexistingJobs) {
+            Job coexistingJob = getJobByJobId(coexistingJobId);
+
+            boolean intJobFlag = coexistingJob.isInteracitveJob();
+            boolean actStateFlag = coexistingJob.isActivationState();
+            if (!intJobFlag) {
+                measureCurrentExecutingTime(currentTime, coexistingJob);
+            } else if (actStateFlag) {
+                measureCurrentExecutingTimeForActivation(currentTime, coexistingJob, currentTime);
+            }
+            coexistingJob.setPreviousMeasuredTime(currentTime);
+        }
+
+        for (int coexistingJobId : coexistingJobs) {
+            Job coexistingJob = getJobByJobId(coexistingJobId);
+            int coexistingNetOCStateLevel = coexistingJob.getNetOCStateLevel();
+            int coexistingOCStateLevel = coexistingJob.getOCStateLevel();
+
+            int newCoexistingNetOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
+            assert newCoexistingNetOCStateLevel <= coexistingNetOCStateLevel;
+            assert coexistingNetOCStateLevel <= coexistingOCStateLevel;
+            coexistingJob.setNetOCStateLevel(newCoexistingNetOCStateLevel);
+            coexistingJob.setJobAffinityRatio(calculateMaxDegradationRatio(coexistingJob, coexistingJob.getCoexistingJobs()));
+            coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
+
+            boolean intJobFlag = coexistingJob.isInteracitveJob();
+            boolean actStateFlag = coexistingJob.isActivationState();
+
+            if (!intJobFlag) {
+                int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
+                int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
+                if (oldTrueEndTime != trueEndTime) {
+                    printThrownEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
+                    evs.add(new Event(EventType.END, trueEndTime, coexistingJob));
+                    coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);
+                    printThrownEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
+                    evs.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
+                }
+            } else if (actStateFlag) {
+                int oldDeactivateTime = coexistingJob.getCurrentDeactiveTime();
+                int deactivateTime = calculateNewActualEndTimeForActivation(currentTime, coexistingJob);
+                if (oldDeactivateTime != currentTime && oldDeactivateTime != deactivateTime) {
+                    printThrownEvent(currentTime, deactivateTime, coexistingJob, EventType.DELETE_DEACTIVE, 1);
+                    evs.add(new Event(EventType.DELETE_DEACTIVE, currentTime, coexistingJob, oldDeactivateTime));
+                    coexistingJob.setCurrentDeactiveTime(deactivateTime);
+                    printThrownEvent(currentTime, deactivateTime, coexistingJob, EventType.INT_DEACTIVATE, 1);
+                    evs.add(new Event(EventType.INT_DEACTIVATE, deactivateTime, coexistingJob));
+                }
+            }
+        }
+        return evs;
     }
 }
