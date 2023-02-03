@@ -2,7 +2,8 @@
 
 # SETTING
 JOBNUM=51871
-SUM_RSC=512097
+#SUM_RSC=512097
+SUM_RSC=506616 # 1762. only_batch
 PAR90=`bc <<< $SUM_RSC*0.90`
 PAR95=`bc <<< $SUM_RSC*0.95`
 PAR90=`echo ${PAR90} | awk '{r=int($1); print (r==$1) ? r : r+1}'`

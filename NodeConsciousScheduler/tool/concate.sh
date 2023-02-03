@@ -3,10 +3,14 @@
 # SETTING
 NODE=150
 ALGO=EasyBackfillingOC
-BNAME=UniLu-Gaia-2014-1_only_batch
-INAME=UniLu-Gaia-2014-1_int_alloced
+BNAME=UniLu-Gaia-2014-1_1762_only_batch
+#BNAME=UniLu-Gaia-2014-1_6500_only_batch
+#BNAME=UniLu-Gaia-2014-1_15913_only_batch
+INAME=UniLu-Gaia-2014-1_1762_int_alloced
+#INAME=UniLu-Gaia-2014-1_6500_int_alloced
+#INAME=UniLu-Gaia-2014-1_15913_int_alloced
 ISTART=431217 # ARRIVAL TIME OF FIRST INTERACTIVE JOB
-RESULT_DIR=/home/minami/work/20220721_accurate_int/NodeConsciousScheduler/NodeConsciousScheduler/result/UniLu/conv
+RESULT_DIR=/home/minami/work/20220721_accurate_int/NodeConsciousScheduler/NodeConsciousScheduler/result/1762_res/optimum
 
 function concate() {
   r=$1

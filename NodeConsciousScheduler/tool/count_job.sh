@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # SETTING
-JOBNUM=51871
+#JOBNUM=51871
+JOBNUM=50109 # only_batch
 PAR90=`bc <<< $JOBNUM*0.90`
 PAR95=`bc <<< $JOBNUM*0.95`
 PAR90=`echo ${PAR90} | awk '{r=int($1); print (r==$1) ? r : r+1}'`
