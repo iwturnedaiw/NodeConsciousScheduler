@@ -2,7 +2,8 @@
 
 #CORE=20
 CORE=12
-ALGO="FCFS EasyBackfilling"
+#ALGO="FCFS EasyBackfilling"
+ALGO="EasyBackfilling"
 
 ### slowdown
 shukei () {
@@ -72,29 +73,31 @@ shukei 10 0
 COMMENTOUT
 
 #NODE="1152"
-NODE="150"
+#NODE="150"
+NODE="146"
 #TP="KIT-FH2-2016-1"
 #TP="UniLu-Gaia-2014-1"
+TP="UniLu-Gaia-2014-1_1762_only_batch"
 #TP="UniLu-Gaia-2014-1_6500_alloced"
-TP="UniLu-Gaia-2014-1_15913_alloced"
+#TP="UniLu-Gaia-2014-1_15913_alloced"
 #TP="UniLu-Gaia-2014-1_25365_alloced"
-M="1 2 3 4 5 6 7 8"
+M="2 3 4 5 6 7 8"
 echo "### OC system"
 echo "### maximumSlowdown"
 shukei 12 0
 echo "### maximumSlowdown(T>600)"
 shukei 12 1
-echo "### maximumSlowdown(int)"
-shukei 12 2
-echo "### maximumSlowdown(int, T>600)"
-shukei 12 3
+#echo "### maximumSlowdown(int)"
+#shukei 12 2
+#echo "### maximumSlowdown(int, T>600)"
+#shukei 12 3
 echo "### maximumWaitingTime"
 shukei 5 0
 echo "### averagedWaitingTime"
 shukei 5 1
-echo "### maximumWaitingTime(int)"
-shukei 5 2
-echo "### averagedWaitingTime(int)"
-shukei 5 3
+#echo "### maximumWaitingTime(int)"
+#shukei 5 2
+#echo "### averagedWaitingTime(int)"
+#shukei 5 3
 echo "### util"
 shukei 10 0
