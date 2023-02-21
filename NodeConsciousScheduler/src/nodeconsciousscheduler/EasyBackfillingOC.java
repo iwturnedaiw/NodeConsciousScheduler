@@ -273,9 +273,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
 
         firstJob.setOCStateLevel(OCStateLevelForFirstJob);
-        makeTimeslices(startTimeFirstJob, tmpTimeSlices);
+        makeTimeslices(startTimeFirstJob, tmpTimeSlices, true);
         int endTimeFirstJob = calculateNewExpectedEndTime(startTimeFirstJob, firstJob);
-        makeTimeslices(endTimeFirstJob, tmpTimeSlices);
+        makeTimeslices(endTimeFirstJob, tmpTimeSlices, true);
         assignFirstJobTemporally(tmpTimeSlices, tmpAllNodesInfo, startTimeFirstJob, firstJob, canExecuteTmpNodes);
 
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
@@ -387,12 +387,12 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 //backfillJob.setStartTime(startTime);
 
                 makeTimeslices(startTime);
-                makeTimeslices(startTime, tmpTimeSlices);
+                makeTimeslices(startTime, tmpTimeSlices, false);
                 
                 if (OCStateLevelForBackfillJob == 1) {
                     int expectedEndTime = startTime + backfillJob.getRequiredTime();
                     makeTimeslices(expectedEndTime);
-                    makeTimeslices(expectedEndTime, tmpTimeSlices);
+                    makeTimeslices(expectedEndTime, tmpTimeSlices, false);
                     backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     backfillJob.setOCStateLevel(OCStateLevelForBackfillJob);
@@ -451,9 +451,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob, tmpTimeSlices);
 
                         makeTimeslices(currentTime);
-                        makeTimeslices(currentTime, tmpTimeSlices);
+                        makeTimeslices(currentTime, tmpTimeSlices, false);
                         makeTimeslices(newExpectedEndTime);
-                        makeTimeslices(newExpectedEndTime, tmpTimeSlices);
+                        makeTimeslices(newExpectedEndTime, tmpTimeSlices, false);
                         reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob);
                         reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob, tmpTimeSlices);
                     }
@@ -463,7 +463,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     backfillJob.setNetOCStateLevel(netOCStateLevel);
                     int expectedEndTime = calculateNewExpectedEndTime(currentTime, backfillJob);
                     makeTimeslices(expectedEndTime);
-                    makeTimeslices(expectedEndTime, tmpTimeSlices);
+                    makeTimeslices(expectedEndTime, tmpTimeSlices, false);
                     backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     assignJob(startTime, backfillJob, assignNodesNo);

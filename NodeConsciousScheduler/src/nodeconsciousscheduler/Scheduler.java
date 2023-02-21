@@ -88,14 +88,16 @@ public abstract class Scheduler {
     }
     
     protected void makeTimeslices(int currentTime) {
-        makeTimeslices(currentTime, this.timeSlices);
+        makeTimeslices(currentTime, this.timeSlices, true);
     }
     
-    protected void makeTimeslices(int currentTime, LinkedList<TimeSlice> timeSlices) {        
+    protected void makeTimeslices(int currentTime, LinkedList<TimeSlice> timeSlices, boolean uniteFlag) {        
         if (existSliceStartAt(currentTime, timeSlices))
             return;
 
-        uniteTimeSlices(timeSlices);
+        if (uniteFlag) {
+            uniteTimeSlices(timeSlices);
+        }
         
         int breakIndex = UNUPDATED;
         breakIndex = sliceIndexToSplit(currentTime, timeSlices);
