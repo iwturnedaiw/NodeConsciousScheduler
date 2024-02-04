@@ -65,7 +65,7 @@ def main():
         csvfile = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for i in range(int(array_size)):
             res = (started_resource[i] - finished_resource[i])/SYS_SIZE
-            csvfile.writerow([i, started_resource[i], finished_resource[i], res])
+            csvfile.writerow([i, res])
 
 
 if __name__ == "__main__":
