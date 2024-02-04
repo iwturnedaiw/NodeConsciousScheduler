@@ -2,15 +2,18 @@ import sys
 import re
 
 OFFSET = 431217
-SYS_SIZE_RATIO = 1/25
+SYS_SIZE_RATIO = 25
+INT_JOB_QUEUE = 0
 
 def extract_time_range(line):
     if consider_utilization:
-        match = re.match(r'\[(\d+), (\d+)\] \(\d+h\) (\d+)', line)
+        match = re.match(r'\[(\d+), (\d+)\] \(\d+h\) (\d+\.\d+)', line)
     else:
         match = re.match(r'\[(\d+), (\d+)\] \(\d+h\)', line)
     
     if match:
+        if consider_utilization:
+            return map(float, match.groups())
         return map(int, match.groups())
     else:
         return None
@@ -40,17 +43,32 @@ def main():
         for line in file1:
             range_values = extract_time_range(line)
             if range_values:
-                start, end = range_values
-                start_time = start * 3600 + OFFSET
-                end_time = end * 3600 + OFFSET
-                time_ranges.append((start_time, end_time))
                 if consider_utilization:
-                    _, _, utilization = range_values
+                    start, end, utilization = range_values
                     utilizations.append(utilization)
+                else:
+                    start, end = range_values
+
+                start_time = int(start) * 3600 + OFFSET
+                end_time = int(end) * 3600 + OFFSET
+                time_ranges.append((start_time, end_time))
 
     with open(file2_name, 'r') as file2:
+        file2_name = file2_name.split('.')[0]
+        suffix = 'subtrace'
+        if do_reduction:
+            suffix += '_reduced'
+            if consider_utilization:
+                suffix += '_consider_utilization'
         for i, (start, end) in enumerate(time_ranges, start=1):
-            output_filename = f'{file2_name}_output_{i}.txt'
+            output_filename = f'{file2_name}_{suffix}_{i}.txt'
+            job_count = 0
+            core_resource_count = 0
+            cpu_resource_count = 0
+
+            ijob_count = 0
+            icore_resource_count = 0
+            icpu_resource_count = 0
             if consider_utilization:
                 utilzation = utilizations[i-1]
             print(start, end)
@@ -59,18 +77,32 @@ def main():
                 for line in file2:
                     fields = line.split()
                     t = int(fields[1])
-                    if do_reduction:
+                    is_int_job = int(fields[14]) == INT_JOB_QUEUE
+                    if not is_int_job and do_reduction:
                         res1 = int(fields[4])
                         res2 = int(fields[7])
                         assert res1 == res2
-                        new_res = int(res1 * SYS_SIZE_RATIO)
+                        new_res = int(res1 / SYS_SIZE_RATIO)
+                        if res1 % SYS_SIZE_RATIO == 0:
+                            new_res += 1
                         if consider_utilization:
                             new_res = int(new_res * utilzation)
+                        new_res = max(1, new_res)
                         fields[4] = str(new_res)
                         fields[7] = str(new_res)
                         line = ' '.join(fields) + '\n'
                     if start <= t < end:
+                        job_count += 1
+                        core_resource_count += int(fields[4])
+                        cpu_resource_count += int(fields[4])*int(fields[3])
                         output_file.write(line.strip() + '\n')
+                        if is_int_job:
+                            ijob_count += 1
+                            icore_resource_count += int(fields[4])
+                            icpu_resource_count += int(fields[4])*int(fields[3])
+            print(f'Subtrace {i}: {ijob_count} {job_count} {ijob_count/job_count} \
+{icore_resource_count} {core_resource_count} {icore_resource_count/core_resource_count} \
+{icpu_resource_count} {cpu_resource_count} {icpu_resource_count/cpu_resource_count}')
 
 if __name__ == "__main__":
     main()
