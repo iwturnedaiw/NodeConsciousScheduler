@@ -14,11 +14,13 @@ def read_file(file_path):
             data.append(row)
     data_started_order = sorted(data, key=lambda x: int(x[5]))
     data_finished_order = sorted(data, key=lambda x: int(x[6]))
-    return header, data_started_order, data_finished_order
+    data_arrival_order = sorted(data, key=lambda x: int(x[3]))
+    return header, data_started_order, data_finished_order, data_arrival_order
 
-def count_rows(data_started_order, data_finished_order, array_size):
+def count_rows(data_started_order, data_finished_order, data_arrival_order, array_size):
     started_resource = [0] * int(array_size)
     finished_resource = [0] * int(array_size)
+    arrival_resource = [0] * int(array_size)
 
     for i in range(0, len(data_started_order)):
         start_time_offset = int(data_started_order[i][5]) + offset
@@ -40,7 +42,18 @@ def count_rows(data_started_order, data_finished_order, array_size):
     for i in range(0, len(finished_resource) - 1):
         finished_resource[i + 1] += finished_resource[i]
 
-    return started_resource, finished_resource
+    for i in range(0, len(data_arrival_order)):
+        arrival_time_offset = int(data_started_order[i][3]) + offset
+        print("arrival_time_offset: " + str(arrival_time_offset))
+        index = int(arrival_time_offset/3600) + 1
+        if arrival_time_offset % 3600 == 0:
+            index -= 1
+        arrival_resource[index] += float(data_arrival_order[i][14])
+
+    for i in range(0, len(arrival_resource) - 1):
+        arrival_resource[i + 1] += arrival_resource[i]
+
+    return started_resource, finished_resource, arrival_resource
 
 
 def main():
@@ -49,7 +62,7 @@ def main():
         sys.exit(1)
 
     file_path = sys.argv[1]
-    header, data_started_order, data_finished_order = read_file(file_path)
+    header, data_started_order, data_finished_order, data_arrival_order = read_file(file_path)
 
     time_condition = 0
     job_id = int(data_finished_order[-1][0])
@@ -60,12 +73,19 @@ def main():
         array_size -= 1
     print("array_size: " + str(array_size))
 
-    started_resource, finished_resource = count_rows(data_started_order, data_finished_order, array_size)
+    started_resource, finished_resource, arrival_resource = count_rows(data_started_order, data_finished_order, data_arrival_order, array_size)
     with open('output.csv', 'w', newline='') as csvfile:
         csvfile = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         for i in range(int(array_size)):
-            res = (started_resource[i] - finished_resource[i])/SYS_SIZE
-            csvfile.writerow([i, res])
+
+            arrival_value = 0
+            if i > 0:
+                arrival_value = arrival_resource[i - 1]
+            arrival_rsc = (arrival_resource[i] - arrival_value)
+            arrival = arrival_rsc/SYS_SIZE
+            executing = (started_resource[i] - finished_resource[i])/SYS_SIZE
+            waiting = (arrival_resource[i] - started_resource[i])/SYS_SIZE
+            csvfile.writerow([i, arrival, waiting, executing])
 
 
 if __name__ == "__main__":
