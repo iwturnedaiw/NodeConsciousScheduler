@@ -140,6 +140,7 @@ def main():
                         res1 = int(fields[4])
                         res2 = int(fields[7])
                         assert res1 == res2
+                        new_res = res1
                         if do_reduction:
                             new_res = math.ceil(res1 / SYS_SIZE_RATIO)
                         if consider_utilization:
