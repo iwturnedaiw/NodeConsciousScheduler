@@ -19,6 +19,18 @@ def extract_time_range(line):
     else:
         return None
 
+def print_distirbution(distribution):
+    max_key = -1
+    for key, value in distribution.items():
+        if key > max_key:
+            max_key = key
+    for i in range(1, max_key+1):
+        if i in distribution:
+            print(f'{i}: {distribution[i]}', end=', ')
+        else:
+            print(f'{i}: 0', end=', ')
+    print(f'')
+
 def main():
     if len(sys.argv) < 3:
         print("Usage: python make_subtrace.py file1.txt file2.txt [--do-reduction] [--consider-utilization] ")
@@ -97,6 +109,9 @@ def main():
             batch_rsc1 = 0
             batch_rsc2 = 0
 
+            org_distribution = {}
+            new_distribution = {}
+
             with open(output_filename, 'w') as output_file:
                 file2.seek(0)  # Reset the file pointer to the beginning of file2
                 for line in file2:
@@ -122,7 +137,6 @@ def main():
                         org_batch_rsc1 += int(fields[4])
                         org_batch_rsc2 += int(fields[4]) * int(fields[3])
 
-                    if not is_int_job:
                         res1 = int(fields[4])
                         res2 = int(fields[7])
                         assert res1 == res2
@@ -139,6 +153,18 @@ def main():
                         batch_rsc1 += new_res
                         batch_rsc2 += new_res * int(fields[3])
 
+                        key = res1
+                        if key in org_distribution:
+                            org_distribution[key] += 1
+                        else:
+                            org_distribution[key] = 1
+
+                        key = new_res
+                        if key in new_distribution:
+                            new_distribution[key] += 1
+                        else:
+                            new_distribution[key] = 1
+
                         print(f'JobId: {fields[0]}, Core rsc: {res1} -> {new_res}, {new_res/res1}')
 
                     
@@ -154,6 +180,10 @@ def main():
             print(f'Subtrace {i}: {ijob_count} {job_count} {ijob_count/job_count} \
 {icore_resource_count} {core_resource_count} {icore_resource_count/core_resource_count} \
 {icpu_resource_count} {cpu_resource_count} {icpu_resource_count/cpu_resource_count}')
+            print(f'Original distribution')
+            print_distirbution(org_distribution)
+            print(f'New distribution')
+            print_distirbution(new_distribution)
             if do_reduction or do_reduction_all_one:
                 print(f'Core rsc: {org_batch_rsc1} -> {batch_rsc1}, {batch_rsc1/org_batch_rsc1} \
 Core*t rsc: {org_batch_rsc2} -> {batch_rsc2}, {batch_rsc2/org_batch_rsc2}')
