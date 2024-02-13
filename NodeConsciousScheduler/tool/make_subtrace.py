@@ -3,7 +3,7 @@ import sys
 import re
 
 OFFSET = 431217
-SYS_SIZE_RATIO = 25
+SYS_SIZE_RATIO = 4
 INT_JOB_QUEUE = 0
 
 def extract_time_range(line):
@@ -142,7 +142,10 @@ def main():
                         assert res1 == res2
                         new_res = res1
                         if do_reduction:
-                            new_res = math.ceil(res1 / SYS_SIZE_RATIO)
+                            if res1 > 12:
+                                ratio = math.floor(res1 / SYS_SIZE_RATIO / 12)
+                                new_res = ratio * 12
+                                #new_res = math.ceil(res1 / SYS_SIZE_RATIO)
                         if consider_utilization:
                             new_res = int(new_res * utilzation)
                         if do_reduction_all_one:
