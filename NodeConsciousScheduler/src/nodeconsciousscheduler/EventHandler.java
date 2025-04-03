@@ -7,8 +7,16 @@
 package nodeconsciousscheduler;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.Constants.DAY_IN_SECOND;
+import static nodeconsciousscheduler.Constants.HOUR_IN_SECOND;
+import static nodeconsciousscheduler.Constants.MINUTE_IN_SECOND;
+import static nodeconsciousscheduler.Constants.SECOND;
+import static nodeconsciousscheduler.Constants.START_TIME;
+import nodeconsciousscheduler.Constants.TimeDesc;
+import static nodeconsciousscheduler.Constants.UNUPDATED;
 
 /**
  *
@@ -51,6 +59,17 @@ class Start implements EventHandler {
         
         NodeConsciousScheduler.sim.getExecutingJobList().add(job);
         
+        // TODO
+        // Update activated cores table if it is not int.
+        boolean interactiveJob = job.isInteracitveJob();
+        if (interactiveJob) {
+            int currentTime = ev.getOccurrenceTime();
+            int prologTime = job.getPrologTime();
+            int activationTime = currentTime + prologTime;
+            Scheduler.printThrownEvent(currentTime, activationTime, job, EventType.INT_ACTIVATE, 1);
+            evs.add(new Event(EventType.INT_ACTIVATE, activationTime, job));
+        }
+        
         return evs;
     }
 }
@@ -67,25 +86,35 @@ class End implements EventHandler {
         int jobId = job.getJobId();
         int currentTime = ev.getOccurrenceTime();
         assert currentTime == job.getEndEventOccuranceTimeNow();
-        int previousMeasuredTime = job.getPreviousMeasuredTime();
-        int mostRecentRunningTime = currentTime - previousMeasuredTime;
-        int OCStateLevel = job.getOCStateLevel();
-        double accumulatedCpuTime = job.getAccumulatedCpuTime();
-        accumulatedCpuTime += (double)mostRecentRunningTime / OCStateLevel;
-        job.setAccumulatedCpuTime(accumulatedCpuTime);
-        if (OCStateLevel == 1) {
-            int runningTimeDed = job.getRunningTimeDed();
-            job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
-        }
-        else {
-            int runningTimeOC = job.getRunningTimeOC();
-            job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
+        boolean interactiveJob = job.isInteracitveJob();
+
+        NodeConsciousScheduler.sim.getSche().calcWastedResource(currentTime);
+        
+        if (!interactiveJob) {
+            int previousMeasuredTime = job.getPreviousMeasuredTime();
+            int mostRecentRunningTime = currentTime - previousMeasuredTime;
+            int netOCStateLevel = job.getNetOCStateLevel();
+            double accumulatedCpuTime = job.getAccumulatedCpuTime();
+            accumulatedCpuTime += (double) mostRecentRunningTime / netOCStateLevel;
+            job.setAccumulatedCpuTime(accumulatedCpuTime);
+
+            if (netOCStateLevel == 1) {
+                int runningTimeDed = job.getRunningTimeDed();
+                job.setRunningTimeDed(runningTimeDed + mostRecentRunningTime);
+            } else {
+                int runningTimeOC = job.getRunningTimeOC();
+                job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
+            }
         }
         int runningTimeDed = job.getRunningTimeDed();
         int runningTimeOC = job.getRunningTimeOC();
         int runningTime = runningTimeDed + runningTimeOC;
         int finishedTime = runningTime + job.getStartTime();
+        if (interactiveJob)
+            finishedTime = job.getStartTime() + runningTime + job.getPrologTime() + job.getSumIdleTime() + job.getEpilogTIme();
         job.setFinishedTime(finishedTime);
+
+            
         assert currentTime == finishedTime;
         
         // Output the result
@@ -110,6 +139,38 @@ class End implements EventHandler {
 
 }
 
+class IntActivate implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
+        
+        ArrayList<Event> evs = new ArrayList<Event>();
+        
+        evs = NodeConsciousScheduler.sim.getSche().activateInteractiveJob(ev);
+        return evs;
+    }
+}
+
+class IntDeactivate implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
+        
+        ArrayList<Event> evs = new ArrayList<Event>();
+        
+        evs = NodeConsciousScheduler.sim.getSche().deactivateInteractiveJob(ev);
+        return evs;
+    }
+}
+
+class DeleteDeactivate implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
+
+        NodeConsciousScheduler.sim.getEvq().deleteDeactiveEvent(ev);
+
+        return new ArrayList<Event>();
+    }
+}
+
 class DeleteFromBeginning implements EventHandler {
     public ArrayList<Event> handle(Event ev) {
         System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime() + ", jobId " + ev.getJob().getJobId() );
@@ -131,6 +192,64 @@ class DeleteFromEnd implements EventHandler {
         
         
         NodeConsciousScheduler.sim.getEvq().deleteEventFromEnd(ev);
+        
+        return new ArrayList<Event>();
+    }
+}
+
+class MeasuringUtilRatio implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
+        
+        ArrayList<Event> evs = new ArrayList<Event>();
+        
+        int currentTime = ev.getOccurrenceTime();
+        TimeDesc timeDesc = ev.getTimeDesc();
+        NodeConsciousScheduler.sim.calculateUtilRatio(currentTime, timeDesc);
+        
+        int threshold = UNUPDATED;
+        if (timeDesc == TimeDesc.MINUTE) {
+            threshold = MINUTE_IN_SECOND;
+        } else if (timeDesc == TimeDesc.HOUR) {
+            threshold = HOUR_IN_SECOND;
+        } else if (timeDesc == TimeDesc.DAY) {
+            threshold = DAY_IN_SECOND;
+        }
+        
+        if ((currentTime == START_TIME) || (currentTime != START_TIME && NodeConsciousScheduler.sim.getCompletedJobList().size() != NodeConsciousScheduler.sim.getJobList().size())) {
+            int nextArrivalTime = currentTime + threshold;
+            NodeConsciousScheduler.sim.getEvq().enqueueUtilizationMeasuringEvent(nextArrivalTime, timeDesc);
+        }
+        
+        return new ArrayList<Event>();
+    }
+}
+
+class MeasuringWastedResource implements EventHandler {
+    public ArrayList<Event> handle(Event ev) {
+        System.out.println("Event type: " + ev.getEventType() + ", at " + ev.getOccurrenceTime());
+        
+        ArrayList<Event> evs = new ArrayList<Event>();
+        
+        int currentTime = ev.getOccurrenceTime();
+        TimeDesc timeDesc = ev.getTimeDesc();
+        NodeConsciousScheduler.sim.calculateWastedResource(currentTime, timeDesc);
+        
+        int threshold = UNUPDATED;
+        if (timeDesc == TimeDesc.MINUTE) {
+            threshold = MINUTE_IN_SECOND;
+        } else if (timeDesc == TimeDesc.HOUR) {
+            threshold = HOUR_IN_SECOND;
+        } else if (timeDesc == TimeDesc.DAY) {
+            threshold = DAY_IN_SECOND;
+        } else if (timeDesc == TimeDesc.SECOND) {
+            threshold = SECOND;
+        }
+        
+        if ((currentTime == START_TIME) || (currentTime != START_TIME && NodeConsciousScheduler.sim.getCompletedJobList().size() != NodeConsciousScheduler.sim.getJobList().size())) {
+            int nextArrivalTime = currentTime + threshold;
+            NodeConsciousScheduler.sim.getEvq().enqueueWastedResourceMeasuringEvent(nextArrivalTime, timeDesc);
+        }
         
         return new ArrayList<Event>();
     }
