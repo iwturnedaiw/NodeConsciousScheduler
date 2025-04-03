@@ -71,6 +71,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                     int trueEndTime = startTime + job.getActualExecuteTime();
                     result.add(new Event(EventType.START, startTime, job));
+
                     if (!interJobFlag) {
                         printThrownEvent(currentTime, trueEndTime, job, EventType.END);
                         result.add(new Event(EventType.END, trueEndTime, job));
@@ -178,6 +179,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     job.setCurrentRatio(calculateMaxDegradationRatioForVictim(job, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
+
                     if (!interJobFlag) {
                         printThrownEvent(currentTime, trueEndTime, job, EventType.END);
                         result.add(new Event(EventType.END, trueEndTime, job));
@@ -373,6 +375,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
                     
                     int trueEndTime = startTime + backfillJob.getActualExecuteTime();
+
                     result.add(new Event(EventType.START, startTime, backfillJob));                    
                     boolean interactiveJob = backfillJob.isInteracitveJob();
                     if (!interactiveJob) {
@@ -446,6 +449,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     backfillJob.setCurrentRatio(calculateMaxDegradationRatioForVictim(backfillJob, victimJobs));
                     int trueEndTime = calculateNewActualEndTime(startTime, backfillJob);
                     result.add(new Event(EventType.START, startTime, backfillJob));
+
                     boolean interactiveJob = backfillJob.isInteracitveJob();
                     if (!interactiveJob) {
                         printThrownEvent(currentTime, trueEndTime, backfillJob, EventType.END);

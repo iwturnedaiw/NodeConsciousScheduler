@@ -86,6 +86,7 @@ class End implements EventHandler {
         int jobId = job.getJobId();
         int currentTime = ev.getOccurrenceTime();
         assert currentTime == job.getEndEventOccuranceTimeNow();
+
         boolean interactiveJob = job.isInteracitveJob();
 
         NodeConsciousScheduler.sim.getSche().calcWastedResource(currentTime);
@@ -105,6 +106,7 @@ class End implements EventHandler {
                 int runningTimeOC = job.getRunningTimeOC();
                 job.setRunningTimeOC(runningTimeOC + mostRecentRunningTime);
             }
+
         }
         int runningTimeDed = job.getRunningTimeDed();
         int runningTimeOC = job.getRunningTimeOC();

@@ -1277,6 +1277,7 @@ public abstract class Scheduler {
 
         boolean actState = coexistingJob.isActivationState();
         //  1-3. Rethrow the END event set the time
+
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
         if (!interactiveJob && currentTime != trueEndTime && currentTime != oldTrueEndTime && trueEndTime != oldTrueEndTime ){
@@ -1473,6 +1474,7 @@ public abstract class Scheduler {
         victimJob.setOCStateLevel(currentOCStateLevel);
         
         /*  1-3. Rethrow the END event set the time */
+
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime) {
             printThrownEvent(currentTime, trueEndTime, victimJob, EventType.END);

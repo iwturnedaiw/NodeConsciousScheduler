@@ -82,6 +82,7 @@ class EasyBackfilling extends Scheduler {
                 job.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
+
                 boolean interactiveJob = job.isInteracitveJob();
                 if (!interactiveJob) {
                     result.add(new Event(EventType.END, trueEndTime, job));
@@ -193,6 +194,7 @@ class EasyBackfilling extends Scheduler {
                 backfillJob.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + backfillJob.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, backfillJob));
+              
                 boolean interactiveJob = backfillJob.isInteracitveJob();
                 if (!interactiveJob) {
                     result.add(new Event(EventType.END, trueEndTime, backfillJob));

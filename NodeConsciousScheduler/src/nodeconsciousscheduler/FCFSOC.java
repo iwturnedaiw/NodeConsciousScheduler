@@ -89,6 +89,7 @@ public class FCFSOC extends FCFS {
                     /* 7. Enqueue the START and END Events */                
                     int trueEndTime = startTime + job.getActualExecuteTime();
                     result.add(new Event(EventType.START, startTime, job));
+
                     if (!interJobFlag) {
                         printThrownEvent(currentTime, trueEndTime, job, EventType.END);
                         result.add(new Event(EventType.END, trueEndTime, job));
@@ -221,6 +222,7 @@ public class FCFSOC extends FCFS {
                     job.setCurrentRatio(ratio);
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
+
                     if (!interJobFlag) {
                         printThrownEvent(currentTime, trueEndTime, job, EventType.END);
                         result.add(new Event(EventType.END, trueEndTime, job));
