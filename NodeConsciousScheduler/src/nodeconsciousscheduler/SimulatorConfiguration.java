@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import nodeconsciousscheduler.Constants.ScheduleConsiderJobType;
+import nodeconsciousscheduler.Constants.OsubOverheadModelType;
 
 /**
  *
@@ -32,6 +33,8 @@ class SimulatorConfiguration {
     private double epilogTimeRatio;
     private boolean outputSecondWastedResources;
     private Constants.ScheduleConsiderJobType scheduleConsiderJobType;
+    private Constants.OsubOverheadModelType osubOverheadModelType;
+    private double osubOverheadConst;
     
     SimulatorConfiguration(String[] thresholdForSlowdown, boolean outputMinuteTimeseries, boolean scheduleUsingMemory) {
         this.scheduleUsingMemory = scheduleUsingMemory;
@@ -59,7 +62,9 @@ class SimulatorConfiguration {
             double prologTimeRatio,
             double epilogTimeRatio,
             boolean outputSecondWastedResources,
-            int scheduleConsiderJobType) {
+            int scheduleConsiderJobType,
+            int osubOverheadModelType,
+            double osubOverheadConst) {
         this.scheduleUsingMemory = scheduleUsingMemory;
         this.considerJobMatching = considerJobMatching;
         this.crammingMemoryScheduling = crammingMemoryScheduling;
@@ -86,6 +91,14 @@ class SimulatorConfiguration {
             this.scheduleConsiderJobType = ScheduleConsiderJobType.BATCH_INT;
         } else if (scheduleConsiderJobType == 2) {
             this.scheduleConsiderJobType = ScheduleConsiderJobType.INT_INT;
+        }
+        if (osubOverheadModelType == 0) {
+            this.osubOverheadModelType = OsubOverheadModelType.NOTHING;
+        } else if (osubOverheadModelType == 1) {
+            this.osubOverheadModelType = OsubOverheadModelType.CONST;
+            this.osubOverheadConst = osubOverheadConst;
+        } else if (osubOverheadModelType == 2) {
+            this.osubOverheadModelType = OsubOverheadModelType.CONSIDER_MULT;
         }
     }
     
@@ -155,5 +168,13 @@ class SimulatorConfiguration {
 
     public Constants.ScheduleConsiderJobType getScheduleConsiderJobType() {
         return scheduleConsiderJobType;
+    }
+
+    public OsubOverheadModelType getOsubOverheadModelType() {
+        return osubOverheadModelType;
+    }
+
+    public double getOsubOverheadConst() {
+        return osubOverheadConst;
     }
 }

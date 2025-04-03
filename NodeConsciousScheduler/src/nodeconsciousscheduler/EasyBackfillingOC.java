@@ -176,7 +176,8 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForBackfillJob;
-                    job.setCurrentRatio(calculateMaxDegradationRatioForVictim(job, victimJobs));
+                    job.setJobAffinityRatio(calculateMaxDegradationRatioForVictim(job, victimJobs));
+                    job.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(job));
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
 
@@ -274,18 +275,38 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
 
         firstJob.setOCStateLevel(OCStateLevelForFirstJob);
-        makeTimeslices(startTimeFirstJob, tmpTimeSlices);
+        makeTimeslices(startTimeFirstJob, tmpTimeSlices, true);
         int endTimeFirstJob = calculateNewExpectedEndTime(startTimeFirstJob, firstJob);
-        makeTimeslices(endTimeFirstJob, tmpTimeSlices);
+        makeTimeslices(endTimeFirstJob, tmpTimeSlices, true);
         assignFirstJobTemporally(tmpTimeSlices, tmpAllNodesInfo, startTimeFirstJob, firstJob, canExecuteTmpNodes);
 
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
+        System.out.println("debug) Queue length: " + tailWaitingQueue.size());
+        ArrayList<Integer> cancelJobExecutionTimeList = new ArrayList<Integer>();
+        ArrayList<Integer> cancelJobRequiredCoresList = new ArrayList<Integer>();
+
         while (tailWaitingQueue.size() > 0) {
             TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
             assert consistency.isConsistency();
             if (consistency.isSameEndEventFlag()) return result;            
             Job backfillJob = tailWaitingQueue.poll();
             int backfillJobId = backfillJob.getJobId();
+            int backfillRequiredTime = backfillJob.getRequiredTime();
+            int backfillRequiredCores = backfillJob.getRequiredCores();
+            
+            boolean cancelFlag = false;
+            for (int j = 0; j < cancelJobExecutionTimeList.size(); ++j) {
+                int cancelJobExecutionTime = cancelJobExecutionTimeList.get(j);
+                int cancelJobRequiredCores = cancelJobRequiredCoresList.get(j);
+                if (cancelJobExecutionTime <= backfillRequiredTime &&
+                    cancelJobRequiredCores <= backfillRequiredCores) {
+                    cancelFlag = true;
+                    break;
+                }
+            } 
+            if (cancelFlag) {
+                continue;
+            }
 
             canExecuteNodesEasyBackfiling = canExecutableNodesOnBackfilling(currentTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, startTimeFirstJob, assignTmpNodesNo);
 
@@ -306,14 +327,17 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 int startTime = currentTime;
                 Set<Integer> victimJobs = new HashSet<Integer>();
                 victimJobs = searchVictimJobs(startTime, backfillJob, assignNodesNo);
+                
+                System.out.println("\tdebug) candidate backfill jobId: " + backfillJobId);
+                System.out.println("\tdebug) victimJobs: " + victimJobs);
 
-                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
-                        double ratio = calculateMaxDegradationRatio(backfillJob, victimJobs);
-                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
-                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY FOR BACKFILL JOB !!!!!!");
-                            break;
-                        }
-                    }
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {                        
+                    double ratio = calculateMaxDegradationRatio(backfillJob, victimJobs);  
+                    if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {                    
+                        System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY FOR BACKFILL JOB !!!!!!");                        
+                        break;                        
+                    }                    
+                }
                 
                 boolean backfillFlag = true;
                 // Check whether victim jobs will slow and delay the start time of first job.
@@ -331,6 +355,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
 
                     if (victimNewOCStateLevel > victimCurrentOCStateLevel) {
                         backfillFlag = false;
+                        cancelJobExecutionTimeList.add(backfillRequiredTime);
+                        cancelJobRequiredCoresList.add(backfillRequiredCores);
+
                         break;
                     }
 
@@ -339,7 +366,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     Set<Integer> tmpCoexistingJobs = cloneCoexistingJobs(victimJob.getCoexistingJobs());
                     tmpCoexistingJobs.add(backfillJobId);
                     double tmpRatio = calculateMaxDegradationRatioForVictim(victimJob, tmpCoexistingJobs);
-                    if (tmpRatio > victimJob.getCurrentRatio()) {
+                    if (tmpRatio > victimJob.getJobAffinityRatio()) {
                         backfillFlag = false;
                         break;
                     }
@@ -347,7 +374,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 
                 if (!backfillFlag) continue;
 
-                System.out.println("Succeed Backfill Job: " + backfillJobId + ", at " + currentTime);
+                System.out.println("Succeed Backfill Job: " + backfillJobId + ", at " + currentTime + ", queueSize: " + tailWaitingQueue.size());
                 
                 Iterator itr = waitingQueue.iterator();
                 while (itr.hasNext()) {
@@ -362,12 +389,12 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 //backfillJob.setStartTime(startTime);
 
                 makeTimeslices(startTime);
-                makeTimeslices(startTime, tmpTimeSlices);
+                makeTimeslices(startTime, tmpTimeSlices, false);
                 
                 if (OCStateLevelForBackfillJob == 1) {
                     int expectedEndTime = startTime + backfillJob.getRequiredTime();
                     makeTimeslices(expectedEndTime);
-                    makeTimeslices(expectedEndTime, tmpTimeSlices);
+                    makeTimeslices(expectedEndTime, tmpTimeSlices, false);
                     backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     backfillJob.setOCStateLevel(OCStateLevelForBackfillJob);
@@ -427,9 +454,9 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         refiilFreeCoresInTimeSlices(currentTime, timeSliceIndex, victimJob, tmpTimeSlices);
 
                         makeTimeslices(currentTime);
-                        makeTimeslices(currentTime, tmpTimeSlices);
+                        makeTimeslices(currentTime, tmpTimeSlices, false);
                         makeTimeslices(newExpectedEndTime);
-                        makeTimeslices(newExpectedEndTime, tmpTimeSlices);
+                        makeTimeslices(newExpectedEndTime, tmpTimeSlices, false);
                         reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob);
                         reallocateOccupiedCoresInTimeSlices(currentTime, newExpectedEndTime, victimJob, tmpTimeSlices);
                     }
@@ -439,14 +466,15 @@ public class EasyBackfillingOC extends EasyBackfilling {
                     backfillJob.setNetOCStateLevel(netOCStateLevel);
                     int expectedEndTime = calculateNewExpectedEndTime(currentTime, backfillJob);
                     makeTimeslices(expectedEndTime);
-                    makeTimeslices(expectedEndTime, tmpTimeSlices);
+                    makeTimeslices(expectedEndTime, tmpTimeSlices, false);
                     backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     assignJob(startTime, backfillJob, assignNodesNo);
                     assignJobForTmp(startTime, tmpTimeSlices, tmpAllNodesInfo, backfillJob, assignNodesNo);
 
                     backfillJob.setPreviousMeasuredTime(startTime);
-                    backfillJob.setCurrentRatio(calculateMaxDegradationRatioForVictim(backfillJob, victimJobs));
+                    backfillJob.setJobAffinityRatio(calculateMaxDegradationRatioForVictim(backfillJob, victimJobs));
+                    backfillJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(backfillJob));
                     int trueEndTime = calculateNewActualEndTime(startTime, backfillJob);
                     result.add(new Event(EventType.START, startTime, backfillJob));
 

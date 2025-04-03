@@ -141,9 +141,9 @@ class EasyBackfilling extends Scheduler {
         LinkedList<TimeSlice> tmpTimeSlices = cloneTimeSlices(timeSlices);
         ArrayList<NodeInfo> tmpAllNodesInfo = cloneAllNodesInfo(NodeConsciousScheduler.sim.getAllNodesInfo());
 
-        makeTimeslices(startTimeFirstJob, tmpTimeSlices);
+        makeTimeslices(startTimeFirstJob, tmpTimeSlices, true);
         int endTimeFirstJob = startTimeFirstJob + firstJob.getRequiredTime();
-        makeTimeslices(endTimeFirstJob, tmpTimeSlices);
+        makeTimeslices(endTimeFirstJob, tmpTimeSlices, true);
         assignFirstJobTemporally(tmpTimeSlices, tmpAllNodesInfo, startTimeFirstJob, firstJob, canExecuteTmpNodes);
         
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
@@ -179,11 +179,11 @@ class EasyBackfilling extends Scheduler {
                 backfillJob.setStartTime(startTime);
 
                 makeTimeslices(startTime);
-                makeTimeslices(startTime, tmpTimeSlices);
+                makeTimeslices(startTime, tmpTimeSlices, true);
 
                 int expectedEndTime = startTime + backfillJob.getRequiredTime();
                 makeTimeslices(expectedEndTime);
-                makeTimeslices(expectedEndTime, tmpTimeSlices);
+                makeTimeslices(expectedEndTime, tmpTimeSlices, true);
                 backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                 /* 5. Modify the resource informaiton */        

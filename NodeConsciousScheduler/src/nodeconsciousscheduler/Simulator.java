@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,6 +30,12 @@ import java.util.logging.Logger;
 import static nodeconsciousscheduler.Constants.ARRIVAL_JOB_PER_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.ARRIVAL_JOB_PER_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.ARRIVAL_JOB_PER_MINUTE_OUTPUT;
+import static nodeconsciousscheduler.Constants.ARRIVAL_MEMORY_RESOURCES_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.ARRIVAL_MEMORY_RESOURCES_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.ARRIVAL_MEMORY_RESOURCES_PER_MINUTE_OUTPUT;
+import static nodeconsciousscheduler.Constants.ARRIVAL_RESOURCES_PER_DAY_OUTPUT;
+import static nodeconsciousscheduler.Constants.ARRIVAL_RESOURCES_PER_HOUR_OUTPUT;
+import static nodeconsciousscheduler.Constants.ARRIVAL_RESOURCES_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT;
 import static nodeconsciousscheduler.Constants.CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT;
@@ -79,6 +86,7 @@ import static nodeconsciousscheduler.Constants.START_JOB_PER_MINUTE_OUTPUT;
 import static nodeconsciousscheduler.Constants.START_TIME;
 import nodeconsciousscheduler.Constants.ScheduleConsiderJobType;
 import nodeconsciousscheduler.Constants.TimeDesc;
+import nodeconsciousscheduler.Constants.OsubOverheadModelType;
 import static nodeconsciousscheduler.Constants.UNUPDATED;
 import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_DAY_OUTPUT;
 import static nodeconsciousscheduler.Constants.WAITING_JOB_PER_HOUR_OUTPUT;
@@ -131,6 +139,8 @@ public class Simulator {
     private boolean outputUtilizationRatio;
     private boolean outputSecondWastedResources;
     private ScheduleConsiderJobType scheduleConsiderJobType;
+    private OsubOverheadModelType osubOverheadModelType;
+    private double osubOverheadConst;
 
     
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
@@ -157,6 +167,10 @@ public class Simulator {
         this.usingAffinityForSchedule = simConf.isUsingAffinityForSchedule();
         this.thresholdForAffinitySchedule = simConf.getThresholdForAffinitySchedule();
         this.scheduleConsiderJobType = simConf.getScheduleConsiderJobType();
+        this.osubOverheadModelType = simConf.getOsubOverheadModelType();
+        if (this.osubOverheadModelType == OsubOverheadModelType.CONST) {
+            this.osubOverheadConst = simConf.getOsubOverheadConst();
+        }
         this.p = obtainPath();
         try {
             initOutputResult();
@@ -404,14 +418,14 @@ public class Simulator {
         outputSlowdown(true);
         outputResultEachUserAndGroup();
 
-        outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_DAY_OUTPUT, ARRIVAL_JOB_PER_DAY_OUTPUT, START_JOB_PER_DAY_OUTPUT, CUMULATIVE_STARTED_JOB_PER_DAY_OUTPUT, FINISHED_JOB_PER_DAY_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT, WAITING_RESOURCES_PER_DAY_OUTPUT, EXECUTING_RESOURCES_PER_DAY_OUTPUT, WAITING_MEMORY_RESOURCES_PER_DAY_OUTPUT, EXECUTING_MEMORY_RESOURCES_PER_DAY_OUTPUT, DAY_IN_SECOND);
-        outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_HOUR_OUTPUT, ARRIVAL_JOB_PER_HOUR_OUTPUT, START_JOB_PER_HOUR_OUTPUT, CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT, FINISHED_JOB_PER_HOUR_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT, WAITING_RESOURCES_PER_HOUR_OUTPUT, EXECUTING_RESOURCES_PER_HOUR_OUTPUT, WAITING_MEMORY_RESOURCES_PER_HOUR_OUTPUT, EXECUTING_MEMORY_RESOURCES_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
+        outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_DAY_OUTPUT, ARRIVAL_JOB_PER_DAY_OUTPUT, START_JOB_PER_DAY_OUTPUT, CUMULATIVE_STARTED_JOB_PER_DAY_OUTPUT, FINISHED_JOB_PER_DAY_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_DAY_OUTPUT, WAITING_RESOURCES_PER_DAY_OUTPUT, EXECUTING_RESOURCES_PER_DAY_OUTPUT, ARRIVAL_RESOURCES_PER_DAY_OUTPUT,WAITING_MEMORY_RESOURCES_PER_DAY_OUTPUT, EXECUTING_MEMORY_RESOURCES_PER_DAY_OUTPUT, ARRIVAL_MEMORY_RESOURCES_PER_DAY_OUTPUT, DAY_IN_SECOND);
+        outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_HOUR_OUTPUT, ARRIVAL_JOB_PER_HOUR_OUTPUT, START_JOB_PER_HOUR_OUTPUT, CUMULATIVE_STARTED_JOB_PER_HOUR_OUTPUT, FINISHED_JOB_PER_HOUR_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_HOUR_OUTPUT, WAITING_RESOURCES_PER_HOUR_OUTPUT, EXECUTING_RESOURCES_PER_HOUR_OUTPUT, ARRIVAL_RESOURCES_PER_HOUR_OUTPUT, WAITING_MEMORY_RESOURCES_PER_HOUR_OUTPUT, EXECUTING_MEMORY_RESOURCES_PER_HOUR_OUTPUT, ARRIVAL_MEMORY_RESOURCES_PER_HOUR_OUTPUT, HOUR_IN_SECOND);
         
         if (outputMinuteBoolean) {
             outputInstatntOccupancy(INSTANT_OCCUPANCY_MINUTE_OUTPUT, MINUTE_IN_SECOND, false);
             outputInstatntOccupancy(INSTANT_OCCUPANCY_OC_MINUTE_OUTPUT, MINUTE_IN_SECOND, true);
             outputInstatntMemoryUtilizationRatio(INSTANT_OCCUPANCY_MEMORY_MINUTE_OUTPUT, MINUTE_IN_SECOND);
-            outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_MINUTE_OUTPUT, ARRIVAL_JOB_PER_MINUTE_OUTPUT, START_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT, FINISHED_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT, WAITING_RESOURCES_PER_MINUTE_OUTPUT, EXECUTING_RESOURCES_PER_MINUTE_OUTPUT, WAITING_MEMORY_RESOURCES_PER_MINUTE_OUTPUT, EXECUTING_MEMORY_RESOURCES_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
+            outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(WAITING_JOB_PER_MINUTE_OUTPUT, ARRIVAL_JOB_PER_MINUTE_OUTPUT, START_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_STARTED_JOB_PER_MINUTE_OUTPUT, FINISHED_JOB_PER_MINUTE_OUTPUT, CUMULATIVE_FINISHED_JOB_PER_MINUTE_OUTPUT, WAITING_RESOURCES_PER_MINUTE_OUTPUT, EXECUTING_RESOURCES_PER_MINUTE_OUTPUT, ARRIVAL_RESOURCES_PER_MINUTE_OUTPUT, WAITING_MEMORY_RESOURCES_PER_MINUTE_OUTPUT, EXECUTING_MEMORY_RESOURCES_PER_MINUTE_OUTPUT, ARRIVAL_MEMORY_RESOURCES_PER_MINUTE_OUTPUT, MINUTE_IN_SECOND);
             outputWastedResource(WASTED_RESOURCE_MINUTE_OUTPUT, MINUTE_IN_SECOND);
         }
         
@@ -795,7 +809,7 @@ public class Simulator {
         return result;
     }
     
-    private void outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(String fileNameWaiting, String fileNameArrival, String fileNameStart, String fileNameCumulativeStart, String fileNameFinished, String fileNameCumulativeFinished, String fileNameWaitingRscs, String fileNameExecutingRscs, String fileNameWaitingMemRscs, String fileNameExecutingMemRscs, int MODE) {
+    private void outputWaitingAndNewArrivalJobAndStartJobAndFinishedJob(String fileNameWaiting, String fileNameArrival, String fileNameStart, String fileNameCumulativeStart, String fileNameFinished, String fileNameCumulativeFinished, String fileNameWaitingRscs, String fileNameExecutingRscs, String fileNameArrivalRscs, String fileNameWaitingMemRscs, String fileNameExecutingMemRscs, String fileNameArrivalMemRscs, int MODE) {
             PairIntegers pairResult = new PairIntegers();
             pairResult = calcWaitingAndNewArrivalJobAndStartJob(MODE);
 
@@ -820,16 +834,28 @@ public class Simulator {
             ArrayList<Long> resultCumulativeWaitingRscs = pairResult.getNumCumulativeWaitingJobResources();
             ArrayList<Long> resultCumulativeStartedRscs = pairResult.getNumCumulativeStartedJobResources();
             ArrayList<Long> resultCumulativeFinishedRscs = pairResult.getNumCumulativeFinishedJobResources();
+            ArrayList<Long> resultCumulativeArrivalRscs = pairResult.getNumCumulativeArrivalJobResources();
+            ArrayList<Long> resultCumulativeArrivalRscsShifted = (ArrayList<Long>) resultCumulativeArrivalRscs.clone();
+            resultCumulativeArrivalRscsShifted.add(0, (long) 0);
+            resultCumulativeArrivalRscsShifted.remove(resultCumulativeArrivalRscs.size()-1);
+            assert resultCumulativeArrivalRscs.size() == resultCumulativeArrivalRscsShifted.size();
             printTimeSeriesToFile(fileNameWaitingRscs, resultCumulativeWaitingRscs, resultCumulativeStartedRscs, NodeConsciousScheduler.numNodes*NodeConsciousScheduler.numCores);
             printTimeSeriesToFile(fileNameExecutingRscs, resultCumulativeStartedRscs, resultCumulativeFinishedRscs, NodeConsciousScheduler.numNodes*NodeConsciousScheduler.numCores);
+            printTimeSeriesToFile(fileNameArrivalRscs, resultCumulativeArrivalRscs, resultCumulativeArrivalRscsShifted, NodeConsciousScheduler.numNodes*NodeConsciousScheduler.numCores);
             
 
             if (scheduleUsingMemory) {
                 ArrayList<Long> resultCumulativeWaitingMemoryRscs = pairResult.getNumCumulativeWaitingJobMemoryResources();
                 ArrayList<Long> resultCumulativeStartedMemoryRscs = pairResult.getNumCumulativeStartedJobMemoryResources();
                 ArrayList<Long> resultCumulativeFinishedMemoryRscs = pairResult.getNumCumulativeFinishedJobMemoryResources();
+                ArrayList<Long> resultCumulativeArrivalMemoryRscs = pairResult.getNumCumulativeArrivalJobMemoryResources();
+                ArrayList<Long> resultCumulativeArrivalMemoryRscsShifted = (ArrayList<Long>) resultCumulativeArrivalMemoryRscs.clone();
+                resultCumulativeArrivalMemoryRscsShifted.add(0, (long) 0);
+                resultCumulativeArrivalMemoryRscsShifted.remove(resultCumulativeArrivalMemoryRscs.size()-1);
+                assert resultCumulativeArrivalMemoryRscs.size() == resultCumulativeArrivalMemoryRscsShifted.size();
                 printTimeSeriesToFile(fileNameWaitingMemRscs, resultCumulativeWaitingMemoryRscs, resultCumulativeStartedMemoryRscs, NodeConsciousScheduler.numNodes*NodeConsciousScheduler.memory);
                 printTimeSeriesToFile(fileNameExecutingMemRscs, resultCumulativeStartedMemoryRscs, resultCumulativeFinishedMemoryRscs, NodeConsciousScheduler.numNodes*NodeConsciousScheduler.memory);
+                printTimeSeriesToFile(fileNameArrivalMemRscs, resultCumulativeArrivalMemoryRscs, resultCumulativeArrivalMemoryRscsShifted, NodeConsciousScheduler.numNodes*NodeConsciousScheduler.memory);
             }
             
     }
@@ -846,11 +872,13 @@ public class Simulator {
         ArrayList<Long> resultCumulativeStartRscs = new ArrayList<Long>();
         ArrayList<Long> resultCumulativeWaitingRscs = new ArrayList<Long>();
         ArrayList<Long> resultCumulativeFinishedRscs = new ArrayList<Long>();
+        ArrayList<Long> resultCumulativeArrivalRscs = new ArrayList<Long>();
 
         ArrayList<Long> resultCumulativeStartMemoryRscs = new ArrayList<Long>();
         ArrayList<Long> resultCumulativeWaitingMemoryRscs = new ArrayList<Long>();
         ArrayList<Long> resultCumulativeFinishedMemoryRscs = new ArrayList<Long>();
-                
+        ArrayList<Long> resultCumulativeArrivalMemoryRscs = new ArrayList<Long>();
+        
         PairIntegers resultPair = new PairIntegers();
         resultPair.setNumNewArrivalJobs(resultArrival);
         resultPair.setNumWaitingJobs(resultWaiting);
@@ -861,15 +889,22 @@ public class Simulator {
         resultPair.setNumCumulativeStartedJobResources(resultCumulativeStartRscs);
         resultPair.setNumCumulativeWaitingJobResources(resultCumulativeWaitingRscs);
         resultPair.setNumCumulativeFinishedJobResources(resultCumulativeFinishedRscs);
+        resultPair.setNumCumulativeArrivalJobResources(resultCumulativeArrivalRscs);
         resultPair.setNumCumulativeStartedJobMemoryResources(resultCumulativeStartMemoryRscs);
         resultPair.setNumCumulativeWaitingJobMemoryResources(resultCumulativeWaitingMemoryRscs);
         resultPair.setNumCumulativeFinishedJobMemoryResources(resultCumulativeFinishedMemoryRscs);;
-                
-        ArrayList<Job> completedJobListStartOrder = (ArrayList<Job>) this.completedJobList.clone();
+        resultPair.setNumCumulativeArrivalJobMemoryResources(resultCumulativeArrivalMemoryRscs);
+            
+        ArrayList<Job> completedJobListStartOrder = new ArrayList<>(this.completedJobList);
         Collections.sort(completedJobListStartOrder);
-        ArrayList<Job> completedJobListSubmitOrder = (ArrayList<Job>) this.completedJobList.clone();
-        Collections.sort(completedJobListSubmitOrder);
-        ArrayList<Job> completedJobListFinishedOrder = (ArrayList<Job>) this.completedJobList.clone();
+        ArrayList<Job> completedJobListSubmitOrder = new ArrayList<>(this.completedJobList);
+        Collections.sort(completedJobListSubmitOrder, new Comparator<Job>() {
+            @Override
+            public int compare(Job job1, Job job2) {
+                return job1.getSubmitTime() - job2.getSubmitTime();
+            }
+        });
+        ArrayList<Job> completedJobListFinishedOrder = new ArrayList<>(this.completedJobList);
         
         int idxWaiting = 0;
         int idxStart = 0;
@@ -882,9 +917,12 @@ public class Simulator {
         long startedJobRscs = 0;
         long waitingJobRscs = 0;
         long finishedJobRscs = 0;
+        long arrivalJobRscs = 0;
+        long previousArrivalTime = 0;
         long startedJobMemoryRscs = 0;
         long waitingJobMemoryRscs = 0;
         long finishedJobMemoryRscs = 0;
+        long arrivalJobMemoryRscs = 0;
         
 
         for (;;) {
@@ -894,8 +932,12 @@ public class Simulator {
                 ++numNewArrivalJobPerTHRESHOLD;
                 ++numWaitingJob;
                 ++idxWaiting;
+                assert previousArrivalTime <= job.getSubmitTime();
+                previousArrivalTime = job.getSubmitTime();
                 waitingJobRscs += job.getRequiredCoresPerNode() * job.getRequiredNodes();
                 waitingJobMemoryRscs += job.getMaxMemory() * job.getRequiredNodes();
+                arrivalJobMemoryRscs += job.getMaxMemory() * job.getRequiredNodes();
+                arrivalJobRscs += job.getRequiredCoresPerNode() * job.getRequiredNodes();
             }
             
             int numStartedJob = 0;
@@ -929,10 +971,12 @@ public class Simulator {
             resultCumulativeFinished.add(numCumulativeFinishedJobs);
             resultCumulativeWaitingRscs.add(waitingJobRscs);
             resultCumulativeStartRscs.add(startedJobRscs);
-            resultCumulativeFinishedRscs.add(finishedJobRscs);            
+            resultCumulativeFinishedRscs.add(finishedJobRscs);   
+            resultCumulativeArrivalRscs.add(arrivalJobRscs);         
             resultCumulativeWaitingMemoryRscs.add(waitingJobMemoryRscs);
             resultCumulativeStartMemoryRscs.add(startedJobMemoryRscs);
             resultCumulativeFinishedMemoryRscs.add(finishedJobMemoryRscs);            
+            resultCumulativeArrivalMemoryRscs.add(arrivalJobMemoryRscs);
             
             threshold +=  THRESHOLD;
 
@@ -1725,4 +1769,11 @@ public class Simulator {
         return scheduleConsiderJobType;
     }
 
+    public OsubOverheadModelType getOsubOverheadModelType() {
+        return osubOverheadModelType;
+    }
+
+    public double getOsubOverheadConst() {
+        return osubOverheadConst;
+    }
 }

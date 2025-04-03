@@ -88,14 +88,16 @@ public abstract class Scheduler {
     }
     
     protected void makeTimeslices(int currentTime) {
-        makeTimeslices(currentTime, this.timeSlices);
+        makeTimeslices(currentTime, this.timeSlices, true);
     }
     
-    protected void makeTimeslices(int currentTime, LinkedList<TimeSlice> timeSlices) {        
+    protected void makeTimeslices(int currentTime, LinkedList<TimeSlice> timeSlices, boolean uniteFlag) {        
         if (existSliceStartAt(currentTime, timeSlices))
             return;
 
-        uniteTimeSlices(timeSlices);
+        if (uniteFlag) {
+            uniteTimeSlices(timeSlices);
+        }
         
         int breakIndex = UNUPDATED;
         breakIndex = sliceIndexToSplit(currentTime, timeSlices);
@@ -381,23 +383,79 @@ public abstract class Scheduler {
                     for (int j = 0; j < usingNodes.size(); ++j) {
                         usingNodeIds.add(usingNodes.get(j).getNodeNum());
                     }
-                    if (occupiedTimeInTimeSeries <= currentTime && occupiedTimeInTimeSeries < endEventOccuranceTimeNow && usingNodeIds.contains(i)) {
-                        int jobId = job.getJobId();
-                        System.out.println("Job " + jobId + ": slows down more than requested time... it needs to be modified timeslices information");
-                        existSlowsDownJob = true;
-                        modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, endEventOccuranceTimeNow, i, job);
-                        modifiedJobInTimeSlices.add(job);
+                    if (occupiedTimeInTimeSeries <= currentTime && usingNodeIds.contains(i)) {
+                        int currentDetectiveTime = job.getCurrentDeactiveTime();
+                        if (occupiedTimeInTimeSeries < endEventOccuranceTimeNow) {
+                            int jobId = job.getJobId();
+                            System.out.println("Job " + jobId + ": slows down more than requested time... it needs to be modified timeslices information");
+                            existSlowsDownJob = true;
+                            int updateTimeSliceValue = endEventOccuranceTimeNow;
+                            modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, updateTimeSliceValue, i, job);
+                            modifiedJobInTimeSlices.add(job);                                
+                        }
                     }
                 }
-                assert existMultipleEventSameTime || existSlowsDownJob;
+                boolean existIntermittenceInteractiveJob = false;
+                for (int k = 0; k < executingJobList.size(); ++k) {
+                    Job job = executingJobList.get(k);
+                    boolean intJob = job.isInteracitveJob();
+                    if (!intJob) {
+                        continue;
+                    }
+                    
+                    int occupiedTimeInTimeSeries = job.getOccupiedTimeInTimeSlices();
+                    ArrayList<UsingNode> usingNodes = job.getUsingNodesList();
+                    ArrayList<Integer> usingNodeIds = new ArrayList<Integer>();
+                    for (int j = 0; j < usingNodes.size(); ++j) {
+                        usingNodeIds.add(usingNodes.get(j).getNodeNum());
+                    }
+
+                    boolean actState = job.isActivationState();
+                    int currentDetectiveTime = job.getCurrentDeactiveTime();
+                    int nextActivationTime = job.getNextActivationTime();
+
+                    
+                    if ( ( occupiedTimeInTimeSeries <= currentTime && usingNodeIds.contains(i) ) &&
+                         ( ( actState && occupiedTimeInTimeSeries < currentDetectiveTime) ||
+                           ( !actState && occupiedTimeInTimeSeries <= nextActivationTime))
+                       )
+                    {                    
+                        int jobId = job.getJobId();                     
+                        System.out.println("Job " + jobId + ": interactive job, ... it needs to be modified timeslices information");
+                        existIntermittenceInteractiveJob = true;
+                        int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
+                        if (endEventOccuranceTimeNow == 0) {                            
+                            int updateTimeSliceValue;
+                            if (actState) {
+                                updateTimeSliceValue = currentDetectiveTime;
+                            } else {
+                                updateTimeSliceValue = nextActivationTime;
+                            }
+                            modifyTimeSlicesDueToInteractiveJob(currentTime, occupiedTimeInTimeSeries, updateTimeSliceValue, i, job);
+                            modifiedJobInTimeSlices.add(job);                            
+                        }                                               
+                    }
+                }                
+                assert existMultipleEventSameTime || existSlowsDownJob || existIntermittenceInteractiveJob;
             } else {
                 ret1 = false;
             }
         }
         for (Job job: modifiedJobInTimeSlices) {
             int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
-            int newOccupiedTimeInTimeSlices = endEventOccuranceTimeNow;
-            job.setOccupiedTimeInTimeSlices(newOccupiedTimeInTimeSlices);
+            int updateTimeSliceValue = endEventOccuranceTimeNow;
+            boolean intJob = job.isInteracitveJob();
+            boolean actState = job.isActivationState();
+            int currentDetectiveTime = job.getCurrentDeactiveTime();
+            int nextActivationTime = job.getNextActivationTime();
+            if (endEventOccuranceTimeNow == 0 && intJob) {
+                if (actState) {
+                    updateTimeSliceValue = currentDetectiveTime;
+                } else {
+                    updateTimeSliceValue = nextActivationTime;
+                }
+            }
+            job.setOccupiedTimeInTimeSlices(updateTimeSliceValue);
         }
         
         // Executing Job List
@@ -1087,8 +1145,9 @@ public abstract class Scheduler {
         // TODO: should be double, but now int.        
         double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int realDeltaTime = currentTime - previousMeasuredTime;
-        double ratio = victimJob.getCurrentRatio();
-        currentAccumulatedComputeQuantity += (double)realDeltaTime / currentNetOCStateLevel / ratio;
+        double jobAffinityRatio = victimJob.getJobAffinityRatio();
+        double osubOvhRatio = victimJob.getOsubOverheadRatio();
+        currentAccumulatedComputeQuantity += (double)realDeltaTime / currentNetOCStateLevel / jobAffinityRatio / osubOvhRatio;
         victimJob.setCurrentAccumulatedComputeQuantity(currentAccumulatedComputeQuantity);
         
         double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
@@ -1142,8 +1201,9 @@ public abstract class Scheduler {
         int realDeltaTime = currentTime - previousMeasuredTime;
         double currentAccumulatedComputeQuantityForLatestActivation = job.getCurrentAccumulatedComputeQuantityForLatestActivation();
 
-        double ratio = job.getCurrentRatio();
-        currentAccumulatedComputeQuantityForLatestActivation += (double)realDeltaTime / currentNetOCStateLevel / ratio;
+        double jobAffinityRatio = job.getJobAffinityRatio();
+        double osubOvhRatio = job.getOsubOverheadRatio();
+        currentAccumulatedComputeQuantityForLatestActivation += (double)realDeltaTime / currentNetOCStateLevel / jobAffinityRatio / osubOvhRatio;
         job.setCurrentAccumulatedComputeQuantityForLatestActivation(currentAccumulatedComputeQuantityForLatestActivation);
         
         int currentOCStateLevel = job.getOCStateLevel();
@@ -1191,6 +1251,7 @@ public abstract class Scheduler {
         double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int actualExecuteTime = victimJob.getActualExecuteTime();
         double restActualExecuteTime = (actualExecuteTime - currentAccumulatedComputeQuantity) * currentNetOCStateLevel;      
+        restActualExecuteTime = max(restActualExecuteTime, 0);
         //double ratio = 1.0;
         /*
         if (OCStateLevel >= 2 && NodeConsciousScheduler.sim.isConsiderJobMatching()) {
@@ -1198,8 +1259,9 @@ public abstract class Scheduler {
             ratio = calculateMaxDegradationRatioForVictim(victimJob, coexistingJobs);
         }
         */
-        double ratio = victimJob.getCurrentRatio();
-        restActualExecuteTime *= ratio;
+        double jobAffinityRatio = victimJob.getJobAffinityRatio();
+        double osubOvhRatio = victimJob.getOsubOverheadRatio();
+        restActualExecuteTime *= (jobAffinityRatio * osubOvhRatio);
         double trueEndTime = startTime + restActualExecuteTime;
 
         return (int) ceil(trueEndTime);
@@ -1217,11 +1279,12 @@ public abstract class Scheduler {
         double currentAccumulatedComputeQuantityForLatestActivation = job.getCurrentAccumulatedComputeQuantityForLatestActivation();
         int actualExecuteTimeForLatestActivation = job.getActivationTimes().get(currentActivationIndex);
         double restActualExecuteTimeForLastestActivation = (actualExecuteTimeForLatestActivation - currentAccumulatedComputeQuantityForLatestActivation) * currentNetOCStateLevel;
-        
+        restActualExecuteTimeForLastestActivation = max(restActualExecuteTimeForLastestActivation, 0);
         // TODO: This is not accurate
         // Must calculate the accurate ratio when calculating netOCStateLevel
-        double ratio = job.getCurrentRatio();
-        restActualExecuteTimeForLastestActivation *= ratio;
+        double jobAffinityRatio = job.getJobAffinityRatio();
+        double osubOvhRatio = job.getOsubOverheadRatio();
+        restActualExecuteTimeForLastestActivation *= (jobAffinityRatio * osubOvhRatio);
         double deactivateTime = startTime + restActualExecuteTimeForLastestActivation;
 
         return (int) ceil(deactivateTime);
@@ -1271,7 +1334,8 @@ public abstract class Scheduler {
         int netOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
         coexistingJob.setNetOCStateLevel(netOCStateLevel);
         double ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingJob.getCoexistingJobs());
-        coexistingJob.setCurrentRatio(ratio);
+        coexistingJob.setJobAffinityRatio(ratio);
+        coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
 //        assert trueEndTime <= oldTrueEndTime;
 
@@ -1305,6 +1369,7 @@ public abstract class Scheduler {
         double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
         int requiredTime = victimJob.getRequiredTime();
         double restRequiredTime = (requiredTime - currentAccumulatedComputeQuantityOnlyConsiderMultiplicity) * currentOCStateLevel;
+        restRequiredTime = max(restRequiredTime, 1);
         double expectedEndTime = currentTime + restRequiredTime;
 
         return (int) ceil(expectedEndTime);
@@ -1469,6 +1534,8 @@ public abstract class Scheduler {
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
         victimJob.setOCStateLevel(OCStateLevel);
         victimJob.setNetOCStateLevel(netOCStateLevel);
+        victimJob.setJobAffinityRatio(calculateMaxDegradationRatio(victimJob, victimJob.getCoexistingJobs()));
+        victimJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(victimJob));
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         assert oldTrueEndTime <= trueEndTime;
         victimJob.setOCStateLevel(currentOCStateLevel);
@@ -1519,7 +1586,8 @@ public abstract class Scheduler {
 
         /* TODO: must calculate ratio among activated jobs */
         double ratio = calculateMaxDegradationRatioForVictim(victimJob, victimJob.getCoexistingJobs());
-        victimJob.setCurrentRatio(ratio);
+        victimJob.setJobAffinityRatio(ratio);
+        victimJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(victimJob));
         
         if (opponentInteractiveJobFlag) {
             ;;
@@ -1623,6 +1691,8 @@ public abstract class Scheduler {
         victimJob.setOCStateLevel(OCStateLevel);
         int netOCStateLevel = calculateNewOCStateLevelForExecutingJob(victimJob, true);
         victimJob.setNetOCStateLevel(netOCStateLevel);
+        victimJob.setJobAffinityRatio(calculateMaxDegradationRatio(victimJob, victimJob.getCoexistingJobs()));
+        victimJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(victimJob));
         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);
         //assert (OCStateLevelIncreasingflag && oldTrueEndTime <= trueEndTime+1) || (!OCStateLevelIncreasingflag && oldTrueEndTime >= trueEndTime);
         victimJob.setOCStateLevel(currentOCStateLevel);
@@ -1853,7 +1923,8 @@ public abstract class Scheduler {
         migratingJobCoexistingJob.removeAll(deletedCoexistingJobs);
         
         double ratio = calculateMaxDegradationRatioForVictim(migratingJob, migratingJobCoexistingJob);
-        migratingJob.setCurrentRatio(ratio);
+        migratingJob.setJobAffinityRatio(ratio);
+        migratingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(migratingJob));
         
         return result;
     }
@@ -2158,6 +2229,25 @@ public abstract class Scheduler {
         return ratio;
     }
 
+    protected double calculateOsubOverheadRatioForVictim(Job victimJob) {    
+        Constants.OsubOverheadModelType oomt = NodeConsciousScheduler.sim.getOsubOverheadModelType();
+        boolean consideOsubOverhead = (oomt != Constants.OsubOverheadModelType.NOTHING);
+        if (!consideOsubOverhead) return 1.0;
+
+        double ratio = 0;
+        
+        int netOCStateLevel = victimJob.getNetOCStateLevel();
+        if (netOCStateLevel == 1) {
+            ratio = 1.0;
+        } else if (oomt == Constants.OsubOverheadModelType.CONST) {         
+            ratio = NodeConsciousScheduler.sim.getOsubOverheadConst();
+        } else if (oomt == Constants.OsubOverheadModelType.CONSIDER_MULT) {
+            // TODO
+            ratio = NodeConsciousScheduler.sim.getOsubOverheadConst();
+        }
+        if (ratio == 0) ratio = 1.0;
+        return ratio;
+    }
 
     protected void modifyTheENDEventTime(Job coexistingJob, int coexistingJobId, int currentTime, int OCStateLevel, ArrayList<Event> result, boolean endFlag, int endingJobId) {
         int coexistingStartTime = coexistingJob.getStartTime();
@@ -2180,7 +2270,7 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
         Set<Integer> coexistingCoexistingJobs = coexistingJob.getCoexistingJobs();
-        double ratio = coexistingJob.getCurrentRatio();
+        double ratio = coexistingJob.getJobAffinityRatio();
         if (endFlag) {
             coexistingCoexistingJobs.remove(endingJobId);
             ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingCoexistingJobs);
@@ -2192,7 +2282,8 @@ public abstract class Scheduler {
             coexistingJob.setNetOCStateLevel(netOCStateLevel);
         }
         coexistingJob.setOCStateLevel(OCStateLevel);
-        coexistingJob.setCurrentRatio(ratio);
+        coexistingJob.setJobAffinityRatio(ratio);
+        coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
         int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
         coexistingCoexistingJobs.add(endingJobId);
 //        assert trueEndTime <= oldTrueEndTime;
@@ -2502,6 +2593,8 @@ public abstract class Scheduler {
             assert coexistingNetOCStateLevel <= newCoexistingNetOCStateLevel;
             assert coexistingNetOCStateLevel <= coexistingOCStateLevel;
             coexistingJob.setNetOCStateLevel(newCoexistingNetOCStateLevel);
+            coexistingJob.setJobAffinityRatio(calculateMaxDegradationRatio(coexistingJob, coexistingJob.getCoexistingJobs()));
+            coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
             
             if (!intJobFlag) {
                 int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
@@ -2534,6 +2627,8 @@ public abstract class Scheduler {
         assert netOCStateLevel <= newNetOCStateLevel;
         assert newNetOCStateLevel <= OCStateLevel;
         job.setNetOCStateLevel(newNetOCStateLevel);
+        job.setJobAffinityRatio(calculateMaxDegradationRatio(job, coexistingJobs));
+        job.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(job));
         int deactivateTime = calculateNewActualEndTimeForActivation(currentTime, job);
         
 
@@ -2584,6 +2679,8 @@ public abstract class Scheduler {
             assert newCoexistingNetOCStateLevel <= coexistingNetOCStateLevel;
             assert coexistingNetOCStateLevel <= coexistingOCStateLevel;
             coexistingJob.setNetOCStateLevel(newCoexistingNetOCStateLevel);
+            coexistingJob.setJobAffinityRatio(calculateMaxDegradationRatio(coexistingJob, coexistingJob.getCoexistingJobs()));
+            coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
             
             boolean intJobFlag = coexistingJob.isInteracitveJob();
             boolean actStateFlag = coexistingJob.isActivationState();
@@ -2629,6 +2726,8 @@ public abstract class Scheduler {
         assert newNetOCStateLevel <= netOCStateLevel;
         assert newNetOCStateLevel <= OCStateLevel;
         job.setNetOCStateLevel(newNetOCStateLevel);
+        job.setJobAffinityRatio(calculateMaxDegradationRatio(job, coexistingJobs));
+        job.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(job));
         
         int currentActivationIndex = job.getCurrentActivationIndex();
         ArrayList<Integer> activationTimes = job.getActivationTimes();
@@ -2646,7 +2745,8 @@ public abstract class Scheduler {
             evs.add(new Event(EventType.INT_ACTIVATE, activateTime, job));
 
             ++currentActivationIndex;
-            job.setCurrentActivationIndex(currentActivationIndex);            
+            job.setCurrentActivationIndex(currentActivationIndex);
+            job.setNextActivationTime(activateTime);
         }
         return evs;
     }
@@ -2679,5 +2779,66 @@ public abstract class Scheduler {
         }
         if (count == START_COUNT) count = -1;
         return count;
+    }
+
+    private void modifyTimeSlicesDueToInteractiveJob(int currentTime, int occupiedTimeInTimeSeries, int updateTimeSliceValue, int i, Job job) {
+        modifyTimeSlicesDueToSlowsDonwJob(currentTime, occupiedTimeInTimeSeries, updateTimeSliceValue, i, job);
+    }
+
+    ArrayList<Event> updateVictimJobOCStateLevel(int currentTime, Job job) {
+        Set<Integer> coexistingJobs = job.getCoexistingJobs();
+        ArrayList<Event> evs = new ArrayList<Event>();
+
+        for (int coexistingJobId : coexistingJobs) {
+            Job coexistingJob = getJobByJobId(coexistingJobId);
+
+            boolean intJobFlag = coexistingJob.isInteracitveJob();
+            boolean actStateFlag = coexistingJob.isActivationState();
+            if (!intJobFlag) {
+                measureCurrentExecutingTime(currentTime, coexistingJob);
+            } else if (actStateFlag) {
+                measureCurrentExecutingTimeForActivation(currentTime, coexistingJob, currentTime);
+            }
+            coexistingJob.setPreviousMeasuredTime(currentTime);
+        }
+
+        for (int coexistingJobId : coexistingJobs) {
+            Job coexistingJob = getJobByJobId(coexistingJobId);
+            int coexistingNetOCStateLevel = coexistingJob.getNetOCStateLevel();
+            int coexistingOCStateLevel = coexistingJob.getOCStateLevel();
+
+            int newCoexistingNetOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
+            assert newCoexistingNetOCStateLevel <= coexistingNetOCStateLevel;
+            assert coexistingNetOCStateLevel <= coexistingOCStateLevel;
+            coexistingJob.setNetOCStateLevel(newCoexistingNetOCStateLevel);
+            coexistingJob.setJobAffinityRatio(calculateMaxDegradationRatio(coexistingJob, coexistingJob.getCoexistingJobs()));
+            coexistingJob.setOsubOverheadRatio(calculateOsubOverheadRatioForVictim(coexistingJob));
+
+            boolean intJobFlag = coexistingJob.isInteracitveJob();
+            boolean actStateFlag = coexistingJob.isActivationState();
+
+            if (!intJobFlag) {
+                int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
+                int trueEndTime = calculateNewActualEndTime(currentTime, coexistingJob);
+                if (oldTrueEndTime != trueEndTime) {
+                    printThrownEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
+                    evs.add(new Event(EventType.END, trueEndTime, coexistingJob));
+                    coexistingJob.setEndEventOccuranceTimeNow(trueEndTime);
+                    printThrownEvent(currentTime, trueEndTime, coexistingJob, EventType.DELETE_FROM_END);
+                    evs.add(new Event(EventType.DELETE_FROM_END, currentTime, coexistingJob, oldTrueEndTime)); // This event delete the END event already exists in the event queue. 
+                }
+            } else if (actStateFlag) {
+                int oldDeactivateTime = coexistingJob.getCurrentDeactiveTime();
+                int deactivateTime = calculateNewActualEndTimeForActivation(currentTime, coexistingJob);
+                if (oldDeactivateTime != currentTime && oldDeactivateTime != deactivateTime) {
+                    printThrownEvent(currentTime, deactivateTime, coexistingJob, EventType.DELETE_DEACTIVE, 1);
+                    evs.add(new Event(EventType.DELETE_DEACTIVE, currentTime, coexistingJob, oldDeactivateTime));
+                    coexistingJob.setCurrentDeactiveTime(deactivateTime);
+                    printThrownEvent(currentTime, deactivateTime, coexistingJob, EventType.INT_DEACTIVATE, 1);
+                    evs.add(new Event(EventType.INT_DEACTIVATE, deactivateTime, coexistingJob));
+                }
+            }
+        }
+        return evs;
     }
 }
