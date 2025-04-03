@@ -11,20 +11,30 @@ package nodeconsciousscheduler;
  * @author sminami
  */
 class VacantNode implements Comparable<VacantNode>{
-    int nodeNo;
-    int freeCores;
-    int OCStateLevel;
+    private int nodeNo;
+    private int freeCores;
+    private int OCStateLevel;
+    private long freeMemory;
+    private double priority; // This is only used when SCHEDULE_USING_AFFINITY is true.
     
     VacantNode() {
         this.nodeNo = -1;
         this.freeCores = 0;
         this.OCStateLevel = 1;
+        this.freeMemory = 0;
     }
     
     VacantNode(int nodeNo, int freeCores) {
         this.nodeNo = nodeNo;
         this.freeCores = freeCores;
-        this.OCStateLevel = 1;        
+        this.OCStateLevel = 1;
+    }
+    
+    VacantNode(int nodeNo, int freeCores, long freeMemory) {
+        this.nodeNo = nodeNo;
+        this.freeCores = freeCores;
+        this.OCStateLevel = 1;
+        this.freeMemory = freeMemory;
     }
     
     @Override
@@ -35,6 +45,25 @@ class VacantNode implements Comparable<VacantNode>{
         if (this.freeCores > o.freeCores) {
             return -1;
         }
+        
+        if (NodeConsciousScheduler.sim.isCrammingMemoryScheduling()) {
+            if (this.freeMemory < o.freeMemory) {
+                return -1;
+            }
+            if (this.freeMemory > o.freeMemory) {
+                return 1;
+            }            
+        }
+        
+        if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+            if (this.priority < o.priority) {
+                return -1;
+            }
+            if (this.priority > o.priority) {
+                return 1;
+            }            
+        }
+        
         return 0;
     }
 
@@ -62,5 +91,19 @@ class VacantNode implements Comparable<VacantNode>{
         this.OCStateLevel = OCStateLevel;
     }
 
-    
+    public long getFreeMemory() {
+        return freeMemory;
+    }
+
+    public void setFreeMemory(long freeMemory) {
+        this.freeMemory = freeMemory;
+    }
+
+    public double getPriority() {
+        return priority;
+    }
+
+    public void setPriority(double priority) {
+        this.priority = priority;
+    }
 }

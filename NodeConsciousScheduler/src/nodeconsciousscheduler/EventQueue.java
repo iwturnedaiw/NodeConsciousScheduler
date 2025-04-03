@@ -12,6 +12,8 @@ import java.util.ListIterator;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.Constants.START_TIME;
+import nodeconsciousscheduler.Constants.TimeDesc;
 
 /**
  *
@@ -56,6 +58,16 @@ public class EventQueue extends PriorityQueue {
             evh = new DeleteFromBeginning();
         } else if (evt == EventType.DELETE_FROM_END) {
             evh = new DeleteFromEnd();
+        } else if (evt == EventType.INT_ACTIVATE) {
+            evh = new IntActivate();
+        } else if (evt == EventType.INT_DEACTIVATE) {
+            evh = new IntDeactivate();
+        } else if (evt == EventType.DELETE_DEACTIVE) {
+            evh = new DeleteDeactivate();
+        } else if (evt == EventType.MEASURING_UTIL_RATIO) {
+            evh = new MeasuringUtilRatio();
+        } else if (evt == EventType.MEASURING_WASTED_RESOURCE) {
+            evh = new MeasuringWastedResource();
         }
         
         assert evh != null;
@@ -73,15 +85,16 @@ public class EventQueue extends PriorityQueue {
         
         Job job = ev.getJob();
         int jobId = job.getJobId();
-        int updatedTime = ev.getUpdatedTime();        
+        int deleteTargetTime = ev.getDeleteTargetTime();        
         int deleteCnt = 0;
         while(itr.hasNext()) {
             Event candidateEvent = (Event) itr.next();
             EventType evt = candidateEvent.getEventType();            
             int occuranceTime = candidateEvent.getOccurrenceTime();            
             Job candidateJob = candidateEvent.getJob();
+            if (candidateJob == null) continue;
             int candidateJobId = candidateJob.getJobId();
-            if (evt == EventType.END && jobId == candidateJobId && occuranceTime != updatedTime) {
+            if (evt == EventType.END && jobId == candidateJobId && occuranceTime == deleteTargetTime) {
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
                 // int originalEndTime = candidateEvent.getOccurrenceTime();                               
                 itr.remove();
@@ -97,15 +110,16 @@ public class EventQueue extends PriorityQueue {
         Iterator itr = this.iterator();
         Job job = ev.getJob();
         int jobId = job.getJobId();
-        int updatedTime = ev.getUpdatedTime();
+        int deleteTargetTime = ev.getDeleteTargetTime();
         int deleteCnt = 0;
         while(itr.hasNext()) {
             Event candidateEvent = (Event) itr.next();
             EventType evt = candidateEvent.getEventType();
             int occuranceTime = candidateEvent.getOccurrenceTime();
             Job candidateJob = candidateEvent.getJob();
+            if (candidateJob == null) continue;
             int candidateJobId = candidateJob.getJobId();
-            if (evt == EventType.END && jobId == candidateJobId && occuranceTime != updatedTime) {                
+            if (evt == EventType.END && jobId == candidateJobId && occuranceTime == deleteTargetTime) {                
                 // TODO: if originalEndTime == currentTime, delete the newcomer event
                 // int originalEndTime = candidateEvent.getOccurrenceTime();                                               
                 itr.remove();
@@ -117,6 +131,31 @@ public class EventQueue extends PriorityQueue {
         return;
     }
 
+    void deleteDeactiveEvent(Event ev) {
+        Iterator itr = this.iterator();
+        Job job = ev.getJob();
+        int jobId = job.getJobId();
+        int deleteTargetTime = ev.getDeleteTargetTime();
+        int deleteCnt = 0;
+        while(itr.hasNext()) {
+            Event candidateEvent = (Event) itr.next();
+            EventType evt = candidateEvent.getEventType();
+            int occuranceTime = candidateEvent.getOccurrenceTime();
+            Job candidateJob = candidateEvent.getJob();
+            if (candidateJob == null) continue;
+            int candidateJobId = candidateJob.getJobId();
+            if (evt == EventType.INT_DEACTIVATE && jobId == candidateJobId && occuranceTime == deleteTargetTime) {                
+                // TODO: if originalEndTime == currentTime, delete the newcomer event
+                // int originalEndTime = candidateEvent.getOccurrenceTime();                                               
+                itr.remove();
+                ++deleteCnt;
+                break;
+            }
+        }
+        assert deleteCnt == 1;
+        return;
+    }
+    
     private void debug() {
         System.out.println("Debug:");
         while(this.size() > 0) {
@@ -138,6 +177,35 @@ public class EventQueue extends PriorityQueue {
             }
         }
     }
+
+    void enqueueUtilizationMeasuringEvent(int arrivalTime, boolean outputMinuteBoolean) {
+        if (outputMinuteBoolean) {
+            enqueueUtilizationMeasuringEvent(arrivalTime, TimeDesc.MINUTE);
+        }
+        enqueueUtilizationMeasuringEvent(arrivalTime, TimeDesc.HOUR);
+        enqueueUtilizationMeasuringEvent(arrivalTime, TimeDesc.DAY);
+    }
+    void enqueueUtilizationMeasuringEvent(int arrivalTime, TimeDesc timeDesc) {
+        Event ev = new Event(arrivalTime, timeDesc, EventType.MEASURING_UTIL_RATIO);
+        this.add(ev);
+    }
+
+    void enqueueWastedResourceMeasuringEvent(int arrivalTime, boolean outputMinuteBoolean, boolean outputSecondWastedResources) {
+        if (outputMinuteBoolean) {
+            enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.MINUTE);
+        }
+        if (outputSecondWastedResources) {
+            enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.SECOND);            
+        }
+        enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.HOUR);
+        enqueueWastedResourceMeasuringEvent(arrivalTime, TimeDesc.DAY);
+    }
+ 
+    void enqueueWastedResourceMeasuringEvent(int arrivalTime, TimeDesc timeDesc) {
+        Event ev = new Event(arrivalTime, timeDesc, EventType.MEASURING_WASTED_RESOURCE);
+        this.add(ev);
+    }
+    
 }
 
 

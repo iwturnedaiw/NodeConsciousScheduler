@@ -29,14 +29,26 @@ class FCFS extends Scheduler {
 
     @Override
     protected ArrayList<Event> scheduleJobsStartAt(int currentTime) {
+        /* 1. Obtain the head job in the queue */ 
+        /* 2. Obtain the nodes the job can execute at */
+        /* 3. Select nodes the job is assigned to */        
+        /* 4. Modify the timeSlices */        
+        /* 5. Modify the resource informaiton */        
+        /* 6. Enqueue the START and END Events */                
+        
         ArrayList<Event> result = new ArrayList<Event>();
         temporallyScheduledJobList.clear();
         while (!waitingQueue.isEmpty()) {
+            /* 1. Obtain the head job in the queue */
             Job job = waitingQueue.peek();
-            
+
+            /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
-            assert checkTimeSlicesAndAllNodeInfo();
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
+            assert consistency.isConsistency();
+            if (consistency.isSameEndEventFlag()) return result;
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
+                /* 3. Select nodes the job is assigned to */
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 for (int i = 0; i < job.getRequiredNodes(); ++i) {
@@ -44,24 +56,33 @@ class FCFS extends Scheduler {
                 }
 
                 waitingQueue.poll();
+                
+                /* 4. Modify the timeSlices */
                 int startTime = currentTime;
                 job.setStartTime(startTime);
                 makeTimeslices(startTime);
                 
                 int expectedEndTime = startTime + job.getRequiredTime();
                 makeTimeslices(expectedEndTime);
-                job.setSpecifiedExecuteTime(expectedEndTime);
+                job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
+                /* 5. Modify the resource informaiton */
                 assignJob(startTime, job, assignNodesNo);
-                
+
+                /* 6. Enqueue the START and END Events */                
                 job.setPreviousMeasuredTime(startTime);
-                int trueEndTime = startTime + job.getActualExecuteTime();                
+                int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
-                result.add(new Event(EventType.END, trueEndTime, job));
-                job.setEndEventOccuranceTimeNow(trueEndTime);
+
+                boolean interactiveJob = job.isInteracitveJob();
+                if (!interactiveJob) {
+                    result.add(new Event(EventType.END, trueEndTime, job));
+                    job.setEndEventOccuranceTimeNow(trueEndTime);
+                }
                 temporallyScheduledJobList.add(job);
             } else break;
         }
+        temporallyScheduledJobList.clear();
         return result;
     }
 
@@ -78,7 +99,8 @@ class FCFS extends Scheduler {
         
         /* Working Variable */
         ArrayList<VacantNode> vacantNodes = new ArrayList<VacantNode>();
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+//        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores, NodeConsciousScheduler.memory));
         
         /* This is used for counting executable nodes */
         ArrayList<Integer> vacantNodeCount = new ArrayList<Integer>();
@@ -86,8 +108,12 @@ class FCFS extends Scheduler {
 
         /* Calculate ppn */
         /* TODO: The case requiredCores ist not dividable  */
-        int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
-        if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
+        //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        int requiredCoresPerNode = job.getRequiredCoresPerNode();
+        long requiredMemoryPerNode = job.getMaxMemory();
+
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
         
         int alongTimeSlices = 0;
         for (int i = 0; i < timeSlices.size(); ++i) {
@@ -96,14 +122,24 @@ class FCFS extends Scheduler {
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     int freeCores = ts.getAvailableCores().get(j);
+                    long freeMemory = ts.getAvailableMemory().get(j);
                     VacantNode node = vacantNodes.get(j);
                     
                     assert node.getNodeNo() == j;
 
                     freeCores = min(freeCores, node.getFreeCores());
                     node.setFreeCores(freeCores);
+                    
+                    freeMemory = min(freeMemory, node.getFreeMemory());
+                    node.setFreeMemory(freeMemory);
 
-                    if (freeCores >= requiredCoresPerNode ) {
+                    boolean addFlag = false;
+                    addFlag = (freeCores >= requiredCoresPerNode);                    
+                    if (scheduleUsingMemory) {
+                        addFlag &= (freeMemory >= requiredMemoryPerNode);
+                    }
+                    
+                    if (addFlag) {
                         int cnt = vacantNodeCount.get(j);
                         vacantNodeCount.set(j, ++cnt);
                     }

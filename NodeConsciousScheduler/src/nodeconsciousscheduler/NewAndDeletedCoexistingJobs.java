@@ -22,6 +22,11 @@ public class NewAndDeletedCoexistingJobs {
         this.newCoexistingJobsOnTheCore = new HashSet<Integer>();
         this.deletedCoexistingJobsFromTheCore = new HashSet<Integer>();
     }
+    
+    public NewAndDeletedCoexistingJobs(HashSet<Integer> newCoexistingJobsOnTheCore, HashSet<Integer> deletedCoexistingJobsOnTheCore) {
+        this.newCoexistingJobsOnTheCore = newCoexistingJobsOnTheCore;
+        this.deletedCoexistingJobsFromTheCore = deletedCoexistingJobsOnTheCore;
+    }
 
     public Set<Integer> getNewCoexistingJobsOnTheCore() {
         return newCoexistingJobsOnTheCore;

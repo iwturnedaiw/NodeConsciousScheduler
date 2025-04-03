@@ -25,6 +25,9 @@ public class NodeInfo implements Cloneable{
     private int numOccupiedCores;
     private int numFreeCores;
     private int OCStateLevel;
+    private long memorySize;
+    private long freeMemory;
+    private long occupiedMemory;
     
     
     NodeInfo(int nodeNum, int numCores) {
@@ -38,6 +41,20 @@ public class NodeInfo implements Cloneable{
         this.OCStateLevel = 0;
     }
 
+    NodeInfo(int nodeNum, int numCores, long memory) {
+        this.nodeNum = nodeNum;
+        this.numCores = numCores;
+        this.occupiedCores = new ArrayList<CoreInfo>(numCores);
+        this.executingJobIds = new HashSet<Integer>();
+        init();
+        this.numOccupiedCores = 0;
+        this.numFreeCores = numCores;
+        this.OCStateLevel = 0;
+        this.memorySize = memory;
+        this.occupiedMemory = 0;
+        this.freeMemory = memory;
+    }
+    
     public int getNodeNum() {
         return nodeNum;
     }
@@ -92,6 +109,30 @@ public class NodeInfo implements Cloneable{
 
     public void setExecutingJobIds(Set<Integer> executingJobIds) {
         this.executingJobIds = executingJobIds;
+    }
+
+    public long getMemorySize() {
+        return memorySize;
+    }
+
+    public long getFreeMemory() {
+        return freeMemory;
+    }
+
+    public long getOccupiedMemory() {
+        return occupiedMemory;
+    }
+
+    public void setMemorySize(long memorySize) {
+        this.memorySize = memorySize;
+    }
+
+    public void setFreeMemory(long freeMemory) {
+        this.freeMemory = freeMemory;
+    }
+
+    public void setOccupiedMemory(long occupiedMemory) {
+        this.occupiedMemory = occupiedMemory;
     }
     
     private void init() {

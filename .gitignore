@@ -1,8 +1,8 @@
-NodeConsciousScheduler/build
+NodeConsciousScheduler/build/classes/nodeconsciousscheduler
 NodeConsciousScheduler/build.xml
 NodeConsciousScheduler/nbproject
 NodeConsciousScheduler/manifest.mf
 NodeConsciousScheduler/result
-NodeConsciousScheduler/log/*
+NodeConsciousScheduler/log/*.log
 
 /NodeConsciousScheduler/dist/

@@ -8,19 +8,31 @@ package nodeconsciousscheduler;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import static java.lang.Math.min;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static nodeconsciousscheduler.Constants.CONFIGURATION_FILE;
+import static nodeconsciousscheduler.Constants.DATASET_DIRECTORY;
+import static nodeconsciousscheduler.Constants.NOTSPECIFIED;
+import static nodeconsciousscheduler.Constants.NOTSPECIFIED_STR;
+import nodeconsciousscheduler.Constants.ScheduleConsiderJobType;
+import static nodeconsciousscheduler.Constants.UNSPECIFIED;
+import static nodeconsciousscheduler.Constants.UNUPDATED;
 import nodeconsciousscheduler.ScheduleAlgorithm;
 import static nodeconsciousscheduler.ScheduleAlgorithm.*;
 
@@ -34,14 +46,23 @@ public class NodeConsciousScheduler {
     static Simulator sim;
     static int numNodes;
     static int numCores;
+    static long memory;
     static int M = 2;
     static String fname = "gen01.swf";
     static ScheduleAlgorithm sche = EasyBackfilling;
+    static boolean ignoreIncompleteMemoryData = false;
+    static boolean memoryDataPerCore = false;
+    static boolean memoryDataPerNode = false;
+    static boolean outputResultsInDetail = true;
+    static boolean considerMemoryForNodeNum = false;
+    static Map<Integer, Integer> matchingGroup;
+    static int interactiveQueueNumber = -1;
+
     
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (args.length == 3){
             fname = args[0];
             sche = ScheduleAlgorithm.valueOf(args[1]);
@@ -71,7 +92,65 @@ public class NodeConsciousScheduler {
 */
         ArrayList<NodeInfo> allNodesInfo = new ArrayList<NodeInfo>();
         allNodesInfo = readResourceSettings(fname);
+        SimulatorConfiguration simConf = readSimulatorConfiguration(CONFIGURATION_FILE);
+        boolean scheduleUsingMemory = simConf.isScheduleUsingMemory();
+        boolean considerJobMatching = simConf.isConsiderJobMatching();
+        boolean usingAffinityForSchedule = simConf.isUsingAffinityForSchedule();
+                
+        if (memoryDataPerCore & memoryDataPerNode) {
+            System.out.println("Configuration Error. Both MEMORY_DATA_PER_CORE and MEMORY_DATA_PER_NODE cannot be set true");
+            System.exit(1);
+        } 
+        
+        if (considerMemoryForNodeNum & scheduleUsingMemory) {
+            System.out.println("Configuration Error. Both SCHEDULE_USING_MEMORY and CONSIDER_MEMORY_FOR_JOB_NODENUM cannot be set true");
+            System.exit(1);            
+        }
+        
+        if (usingAffinityForSchedule && !considerJobMatching) {
+            System.out.println("Configuration Error. SCHEDULE_USING_AFFINITY must be set false when CONSIDER_JOB_MATCHING is false.");
+            System.exit(1);
+        }
+        
+        Map<JobMatching, Double> jobMatchingTable = new HashMap<>();
+        if (considerJobMatching) {
+            matchingGroup = readJobMatchingGroupTable(fname);
+            jobMatchingTable = readJobMatchingTable(fname);
+            simConf.setJobMatchingTable(jobMatchingTable);
+        }
+        
+        boolean accurateInteractiveJobs = simConf.isAccurateInteractiveJobs();
+        int interactiveJobsRecordsType = simConf.getInteractiveJobsRecordsType();
+        double interactiveCPURatio = simConf.getInteractiveCPURatio();
+        double prologTimeRatio = simConf.getPrologTimeRatio();
+        double epilogTimeRatio = simConf.getEpilogTimeRatio();
+        if (accurateInteractiveJobs && interactiveQueueNumber == -1) {
+            System.out.println("Configuration Error. INTERACTIVE_QUEUE_NUMBER must be set.");
+            System.exit(1);            
+        }
+        if (accurateInteractiveJobs && ( (interactiveCPURatio <= 0) || (interactiveCPURatio >= 1))) {
+            System.out.println("Configuration Error. INTERACTIVE_CPU_RATIO must be set between 0 < r < 1.");
+            System.exit(1);            
+        }
+        if (accurateInteractiveJobs && ( (prologTimeRatio < 0) || (prologTimeRatio >= 1))) {
+            System.out.println("Configuration Error. PROLOG_TIME_RATIO must be set between 0 <= r < 1.");
+            System.exit(1);            
+        }
+        if (accurateInteractiveJobs && ( (epilogTimeRatio < 0) || (epilogTimeRatio >= 1))) {
+            System.out.println("Configuration Error. EPILOG_TIME_RATIO must be set between 0 <= r < 1.");
+            System.exit(1);            
+        }
+        if (accurateInteractiveJobs && ( prologTimeRatio + interactiveCPURatio + epilogTimeRatio >= 1)) {
+            System.out.println("Configuration Error. The sum of PROLOG_TIME_RATIO, INTERACTIVE_CPU_RATIO, and EPILOG_TIME_RATIO must be set between 0 < r < 1.");
+            System.exit(1);            
+        }
 
+        if (accurateInteractiveJobs && interactiveJobsRecordsType == Constants.UNSPECIFIED) {
+            System.out.println("Configuration Error. INTERACTIVE_JOBS_RECORDS_TYPE must be specified when ACCURATE_INTERACTIVE_JOBS is true");
+            System.exit(1);            
+        }
+        
+        
         // Workload Trace Setting
         /*        
         Job job0 = new Job(0, 1, 500, 1000, 40, 4);
@@ -86,15 +165,16 @@ public class NodeConsciousScheduler {
         */      
         ArrayList<Job> jobList = new ArrayList<Job>();
         try {
-            jobList = readSWFFile(fname);
+            jobList = readSWFFile(fname, scheduleUsingMemory, considerJobMatching, accurateInteractiveJobs, interactiveJobsRecordsType, interactiveCPURatio, prologTimeRatio, epilogTimeRatio);
         } catch (IOException ex) {
             Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         //ScheduleAlgorithm sche = EasyBackfilling;
         //sim = new Simulator(jobList, allNodesInfo, FCFS);
-        sim = new Simulator(jobList, allNodesInfo, sche);
+        sim = new Simulator(jobList, allNodesInfo, sche, simConf);
         sim.run();
+        if (outputResultsInDetail) sim.makeResults();
 /*        
         PriorityQueue<Event> pq = new EventQueue();
         EventQueue evq = (EventQueue) pq;
@@ -113,18 +193,13 @@ public class NodeConsciousScheduler {
     }
 
     private static ArrayList<NodeInfo> readResourceSettings(String data_set) {
-        String fname = "configuration.properties";
-
-        String dir = "./" + fname;
-        Path p = Paths.get(dir);       
- 
         LinkedList lines = new LinkedList();
         Input r = new Input();
 
         BufferedReader br = null;
 
-        br = r.openFile(new File("data-set/" + data_set + ".machines"));
-        System.out.println("Opening: " + "data-set/" + data_set + ".machines");
+        br = r.openFile(new File(DATASET_DIRECTORY + "/" + data_set + ".machines"));
+        System.out.println("Opening: " + DATASET_DIRECTORY + "/" + data_set + ".machines");
         r.getLines(lines, br);
         r.closeFile(br);
 
@@ -146,29 +221,52 @@ public class NodeConsciousScheduler {
         int numCores = Integer.parseInt(values[3]);
         NodeConsciousScheduler.numCores = numCores;
         NodeConsciousScheduler.numNodes = numNodes;
+        NodeConsciousScheduler.memory = ram;
         int peRating = Integer.parseInt(values[4]);
         String name = values[1];
 
         ArrayList<NodeInfo> nodeInfoList = new ArrayList<NodeInfo>();
         for (int i = 0; i < numNodes; ++i){
-            NodeInfo nodeInfo = new NodeInfo(i, numCores);
+//            NodeInfo nodeInfo = new NodeInfo(i, numCores);
+            NodeInfo nodeInfo = new NodeInfo(i, numCores, NodeConsciousScheduler.memory);
             nodeInfoList.add(nodeInfo);
-        }            
+        }
 
         return nodeInfoList;
     }
 
-    private static ArrayList<Job> readSWFFile(String fname) throws IOException {
-        System.out.println("Opening job file at: " + "data-set/" + fname);
+    private static ArrayList<Job> readSWFFile(String fname, 
+            boolean scheduleUsingMemory, 
+            boolean considerJobMatching,
+            boolean accurateInteractiveJobs,
+            int interactiveJobsRecordType,
+            double configCPURatio,
+            double configPrologTimeRatio,
+            double configEpilogTimeRatio) throws IOException {
+        boolean ignoreIncompleteMemoryData = NodeConsciousScheduler.ignoreIncompleteMemoryData;
+        int interactiveQueueNumber = NodeConsciousScheduler.interactiveQueueNumber;
+
+        System.out.println("Opening job file at: " + DATASET_DIRECTORY + "/" + fname);
         BufferedReader br = null;
         Input in = new Input();
-        br = in.openFile(new File("data-set/" + fname));
+        br = in.openFile(new File(DATASET_DIRECTORY + "/" + fname));
         
         String[] values = null;
         String line = "";
+        
+        
+        int canNotExecuteDueCpuTime = 0;
+        int notSpecifiedActural = 0;
+        int zeroCpuCnt = 0;
+        int canNotExecuteDueMemory = 0;
+        int canNotExecuteDueMemoryUpperLimit = 0;
+        int memoryUnspecifiedCnt = 0;
+        int canNotExecuteCountDueCpuResources = 0;
+        int coreZeroCnt = 0;
+        int addCheckSkip = 0;
 
 
-
+        int firstJobSubmitTime = UNUPDATED;
         ArrayList jobList = new ArrayList<Job>();
         while ((line = br.readLine()) != null) {
             if (line.charAt(0) == ' ') {
@@ -189,6 +287,41 @@ public class NodeConsciousScheduler {
             values = line.split("\\s+");
 
             int jobId = Integer.parseInt(values[0]);
+            int userId = Integer.parseInt(values[11]);
+            int matchingGroup = UNSPECIFIED;
+            if (considerJobMatching && NodeConsciousScheduler.matchingGroup.containsKey(userId)) {
+                matchingGroup  = NodeConsciousScheduler.matchingGroup.get((Integer) userId);
+            }
+            int groupId = Integer.parseInt(values[12]);
+            int requiredMemory = Integer.parseInt(values[9]);
+            int actualMemory = Integer.parseInt(values[6]);
+            // required memory is unspecified
+            if (requiredMemory == UNSPECIFIED) {
+                requiredMemory = actualMemory;
+                memoryUnspecifiedCnt++;
+                // TODO: set appropriate parameter?
+            }
+
+
+            // required and actual memory is unspecified
+            if (requiredMemory == UNSPECIFIED) {
+                ++canNotExecuteDueMemory;
+                if (ignoreIncompleteMemoryData) {
+                    continue;
+                }
+                requiredMemory = 0;
+                // TODO: set appropriate parameter?
+            }
+
+            // required memory is zero
+            if (requiredMemory == 0) {
+                ++canNotExecuteDueMemory;
+                if (ignoreIncompleteMemoryData) {
+                    continue;
+                }
+            }
+            
+            
             int requiredCores = 0;
             try {
                 requiredCores = Integer.parseInt(values[4]);
@@ -198,53 +331,481 @@ public class NodeConsciousScheduler {
                 //numCPU = 1;
             }
             
+            if (requiredCores == 0 || requiredCores == UNSPECIFIED) {
+                coreZeroCnt++;
+                continue;
+            }
+ 
+            if (NodeConsciousScheduler.memoryDataPerCore) {
+                requiredMemory = requiredMemory * requiredCores;
+            }
+            
             int submitTime = Integer.parseInt(values[1]);
+            if (firstJobSubmitTime == UNUPDATED) {
+                firstJobSubmitTime = submitTime;
+            }
+            submitTime = submitTime - firstJobSubmitTime;
+            assert submitTime >= 0;
             int actualExecuteTime = Integer.parseInt(values[3]);
-            if (actualExecuteTime == Constants.NOTSPECIFIED) {
+            // actual time is unspecified
+            if (actualExecuteTime == NOTSPECIFIED) {
                 actualExecuteTime = Integer.parseInt(values[5]);
+                notSpecifiedActural++;
+            }
+ 
+            // actual and required time is unspecified            
+            if (actualExecuteTime == NOTSPECIFIED) {
+                canNotExecuteDueCpuTime++;
+                continue;
+            }
+
+            // actual time is zero            
+            if (actualExecuteTime == 0) {
+                zeroCpuCnt++;
+                actualExecuteTime = 1;
             }
             int specifiedExecuteTime = Integer.parseInt(values[8]);
             
+            // actual time is greater than required time
             if (specifiedExecuteTime < actualExecuteTime) {
                 specifiedExecuteTime = actualExecuteTime;
             }
 
             int requiredNodes = 1;
-            int ppn = -1;
 
             String properties = "";
+            boolean nodeSpecifiedFlag = false;
             if (values.length > 19) {
                 properties = values[20];
 
                 String[] req_nodes = values[20].split(":");
                 requiredNodes = Integer.parseInt(req_nodes[0]);
-                
+                nodeSpecifiedFlag = true;
             }
-            
-            if (requiredNodes > NodeConsciousScheduler.numNodes) {
+            // if required node is specified
+            if (nodeSpecifiedFlag && requiredNodes > NodeConsciousScheduler.numNodes) {
+                ++canNotExecuteCountDueCpuResources;
                 continue;
             }
-            
-            if (requiredCores%NodeConsciousScheduler.numCores == 0) {
+
+            if (!nodeSpecifiedFlag || requiredNodes == NOTSPECIFIED) {
+/*
+                // Can execute single node
+                if (requiredCores <= NodeConsciousScheduler.numCores) {
+                    requiredNodes = 1;
+                } else if (requiredCores > NodeConsciousScheduler.numCores) {
+                    // Can execute multiple nodes using full core
+                    if (requiredCores % NodeConsciousScheduler.numCores == 0) {
+                        requiredNodes = requiredCores/NodeConsciousScheduler.numCores;
+                    // Check can execute multiple nodes
+                    } else {                    
+                        if (requiredCores % 2 == 1)
+                            ++requiredCores;
+                        int nodeNum = checkCanExecuteMultipleNodes(requiredCores, requiredMemory, scheduleUsingMemory);
+
+                        if (nodeNum >= 2) {
+                            requiredNodes = nodeNum;
+                        } else {
+                            ++canNotExecuteCountDueCpuResources;
+                        }
+                    }
+                }
+*/
+                int nodeNum = checkCanExecuteMultipleNodes(requiredCores, requiredMemory, scheduleUsingMemory);
+
+                if (nodeNum >= 1) {
+                    requiredNodes = nodeNum;
+                } else {
+                    ++canNotExecuteCountDueCpuResources;
+                    checkCanExecuteMultipleNodes(requiredCores, requiredMemory, scheduleUsingMemory);
+                }
+            }
+            /*
+            if (!nodeSpecifiedFlag && requiredCores%NodeConsciousScheduler.numCores == 0) {
                 requiredNodes = requiredCores/NodeConsciousScheduler.numCores;
             }
+            */
+            
+            int ppn = requiredCores/requiredNodes;
+            if (requiredCores%requiredNodes != 0) ppn++;
 
             if (requiredNodes > NodeConsciousScheduler.numNodes) {
+                ++canNotExecuteCountDueCpuResources;
                 continue;
             }
             
             if (requiredCores > requiredNodes * NodeConsciousScheduler.numCores) {
+                ++canNotExecuteCountDueCpuResources;
                 continue;
             }            
             
             // TODO
             // Decide the accurate num of node for non-specified data
+                        
+            if (!NodeConsciousScheduler.memoryDataPerNode) {
+                requiredMemory /= requiredNodes;
+            }
             
-            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, requiredCores, requiredNodes);
+            if (requiredMemory > NodeConsciousScheduler.memory) {
+                ++canNotExecuteDueMemoryUpperLimit;
+                if (scheduleUsingMemory) {
+                    continue;
+                }
+            }
+            
+            int queueNum = Integer.parseInt(values[14]);
+            
+            boolean interactiveJob = false;                
+            int interactiveExecuteTime = NOTSPECIFIED;
+            double prologTimeRatio = NOTSPECIFIED;
+            double epilogTimeRatio = NOTSPECIFIED;
+            ArrayList<Integer> activationTimes = new ArrayList();
+            ArrayList<Integer> idleTimes = new ArrayList();
+            int prologTime = -1;
+            int epilogTime = -1;
+            if (accurateInteractiveJobs && interactiveJobsRecordType == Constants.INT_SIMPLE_MODEL && (queueNum == NodeConsciousScheduler.interactiveQueueNumber) ) {
+                double interactiveCPURatio = Double.parseDouble(safeGetElement(values, 21));
+                prologTimeRatio = Double.parseDouble(safeGetElement(values, 22));
+                epilogTimeRatio = Double.parseDouble(safeGetElement(values, 23));
+
+                interactiveCPURatio = checkAndCorrectRatio(interactiveCPURatio, configCPURatio);
+                prologTimeRatio = checkAndCorrectRatio(prologTimeRatio, configPrologTimeRatio);
+                epilogTimeRatio = checkAndCorrectRatio(epilogTimeRatio, configEpilogTimeRatio);
+                assert interactiveCPURatio + prologTimeRatio + epilogTimeRatio <= 1.0;
+                InteractiveJobInfoPack ij = simpleInteractiveModel(jobId, actualExecuteTime, interactiveCPURatio, prologTimeRatio, epilogTimeRatio);
+                interactiveJob = ij.isInteractiveJob();
+                interactiveExecuteTime = ij.getInteractiveExecuteTime();
+                activationTimes = ij.getActivationTimes();
+                prologTime = ij.getPrologTime();
+                epilogTime = ij.getEpilogTime();
+                idleTimes = ij.getIdleTimes();
+                /* next job initialization */
+            } else if (accurateInteractiveJobs && interactiveJobsRecordType == Constants.THREE_PHASE_MODEL && (queueNum == NodeConsciousScheduler.interactiveQueueNumber) ) {
+                interactiveJob = true;
+                prologTime = Integer.parseInt(safeGetElement(values, 21));
+                epilogTime = Integer.parseInt(safeGetElement(values, 22));
+                int repeatTimes = Integer.parseInt(safeGetElement(values, 23));                
+                
+                int offset = 24;
+                for (int i = 0; i < repeatTimes; ++i) {
+                    activationTimes.add(Integer.parseInt(safeGetElement(values, offset + 2 * i)));
+                    if (i == repeatTimes - 1) {
+                        break;
+                    }
+                    idleTimes.add(Integer.parseInt(safeGetElement(values, offset + 2 * i + 1)));
+                }
+                assert (activationTimes.size() == 0 && idleTimes.size() == 0) ||activationTimes.size() == idleTimes.size() + 1;
+            }
+            
+            if (accurateInteractiveJobs && queueNum == NodeConsciousScheduler.interactiveQueueNumber) {
+                int sum = 0;
+                sum = prologTime + epilogTime;
+                for (int i = 0; i < activationTimes.size(); ++i) {
+                    sum += activationTimes.get(i);
+                }
+                for (int i = 0; i < idleTimes.size(); ++i) {
+                    sum += idleTimes.get(i);
+                }
+                if (sum == 0 && actualExecuteTime == 1) {
+                    prologTime = 1;
+                    sum = 1;
+                }
+                if (sum != actualExecuteTime) {
+                    int a = 1;
+                }
+                assert sum == actualExecuteTime;
+            }
+
+            boolean addFlag = checkJobProperty(submitTime, actualExecuteTime, specifiedExecuteTime, requiredNodes, ppn, scheduleUsingMemory, requiredMemory);
+            
+            if (!addFlag) {
+                addCheckSkip++;
+                continue;
+            }
+            
+            Job job = new Job(jobId, submitTime, actualExecuteTime, specifiedExecuteTime, 
+                            requiredCores, requiredNodes, userId, groupId, requiredMemory, 
+                            matchingGroup, queueNum,
+                            accurateInteractiveJobs, 
+                            interactiveJob, interactiveExecuteTime, activationTimes, 
+                            prologTime, epilogTime, idleTimes);
             jobList.add(job);
             
         }
         return jobList;
+    }
+
+    private static SimulatorConfiguration readSimulatorConfiguration(String fname) throws IOException {
+        String dir = "./" + fname;
+        Path p = Paths.get(dir); 
+        Properties configurations = new Properties();
+        FileInputStream in = null;
+        try {
+            in = new FileInputStream(dir);
+            configurations.load(in);
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(NodeConsciousScheduler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        String slowdownThreshold = configurations.getProperty("SLOWDOWN_THRESHOLD");
+        String[] slowdownThresholds = slowdownThreshold.replace("\"","").split(",");
+        boolean outputMinuteTimeseries = Boolean.parseBoolean(configurations.getProperty("OUTPUT_MINUTE_TIMESERIES"));
+        boolean scheduleUsingMemory = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_MEMORY"));
+        boolean crammingMemoryScheduling = Boolean.parseBoolean(configurations.getProperty("CRAMMING_MEMORY_SCHEDULING"));
+        NodeConsciousScheduler.ignoreIncompleteMemoryData = Boolean.parseBoolean(configurations.getProperty("IGNORE_INCOMPLETE_MEMORY_DATA"));
+        NodeConsciousScheduler.memoryDataPerCore = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_CORE"));
+        NodeConsciousScheduler.outputResultsInDetail = Boolean.parseBoolean(configurations.getProperty("OUTPUT_RESULTS_IN_DETAIL"));
+        boolean outputUtilizationRatio = Boolean.parseBoolean(configurations.getProperty("OUTPUT_UTILIZATION_RATIO"));
+        NodeConsciousScheduler.memoryDataPerNode = Boolean.parseBoolean(configurations.getProperty("MEMORY_DATA_PER_NODE"));
+        NodeConsciousScheduler.considerMemoryForNodeNum = Boolean.parseBoolean(configurations.getProperty("CONSIDER_MEMORY_FOR_JOB_NODENUM"));
+        boolean considerJobMatching = Boolean.parseBoolean(configurations.getProperty("CONSIDER_JOB_MATCHING"));
+        boolean usingAffinityForSchedule = Boolean.parseBoolean(configurations.getProperty("SCHEDULE_USING_AFFINITY"));
+        double thresholdForAffinitySchedule = Double.parseDouble(configurations.getProperty("QUIT_SCHEDULE_THRESHOLD"));
+        NodeConsciousScheduler.interactiveQueueNumber = Integer.parseInt(configurations.getProperty("INTERACTIVE_QUEUE_NUMBER"));
+        boolean accurateInteractiveJobs = Boolean.parseBoolean(configurations.getProperty("ACCURATE_INTERACTIVE_JOBS"));
+        int interacitiveJobsRecordsType = Integer.parseInt(configurations.getProperty("INTERACTIVE_JOBS_RECORDS_TYPE"));
+        double interacitiveCPURatio = Double.parseDouble(configurations.getProperty("INTERACTIVE_CPU_RATIO"));
+        double prologTimeRatio = Double.parseDouble(configurations.getProperty("PROLOG_TIME_RATIO"));
+        double epilogTimeRatio = Double.parseDouble(configurations.getProperty("EPILOG_TIME_RATIO"));
+        boolean outputSecondWastedResources = Boolean.parseBoolean(configurations.getProperty("OUTPUT_SECOND_WASTED_RESOURCES"));
+        int scheduleConsiderJobType = Integer.parseInt(configurations.getProperty("SCHEDULE_CONSIDER_JOB_TYPE"));
+        
+        return new SimulatorConfiguration(slowdownThresholds, 
+                outputMinuteTimeseries, 
+                outputUtilizationRatio,
+                scheduleUsingMemory, 
+                crammingMemoryScheduling, 
+                considerJobMatching, 
+                usingAffinityForSchedule, 
+                thresholdForAffinitySchedule, 
+                accurateInteractiveJobs, 
+                interacitiveJobsRecordsType,
+                interacitiveCPURatio,
+                prologTimeRatio,
+                epilogTimeRatio,
+                outputSecondWastedResources,
+                scheduleConsiderJobType);
+    }
+
+    private static int checkCanExecuteMultipleNodes(int requiredCores, int requiredMemeory, boolean scheduleUsingMemory) {
+        int requiredNode = NodeConsciousScheduler.numNodes + 1;
+        
+        if ((!scheduleUsingMemory && !considerMemoryForNodeNum)){
+            for (int i = 1; i <= NodeConsciousScheduler.numNodes; ++i) {
+                int wRequiredCores = (requiredCores + i - 1) / i;
+                if (wRequiredCores <= NodeConsciousScheduler.numCores) {
+                    requiredNode = min(requiredNode, i);
+                    if (requiredCores % i == 0) {
+                        requiredNode = i;
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (int i = 1; i <= NodeConsciousScheduler.numNodes; ++i) {
+                int wRequiredCores = (requiredCores + i - 1) / i;
+                int wRequiredMemoryPerNode = (requiredMemeory)/i;
+                if (wRequiredMemoryPerNode > NodeConsciousScheduler.memory) {
+                    continue;
+                }
+                if (wRequiredCores <= NodeConsciousScheduler.numCores) {
+                    requiredNode = min(requiredNode, i);
+                    if (requiredCores % i == 0) {
+                        requiredNode = i;
+                        break;
+                    }
+                }
+            }            
+        }
+        return requiredNode;
+    }
+
+    private static boolean checkJobProperty(int submitTime, int actualExecuteTime, int specifiedExecuteTime, int requiredNodes, int ppn, boolean scheduleUsingMemory, int requiredMemory) {
+        boolean submitTimeFlag = (submitTime >= 0) && (submitTime < (2 << 29));
+        boolean actualFlag = (actualExecuteTime >= 0) && (specifiedExecuteTime >= 0) && (actualExecuteTime <= specifiedExecuteTime);
+        boolean cpuRscFlag = (requiredNodes <= NodeConsciousScheduler.numNodes) && (ppn <= NodeConsciousScheduler.numCores) && (requiredNodes * ppn <= NodeConsciousScheduler.numCores * NodeConsciousScheduler.numNodes); 
+        boolean memoryFlag = false;
+        if (!scheduleUsingMemory) {
+            memoryFlag = true;
+        } else {
+            memoryFlag = requiredMemory <= NodeConsciousScheduler.memory;
+        }
+                
+        return submitTimeFlag && actualFlag && cpuRscFlag && memoryFlag;
+
+    }
+
+    private static Map<Integer, Integer> readJobMatchingGroupTable(String fname) throws IOException {
+        String fnameMatchingGroupTable = fname + ".matching_group";
+        System.out.println("Opening matching table file at: " + DATASET_DIRECTORY + "/" + fnameMatchingGroupTable);
+        BufferedReader br = null;
+        Input in = new Input();
+        br = in.openFile(new File(DATASET_DIRECTORY + "/" + fnameMatchingGroupTable));
+        
+        String[] values = null;
+        String line = "";
+        
+       Map<Integer, Integer> matchingGroupTable = new HashMap<Integer, Integer>();
+        while ((line = br.readLine()) != null) {
+            values = line.split("\\s+");
+            for (int i = 1; i < values.length; ++i) {
+                matchingGroupTable.put(Integer.parseInt(values[i]), Integer.parseInt(values[0]));
+            }
+
+        }
+        return matchingGroupTable;
+    }
+
+    private static Map<JobMatching, Double> readJobMatchingTable(String fname) throws IOException {
+        String fnameMatchingTable = fname + ".matching_table";
+        System.out.println("Opening matching table file at: " + DATASET_DIRECTORY + "/" + fnameMatchingTable);
+        BufferedReader br = null;
+        Input in = new Input();
+        br = in.openFile(new File(DATASET_DIRECTORY + "/" + fnameMatchingTable));
+        
+        String[] values = null;
+        String line = "";
+        
+       Map<JobMatching, Double> matchingTable = new HashMap<>();
+        while ((line = br.readLine()) != null) {
+            values = line.split("\\s+");
+            int victimJobId = Integer.parseInt(values[0]);
+            int opponentJobId = Integer.parseInt(values[1]);
+            double ratio = Double.parseDouble(values[2]);
+            matchingTable.put(new JobMatching(victimJobId, opponentJobId), ratio);
+        }
+        return matchingTable;
         
     }
+        
+    private static InteractiveJobInfoPack simpleInteractiveModel(int jobId, int actualExecuteTime, double interactiveCPURatio, double prologTimeRatio, double epilogTimeRatio) {
+        int interactiveExecuteTime = (int) Math.ceil(actualExecuteTime * interactiveCPURatio);
+
+        /* 0.2  is hard-coded following multiply. */
+        int executionTimePerActivate = (int) Math.ceil(interactiveExecuteTime * 0.2);
+        int prologTime = (int) Math.ceil(actualExecuteTime * prologTimeRatio);
+        int epilogTime = (int) Math.ceil(actualExecuteTime * epilogTimeRatio);
+
+        if (actualExecuteTime <= prologTime + epilogTime) {
+            prologTime = 0;
+            epilogTime = 0;
+        }
+
+        int numOfTimesToActivate = (int) ((interactiveExecuteTime + executionTimePerActivate - 1) / executionTimePerActivate);
+        int numOfTimesBetweenActivate = numOfTimesToActivate - 1;
+        int idleTimeBetweenActivate = -1;
+        if (numOfTimesBetweenActivate != 0) {
+            idleTimeBetweenActivate = (actualExecuteTime - prologTime - epilogTime - interactiveExecuteTime + numOfTimesBetweenActivate - 1) / numOfTimesBetweenActivate;
+        } else {
+            idleTimeBetweenActivate = 0;
+            epilogTime = actualExecuteTime - prologTime - interactiveExecuteTime;
+        }
+
+        int sumTime = prologTime + epilogTime + interactiveExecuteTime + idleTimeBetweenActivate * numOfTimesBetweenActivate;
+
+        /* If interactiveCPURatio >= about 0.5, a short-running job may be caught here. */
+        if (sumTime > actualExecuteTime) {
+            System.out.printf("JobId:%d\tacutualTime:%d\tintExecTime:%d\tExecTimePerAct:%d"
+                    + "\tprologTime:%d\tepilogTime:%d\tidleTimeBtAct:%d\tsumTime:%d\n",
+                    jobId, actualExecuteTime, interactiveExecuteTime, executionTimePerActivate,
+                    prologTime, epilogTime, idleTimeBetweenActivate, sumTime);
+        }
+
+        System.out.printf("JobId:%d\tacutualTime:%d\tintExecTime:%d"
+                + "\tExecTimePerAct:%d\tnumActivate:%d"
+                + "\tprologTime:%d\tepilogTime:%d\tidleTimeBtAct:%d\tsumTime:%d\tDiff:%d\n",
+                jobId, actualExecuteTime, interactiveExecuteTime,
+                executionTimePerActivate, numOfTimesToActivate,
+                prologTime, epilogTime, idleTimeBetweenActivate, sumTime,
+                actualExecuteTime - sumTime);
+
+        /* packing */
+        ArrayList<Integer> activationTimes = new ArrayList();
+        ArrayList<Integer> idleTimes = new ArrayList();
+        
+        int restTime = interactiveExecuteTime;
+        int totalIdleTime = actualExecuteTime - (prologTime + epilogTime + interactiveExecuteTime);
+        for(int i = 0; i < numOfTimesToActivate; ++i) {
+            int wExecutionTimePerActivate = executionTimePerActivate;
+            if (interactiveExecuteTime % numOfTimesToActivate != 0 && i >= interactiveExecuteTime % numOfTimesToActivate) {
+                --wExecutionTimePerActivate;
+            }
+            
+//            activationTimes.add((Integer) min(restTime, executionTimePerActivate));
+            activationTimes.add((Integer) wExecutionTimePerActivate);
+//            restTime -= executionTimePerActivate;
+            if (i == numOfTimesToActivate-1) break;
+//            idleTimes.add((Integer) min(restIdleTime, idleTimeBetweenActivate));
+            int wIdleTimeBetweenActivate = idleTimeBetweenActivate;
+            if (totalIdleTime % numOfTimesBetweenActivate != 0 && i >= totalIdleTime % numOfTimesBetweenActivate) {
+                --wIdleTimeBetweenActivate;
+            }
+            idleTimes.add((Integer) wIdleTimeBetweenActivate);
+//            restIdleTime -= idleTimeBetweenActivate;
+        }
+        assert activationTimes.size() == idleTimes.size() + 1;
+        
+        return new InteractiveJobInfoPack(true, interactiveExecuteTime, activationTimes, prologTime, epilogTime, idleTimes);
+    }
+    
+    private static double checkAndCorrectRatio(double ratio, double configRatio) {
+        double ret = ratio;
+        if (!((0 < ratio) && (ratio < 1.0))) {
+            ret = configRatio;
+        }
+        return ret;
+    }
+
+    private static String safeGetElement(String[] values, int i) {
+        if (values.length >= i + 1) return values[i];
+        
+        return NOTSPECIFIED_STR;
+    }
 }
+
+class InteractiveJobInfoPack {
+
+    boolean interactiveJob; 
+    int interactiveExecuteTime;
+    ArrayList<Integer> activationTimes;
+    int prologTime;
+    int epilogTime;
+    ArrayList<Integer> idleTimes;
+
+    public InteractiveJobInfoPack(boolean interactiveJob, int interactiveExecuteTime, ArrayList<Integer> activationTimes, int prologTime, int epilogTime, ArrayList<Integer> idleTimes) {
+        this.interactiveJob = interactiveJob;
+        this.interactiveExecuteTime = interactiveExecuteTime;
+        this.activationTimes = activationTimes;
+        this.prologTime = prologTime;
+        this.epilogTime = epilogTime;
+        this.idleTimes = idleTimes;
+    }
+
+    public boolean isInteractiveJob() {
+        return interactiveJob;
+    }
+
+    public int getInteractiveExecuteTime() {
+        return interactiveExecuteTime;
+    }
+
+    public ArrayList<Integer> getActivationTimes() {
+        return activationTimes;
+    }
+
+    public int getPrologTime() {
+        return prologTime;
+    }
+
+    public int getEpilogTime() {
+        return epilogTime;
+    }
+
+    public ArrayList<Integer> getIdleTimes() {
+        return idleTimes;
+    }
+
+    
+    
+}
+

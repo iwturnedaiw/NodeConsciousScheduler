@@ -27,16 +27,35 @@ import static nodeconsciousscheduler.Constants.UNUSED;
 public class FCFSOC extends FCFS {
     @Override
     protected ArrayList<Event> scheduleJobsStartAt(int currentTime) {
+        /* 1. Obtain the head job in the queue */ 
+        /* 2. Obtain the nodes the job can execute at */
+        /* 3. Select nodes the job is assigned to */        
+        /* 4. Calculate opponent job (the head job) OCStateLevel */        
+        /* 5. Modify the timeSlices */        
+        /* 6. Modify the resource informaiton */        
+        /* 7. Enqueue the START and END Events */                
+        
         ArrayList<Event> result = new ArrayList<Event>();
         temporallyScheduledJobList.clear();
+        
+        /* 1. Obtain the head job in the queue */
         while (!waitingQueue.isEmpty()) {
             Job job = waitingQueue.peek();
             int jobId = job.getJobId();
-            
+
+
+            TimeSlicesAndNodeInfoConsistency consistency = checkTimeSlicesAndAllNodeInfo(currentTime);
+            assert consistency.isConsistency();
+            /* 2. Obtain the nodes the job can execute at */
             ArrayList<VacantNode> canExecuteNodes = canExecutableNodesImmediately(currentTime, job);
-            assert checkTimeSlicesAndAllNodeInfo();
+            if (consistency.isSameEndEventFlag()) return result;            
             if (canExecuteNodes.size() >= job.getRequiredNodes()) {
-                temporallyScheduledJobList.add(job);
+
+                /* 3. Select nodes the job is assigned to */        
+                /* 4. Calculate opponent job (the head job) OCStateLevel */        
+                if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                    calculatePriorityForNodes(canExecuteNodes, job);
+                }
                 Collections.sort(canExecuteNodes);
                 ArrayList<Integer> assignNodesNo = new ArrayList<Integer>();
                 int OCStateLevelForJob = 1;
@@ -45,24 +64,37 @@ public class FCFSOC extends FCFS {
                     OCStateLevelForJob = max(OCStateLevelForJob, canExecuteNodes.get(i).getOCStateLevel());
                 }
 
-                waitingQueue.poll();
+                /* 5. Modify the timeSlices */        
+                /* 6. Modify the resource informaiton */        
+                /* 7. Enqueue the START and END Events */                
+                
                 int startTime = currentTime;
                 //job.setStartTime(startTime);
                 makeTimeslices(startTime);
                 
+                boolean interJobFlag = job.isInteracitveJob();
+                
                 if (OCStateLevelForJob == 1) {
+                    /* 5. Modify the timeSlices */        
                     int expectedEndTime = startTime + job.getRequiredTime();
                     makeTimeslices(expectedEndTime);
-                    job.setSpecifiedExecuteTime(expectedEndTime);
+                    job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     job.setOCStateLevel(OCStateLevelForJob);
+                    int netOCStateLevelForJob = OCStateLevelForJob;
+                    job.setNetOCStateLevel(netOCStateLevelForJob);
+                    /* 6. Modify the resource informaiton */        
                     assignJob(startTime, job, assignNodesNo);
 
+                    /* 7. Enqueue the START and END Events */                
                     int trueEndTime = startTime + job.getActualExecuteTime();
                     result.add(new Event(EventType.START, startTime, job));
-                    printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
-                    result.add(new Event(EventType.END, trueEndTime, job));
-                    job.setEndEventOccuranceTimeNow(trueEndTime);
+
+                    if (!interJobFlag) {
+                        printThrownEvent(currentTime, trueEndTime, job, EventType.END);
+                        result.add(new Event(EventType.END, trueEndTime, job));
+                        job.setEndEventOccuranceTimeNow(trueEndTime);
+                    }
                 } else {
                     /* If OCStateLevel is greater than 1, */
                     /* we must modify the three points below */
@@ -85,6 +117,16 @@ public class FCFSOC extends FCFS {
                     Set<Integer> victimJobs = new HashSet<Integer>();
                     victimJobs = searchVictimJobs(startTime, job, assignNodesNo);
                     int opponentJobId = job.getJobId();
+                    
+                    if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+                        double ratio = calculateMaxDegradationRatio(job, victimJobs);
+                        if (ratio > NodeConsciousScheduler.sim.getThresholdForAffinitySchedule()) {
+                            System.out.println("!!!!!! QUIT SCHEDULING DUE TO AFFINITY !!!!!!");
+                            break;
+                        }
+                    }
+                    
+                    
                     System.out.println("OC allocating, opponent jobId: " + opponentJobId + ", OCStateLevel: " + OCStateLevelForJob + ", victim jobId: " + victimJobs);
                     /* Set victim jobList for the opponent job */
                     job.setCoexistingJobs(victimJobs);
@@ -98,12 +140,16 @@ public class FCFSOC extends FCFS {
                     /*  1-2. Calculate new trueEndTime */
                     /*  1-3. Rethrow the END event set the time */
                     for (int victimJobId: victimJobs) {
-                        ArrayList<Event> resultForVictim = new ArrayList<Event>();
-                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
-                        for (Event ev: resultForVictim) {
+                        ArrayList<Event> resultForVictim = new ArrayList<Event>();           
+                        Job victimJob = getJobByJobId(victimJobId);
+                        int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
+                        int victimNewNetOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo, true, interJobFlag);
+                        victimJob.getCoexistingJobs().add(opponentJobId);;
+//                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
+                        resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel, victimNewNetOCStateLevel, interJobFlag);
+                        for (Event ev : resultForVictim) {
                             result.add(ev);
                         }
-                        Job victimJob = getJobByJobId(victimJobId); // O(N)
                         /*
 
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
@@ -122,11 +168,11 @@ public class FCFSOC extends FCFS {
                         victimJob.setOCStateLevel(OCStateLevelForJob);
                         int trueEndTime = calculateNewActualEndTime(currentTime, victimJob);                        
 
-                        printThrowENDEvent(currentTime, trueEndTime, victimJob);
+                        printThrownEvent(currentTime, trueEndTime, victimJob);
                         result.add(new Event(EventType.END, trueEndTime, victimJob));
                         result.add(new Event(EventType.DELETE_FROM_BEGINNING, currentTime, victimJob)); // This event delete the END event already exists in the event queue. 
                         */
-                        victimJob.getCoexistingJobs().add(opponentJobId);                        
+                        victimJob.setOCStateLevel(victimNewOCStateLevel);
                     }
                     
                     /* 2. Modify the time slices (variable name: timeSlices defined in Class Scheduler) */
@@ -137,10 +183,15 @@ public class FCFSOC extends FCFS {
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
 
                         /*  2-1. Calculate new expectedEndTime */
-                        int oldExpectedEndTime = victimJob.getSpecifiedExecuteTime(); // This field name is bad. Difficult to interpret.
+                        int oldExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices();
                         int newExpectedEndTime = calculateNewExpectedEndTime(currentTime, victimJob);
-                        victimJob.setSpecifiedExecuteTime(newExpectedEndTime);
-                        assert oldExpectedEndTime <= newExpectedEndTime;
+                        int endEventOccuranceTime = victimJob.getEndEventOccuranceTimeNow();
+                        if (newExpectedEndTime < endEventOccuranceTime) { // This is not good implement
+                            newExpectedEndTime = endEventOccuranceTime;
+                        }
+                        //newExpectedEndTime = max(oldExpectedEndTime, oldExpectedEndTime);
+                        victimJob.setOccupiedTimeInTimeSlices(newExpectedEndTime);
+//                        assert oldExpectedEndTime <= newExpectedEndTime+1;
                         
                         /*  2-2. Update the timeslice between current and new expectedEndTime */
                         int timeSliceIndex = getTimeSliceIndexEndTimeEquals(oldExpectedEndTime);
@@ -153,10 +204,12 @@ public class FCFSOC extends FCFS {
                     
                     /* For opponent job */
                     job.setOCStateLevel(OCStateLevelForJob);
+                    int netOCStateLevel = calculateNewOCStateLevelForNewJob(job, job.getRequiredCoresPerNode(), assignNodesNo, true);
+                    job.setNetOCStateLevel(netOCStateLevel);
                     //int expectedEndTime = startTime + job.getRequiredTime() * OCStateLevelForJob;
                     int expectedEndTime = calculateNewExpectedEndTime(startTime, job);
                     makeTimeslices(expectedEndTime);
-                    job.setSpecifiedExecuteTime(expectedEndTime);
+                    job.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                     /* Set previous time. */
                     /* This is opponent, so it is not "switched" now. But, this value is needed. */
@@ -165,14 +218,22 @@ public class FCFSOC extends FCFS {
                     assignJob(startTime, job, assignNodesNo);
 
                     //int trueEndTime = startTime + job.getActualExecuteTime() * OCStateLevelForJob;
+                    double ratio = calculateMaxDegradationRatioForVictim(job, victimJobs);
+                    job.setCurrentRatio(ratio);
                     int trueEndTime = calculateNewActualEndTime(startTime, job);
                     result.add(new Event(EventType.START, startTime, job));
-                    printThrowENDEvent(currentTime, trueEndTime, job, EventType.END);
-                    result.add(new Event(EventType.END, trueEndTime, job));
-                    job.setEndEventOccuranceTimeNow(trueEndTime);
+
+                    if (!interJobFlag) {
+                        printThrownEvent(currentTime, trueEndTime, job, EventType.END);
+                        result.add(new Event(EventType.END, trueEndTime, job));
+                        job.setEndEventOccuranceTimeNow(trueEndTime);          
+                    }
                 }
+                waitingQueue.poll();
+                temporallyScheduledJobList.add(job);
             } else break;
         }
+        temporallyScheduledJobList.clear();
         return result;
     }
 
@@ -191,6 +252,9 @@ public class FCFSOC extends FCFS {
         int endingJobId = endingJob.getJobId();
         Set<Integer> coexistingJobs = endingJob.getCoexistingJobs();
 
+        System.out.println("debug) ending Job Id: " + endingJobId);
+        System.out.println("\tdebug) coexistingJobs: " + coexistingJobs);
+        
         /* 1. Check the OCStateLevel */
         /*    Change appropriate OCStateLevel for coexisting jobs */
         for (int coexistingJobId : coexistingJobs) {
@@ -199,7 +263,6 @@ public class FCFSOC extends FCFS {
             ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
 
             Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
-            System.out.println("\tdebug) ending Job Id: " + endingJobId);
             assert coexistingJobCoexistingJob.contains(endingJobId);
            
             printDebugForCoexistingJob(ev, coexistingJobId);
@@ -240,7 +303,7 @@ public class FCFSOC extends FCFS {
             int OCStateLevel = checkMultiplicityAlongNodes(coexistingJobUsingNodeList, endingJobId, coexistingJobId);
 
             // 2. Modify the END event time
-            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevel, result);
+            modifyTheENDEventTime(coexistingJob, coexistingJobId, currentTime, OCStateLevel, result, true, endingJobId);
 
             // 3. Modify the timeSlices
             modifyTheTimeSlices(coexistingJob, coexistingJobCoexistingJob, currentTime, endingJobId);
@@ -258,7 +321,8 @@ public class FCFSOC extends FCFS {
         
         /* Working Variable */
         ArrayList<VacantNode> vacantNodes = new ArrayList<VacantNode>();
-        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+        //for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores));
+        for (int i = 0; i < NodeConsciousScheduler.numNodes; ++i) vacantNodes.add(new VacantNode(i, NodeConsciousScheduler.numCores, NodeConsciousScheduler.memory));
         
         /* This is used for counting executable nodes */
         ArrayList<Integer> vacantNodeCount = new ArrayList<Integer>();
@@ -266,9 +330,13 @@ public class FCFSOC extends FCFS {
 
         /* Calculate ppn */
         /* TODO: The case requiredCores ist not dividable  */
-        int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
-        if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        //int requiredCoresPerNode = job.getRequiredCores()/job.getRequiredNodes();
+        //if (job.getRequiredCores()%job.getRequiredNodes() != 0) ++requiredCoresPerNode;
+        int requiredCoresPerNode = job.getRequiredCoresPerNode();
+        long requiredMemoryPerNode = job.getMaxMemory();        
 
+        boolean scheduleUsingMemory = NodeConsciousScheduler.sim.isScheduleUsingMemory();
+        
         int jobId = job.getJobId();
         int M = NodeConsciousScheduler.M;
         int alongTimeSlices = 0;
@@ -278,6 +346,7 @@ public class FCFSOC extends FCFS {
                 ++alongTimeSlices;
                 for (int j = 0; j < ts.getNumNode(); ++j) {
                     int freeCores = ts.getAvailableCores().get(j);
+                    long freeMemory = ts.getAvailableMemory().get(j);
                     int numCore = ts.getPpn();
                     
                     assert freeCores >= -(M-1)*numCore;
@@ -288,12 +357,20 @@ public class FCFSOC extends FCFS {
                     assert node.getNodeNo() == j;
 
                     freeCores = min(freeCores, node.getFreeCores());
-                    node.setFreeCores(freeCores);
-
                     assert freeCores >= -(M-1)*numCore;
                     assert freeCores <= numCore;                    
-//                    if (freeCores >= requiredCoresPerNode ) {
-                    if (freeCores - requiredCoresPerNode >= -(M-1)*numCore) {
+                    node.setFreeCores(freeCores);
+
+                    freeMemory = min(freeMemory, node.getFreeMemory());
+                    node.setFreeMemory(freeMemory);
+
+                    boolean addFlag = false;
+                    addFlag = (freeCores - requiredCoresPerNode >= -(M-1)*numCore);
+                    if (scheduleUsingMemory) {
+                        addFlag &= (freeMemory >= requiredMemoryPerNode);
+                    }
+                    
+                    if (addFlag) {
                         int cnt = vacantNodeCount.get(j);
                         vacantNodeCount.set(j, ++cnt);
                     }
@@ -510,49 +587,6 @@ public class FCFSOC extends FCFS {
             if (executingJobId == endingJobId) jobListOnTheCore.remove(i);
         }
 
-    }
-
-    private void printDebugForCoexistingJob(Event ev, int coexistingJobId) {
-
-        int currentTime = ev.getOccurrenceTime();
-        Job endingJob = ev.getJob();
-        int endingJobId = endingJob.getJobId();
-        Set<Integer> coexistingJobs = endingJob.getCoexistingJobs();
-        Job coexistingJob = getJobByJobId(coexistingJobId);
-        /* Calculate new OCStateLevel for coexisting jobs */
-        ArrayList<UsingNode> coexistingJobUsingNodeList = coexistingJob.getUsingNodesList();
-
-        Set<Integer> coexistingJobCoexistingJob = coexistingJob.getCoexistingJobs();
-        
-        
-        if (coexistingJobUsingNodeList == null) {
-            System.out.println("debug) OCCURRED HERE, ending job Id: " + endingJobId + ", currentTime: " + currentTime);
-            System.out.println("debug) usingNodeList: ");
-            ArrayList<UsingNode> endingJobUsingNodeList = endingJob.getUsingNodesList();
-            for (int i = 0; i < endingJobUsingNodeList.size(); ++i) {
-                UsingNode node = endingJobUsingNodeList.get(i);
-                System.out.print("\tNode" + node.getNodeNum() + ": ");
-                ArrayList<Integer> cores = node.getUsingCoreNum();
-                for (int j = 0; j < cores.size(); ++j) {
-                    System.out.print(cores.get(j));
-                    if (j != cores.size() - 1) {
-                        System.out.print(", ");
-                    }
-                }
-                System.out.println("");
-            }
-            System.out.println("");
-            System.out.println("debug) coexisting jobs: " + coexistingJobs);
-            System.out.println("debug) coexisting job Id: " + coexistingJobId);
-            try {
-                Thread.sleep(2000);
-                throw new Exception();
-            } catch (Exception ex) {
-                Logger.getLogger(FCFSOC.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            System.exit(1);
-        }
-        
     }
 
 }
