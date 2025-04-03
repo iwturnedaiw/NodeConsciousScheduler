@@ -47,6 +47,7 @@ class Start implements EventHandler {
         
         ArrayList<Event> evs = new ArrayList<Event>();
         
+        int currentTime= ev.getOccurrenceTime();
         // Add the Job to Executing job List
         // Executing job list is declared in Simulator
 //        evs = NodeConsciousScheduler.sim.getSche().schedule(ev);
@@ -63,12 +64,14 @@ class Start implements EventHandler {
         // Update activated cores table if it is not int.
         boolean interactiveJob = job.isInteracitveJob();
         if (interactiveJob) {
-            int currentTime = ev.getOccurrenceTime();
             int prologTime = job.getPrologTime();
             int activationTime = currentTime + prologTime;
             Scheduler.printThrownEvent(currentTime, activationTime, job, EventType.INT_ACTIVATE, 1);
             evs.add(new Event(EventType.INT_ACTIVATE, activationTime, job));
+            job.setNextActivationTime(activationTime);
         }
+        
+        evs.addAll(NodeConsciousScheduler.sim.getSche().updateVictimJobOCStateLevel(currentTime, job));
         
         return evs;
     }

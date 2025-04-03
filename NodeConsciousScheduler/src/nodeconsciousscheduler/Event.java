@@ -129,7 +129,7 @@ public class Event implements Comparable<Event> {
         }
         if (o.eventType == EventType.INT_DEACTIVATE) {
             return 1;
-        }
+        }        
         if (this.eventType == EventType.END) {
             return -1;
         }

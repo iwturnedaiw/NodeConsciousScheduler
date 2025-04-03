@@ -4,15 +4,11 @@
 JOBNUM=51871
 #SUM_RSC=512097
 SUM_CPUTIME=6915622385 # 1762
-SUM_CPUTIME=6905481383 # 1762, only_batch
+#SUM_CPUTIME=6905481383 # 1762, only_batch
 #SUM_CPUTIME=6885289677 # 6500
 #SUM_CPUTIME=6859583133 # 15942
 #SUM_CPUTIME=6764598847 # 25365
 
-PAR90=`bc <<< $SUM_CPUTIME*0.90`
-PAR95=`bc <<< $SUM_CPUTIME*0.95`
-PAR90=`echo ${PAR90} | awk '{r=int($1); print (r==$1) ? r : r+1}'`
-PAR95=`echo ${PAR95} | awk '{r=int($1); print (r==$1) ? r : r+1}'`
 
 function shukei() {
   file=$1
@@ -31,13 +27,29 @@ function shukei() {
     t=$second
   fi
 
+  local scputime=$3
+
+  PAR90=`bc <<< $scputime*0.90`
+  PAR95=`bc <<< $scputime*0.95`
+  PAR90=`echo ${PAR90} | awk '{r=int($1); print (r==$1) ? r : r+1}'`
+  PAR95=`echo ${PAR95} | awk '{r=int($1); print (r==$1) ? r : r+1}'`
+
+
   awk -v THRESHOLD=$t -v PAR90=$PAR90 -v PAR95=$PAR95 \
       '{OFMT="%.f"} BEGIN{u=THRESHOLD; i=0; cnt=0; par90=0; par95=0};
        {ft=$7; if (ft == "finishedTime") {next;}; while (ft > i * u) {print i, cnt; i = i + 1; }; {cnt = cnt + $10 * $15}; if (par90 == 0 && cnt >= PAR90) {par90 = i;} if (par95 == 0 && cnt >= PAR95) {par95 = i;} } END{print i, cnt} END{print par90, par95}' \
       ${file} > wk_count.out
 }
 
+function calc_sumcputime() {
+  local file=$1
+  awk '{OFMT="%.f"} BEGIN{sum=0}; {sum += $10*$15}; END{print sum}' ${file}
+}
 
 file=$1
 t=$2
-shukei ${file} ${t}
+
+scputime=`calc_sumcputime $file`
+
+#echo $scputime
+shukei ${file} ${t} ${scputime}
