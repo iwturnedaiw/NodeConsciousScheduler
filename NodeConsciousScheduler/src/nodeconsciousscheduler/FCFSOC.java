@@ -125,7 +125,7 @@ public class FCFSOC extends FCFS {
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();           
                         Job victimJob = getJobByJobId(victimJobId);
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
-                        victimJob.getCoexistingJobs().add(opponentJobId);;
+                        victimJob.getCoexistingJobs().add(opponentJobId);
 //                        resultForVictim = modifyTheENDEventTimeForTheJobByJobId(currentTime, victimJobId, OCStateLevelForJob);
                         resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel);
                         for (Event ev: resultForVictim) {
