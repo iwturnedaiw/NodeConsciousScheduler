@@ -124,6 +124,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                         ArrayList<Event> resultForVictim = new ArrayList<Event>();
                         Job victimJob = getJobByJobId(victimJobId); // O(N)
                         int victimNewOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo);
+
                         int victimNewNetOCStateLevel = calculateVictimNewOCStateLevel(victimJob, job.getRequiredCoresPerNode(), assignNodesNo, true, interJobFlag);
                         victimJob.getCoexistingJobs().add(opponentJobId);;
                         resultForVictim = modifyTheENDEventTimeForTheJob(currentTime, victimJob, victimNewOCStateLevel, victimNewNetOCStateLevel, interJobFlag);
@@ -343,6 +344,7 @@ public class EasyBackfillingOC extends EasyBackfilling {
                 // Check whether victim jobs will slow and delay the start time of first job.
                 for (int victimJobId: victimJobs) {
                     Job victimJob = getJobByJobId(victimJobId);
+
                     int currentVictimExpectedEndTime = victimJob.getOccupiedTimeInTimeSlices();
                     /* "victim's occupied time in timeslices > first job's start time" means victim job does not use nodes in common with first job.*/
                     /* Thus we can skip it. */
@@ -846,5 +848,4 @@ public class EasyBackfillingOC extends EasyBackfilling {
             }
         }
     }
-
 }

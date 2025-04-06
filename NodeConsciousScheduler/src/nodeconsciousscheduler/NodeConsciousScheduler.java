@@ -149,8 +149,7 @@ public class NodeConsciousScheduler {
             System.out.println("Configuration Error. INTERACTIVE_JOBS_RECORDS_TYPE must be specified when ACCURATE_INTERACTIVE_JOBS is true");
             System.exit(1);            
         }
-        
-        
+                
         // Workload Trace Setting
         /*        
         Job job0 = new Job(0, 1, 500, 1000, 40, 4);
@@ -234,6 +233,7 @@ public class NodeConsciousScheduler {
 
         return nodeInfoList;
     }
+
 
     private static ArrayList<Job> readSWFFile(String fname, 
             boolean scheduleUsingMemory, 
@@ -678,8 +678,7 @@ public class NodeConsciousScheduler {
             double ratio = Double.parseDouble(values[2]);
             matchingTable.put(new JobMatching(victimJobId, opponentJobId), ratio);
         }
-        return matchingTable;
-        
+        return matchingTable;        
     }
         
     private static InteractiveJobInfoPack simpleInteractiveModel(int jobId, int actualExecuteTime, double interactiveCPURatio, double prologTimeRatio, double epilogTimeRatio) {
