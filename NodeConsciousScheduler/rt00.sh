@@ -26,21 +26,22 @@ CASE="n1c16 n2c16 n4c16 n8c16 n16c16 n1c48 n1c96 n1c32 n2c32 n4c32 n8c32 n16c32 
 #CASE="n8c32" # for OC
 #CASE="n2c16"
 #CASE="n1c512"
-#TP="gen01 gen02 gen03 short short1 hpc2n"
+TP="gen01 gen02 gen03 short short1 hpc2n"
 #TP="gen01 gen02 gen03"
 #TP="short short1"
 #TP="gen01 gen02"
 #TP="short1"
 #TP="gen03"
 #TP="short short1"
-TP="hpc2n"
+#TP="hpc2n"
 #M=5
-M="2 3 4 5 6 7 8"
+M="1 2 3 4 5 6 7 8"
 #M=4
 #ALGORITHM=FCFS
 #ALGORITHM=FCFSOC
 #ALGORITHM=EasyBackfilling
-ALGORITHM=EasyBackfillingOC
+#ALGORITHM=EasyBackfillingOC
+ALGORITHMS="FCFS FCFSOC EasyBackfilling EasyBackfillingOC"
 
 # path
 DATADIR=./data-set
@@ -59,6 +60,8 @@ test() {
   if [ ${LEN} -eq 0 ]; then
     OC_FLAG=1
   fi
+  for ALGORITHM in ${ALGORITHMS}
+  do
   echo ${ALGORITHM}
   for m in ${M}
   do
@@ -104,6 +107,7 @@ test() {
       fi
     done
     fi
+  done
   done
   done
 }
