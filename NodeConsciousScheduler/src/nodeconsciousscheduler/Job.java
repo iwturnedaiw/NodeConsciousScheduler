@@ -9,6 +9,7 @@ package nodeconsciousscheduler;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import static nodeconsciousscheduler.Constants.NOTACTIVATED;
 import static nodeconsciousscheduler.Constants.NOT_FINISHED;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
 
@@ -28,8 +29,8 @@ public class Job implements Comparable<Job> {
     private int requiredCoresPerNode;
     private int runningTimeDed;
     private int runningTimeOC;
-    private double cpuTimeForNow;
-    private double cpuTimeOnlyConsiderMultiplicity;
+    private double currentAccumulatedComputeQuantity;
+    private double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity;
     private int OCStateLevel;
     private int startTime;
     private int previousMeasuredTime;
@@ -45,7 +46,23 @@ public class Job implements Comparable<Job> {
     private int groupId;
     private long maxMemory;
     private int matchingGroup;
-    private double currentRatio;
+    private double jobAffinityRatio;
+    private double osubOverheadRatio;
+    private double accumulatedCpuTime;
+    private int queueNum;
+    private int netOCStateLevel;
+    private boolean interacitveJob;
+    private int interactiveExecuteTime;
+    private int prologTime;
+    private int epilogTIme;
+    private ArrayList<Integer> activationTimes;
+    private ArrayList<Integer> idleTimes;
+    private boolean activationState;
+    private int currentActivationIndex;
+    private double currentAccumulatedComputeQuantityForLatestActivation;
+    private int sumIdleTime;
+    private int currentDeactiveTime;
+    private int nextActivationTime;
     
 
     Job() {}
@@ -60,13 +77,21 @@ public class Job implements Comparable<Job> {
         this.startTime = UNSTARTED;
         this.finishedTime = 2 << 30;
         this.waitTime = -1;
-        this.cpuTimeForNow = 0.0;
+        this.currentAccumulatedComputeQuantity = 0.0;
+        this.currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = 0.0;
+        this.accumulatedCpuTime = 0.0;
         this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
     }
 
-    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, int requiredCores, int requiredNodes, int userId, int groupId, int maxMemory, int matchingGroup) {
+    Job(int jobId, int submitTime, int actualExecuteTime, int requiredTime, 
+            int requiredCores, int requiredNodes, int userId, int groupId, 
+            int maxMemory, int matchingGroup, int queueNum,
+            boolean accurateIntteractiveJobs,   
+            boolean interactiveJob, 
+            int interactiveExecuteTime, ArrayList<Integer> activationTimes, 
+            int prologTime, int epilogTime, ArrayList<Integer> idleTimes) {
         this.jobId = jobId;
         this.submitTime = submitTime;
         this.actualExecuteTime = actualExecuteTime;
@@ -79,16 +104,40 @@ public class Job implements Comparable<Job> {
         this.groupId = groupId;
         this.maxMemory = maxMemory;
         this.matchingGroup = matchingGroup;
-        this.currentRatio = 1.0;
+        this.jobAffinityRatio = 1.0;
+        this.osubOverheadRatio = 1.0;
         
         this.startTime = -1;
         this.finishedTime = NOT_FINISHED;
         this.waitTime = -1;
-        this.cpuTimeForNow = 0.0;
-        this.cpuTimeOnlyConsiderMultiplicity = 0.0;
+
+        this.currentAccumulatedComputeQuantity = 0.0;
+        this.currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = 0.0;
+        this.accumulatedCpuTime = 0.0;
         this.usingNodesList = new ArrayList<UsingNode>();
         this.coexistingJobs = new HashSet<Integer>();
         this.OCStateLevel = 1;
+        this.queueNum = queueNum;
+        this.netOCStateLevel = 1;
+
+        if (accurateIntteractiveJobs) {
+            this.interacitveJob = interactiveJob;
+            this.interactiveExecuteTime = interactiveExecuteTime;
+            this.prologTime = prologTime;
+            this.epilogTIme = epilogTime;
+            this.idleTimes = idleTimes;
+            this.activationTimes = activationTimes;
+            this.activationState = false;
+            this.currentActivationIndex = 0;
+            this.currentAccumulatedComputeQuantityForLatestActivation = 0.0;
+            this.sumIdleTime = 0;
+            this.nextActivationTime = 0;
+            for (int idleTime: idleTimes) {
+                this.sumIdleTime += idleTime;
+            }
+        } else {            
+            this.interacitveJob = false;
+        }
     }
     
     
@@ -148,8 +197,8 @@ public class Job implements Comparable<Job> {
         return requiredNodes;
     }
 
-    public double getCpuTimeForNow() {
-        return cpuTimeForNow;
+    public double getCurrentAccumulatedComputeQuantity() {
+        return currentAccumulatedComputeQuantity;
     }
     
     public int getOCStateLevel() {
@@ -229,8 +278,8 @@ public class Job implements Comparable<Job> {
         this.occupiedTimeInTimeSlices = occupiedTimeInTimeSlices;
     }
 
-    public void setCpuTimeForNow(double cpuTimeForNow) {
-        this.cpuTimeForNow = cpuTimeForNow;
+    public void setCurrentAccumulatedComputeQuantity(double cpuTimeForNow) {
+        this.currentAccumulatedComputeQuantity = cpuTimeForNow;
     }
     
     public void setOCStateLevel(int OCStateLevel) {
@@ -322,21 +371,122 @@ public class Job implements Comparable<Job> {
         this.matchingGroup = matchingGroup;
     }
 
-    public double getCurrentRatio() {
-        return currentRatio;
+    public double getJobAffinityRatio() {
+        return jobAffinityRatio;
     }
 
-    public void setCurrentRatio(double currentRatio) {
-        this.currentRatio = currentRatio;
+    public void setJobAffinityRatio(double jobAffinityRatio) {
+        this.jobAffinityRatio = jobAffinityRatio;
     }
 
-    public double getCpuTimeOnlyConsiderMultiplicity() {
-        return cpuTimeOnlyConsiderMultiplicity;
+    public double getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity() {
+        return currentAccumulatedComputeQuantityOnlyConsiderMultiplicity;
     }
 
-    public void setCpuTimeOnlyConsiderMultiplicity(double cpuTimeOnlyConsiderMultiplicity) {
-        this.cpuTimeOnlyConsiderMultiplicity = cpuTimeOnlyConsiderMultiplicity;
+    public void setCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity(double cpuTimeOnlyConsiderMultiplicity) {
+        this.currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = cpuTimeOnlyConsiderMultiplicity;
+    }
+
+    public double getAccumulatedCpuTime() {
+        return accumulatedCpuTime;
+    }
+
+    public void setAccumulatedCpuTime(double accumulatedCpuTime) {
+        this.accumulatedCpuTime = accumulatedCpuTime;
+    }
+
+    public int getQueueNum() {
+        return queueNum;
+    }
+
+    public int getNetOCStateLevel() {
+        return netOCStateLevel;
+    }
+
+    public boolean isInteracitveJob() {
+        return interacitveJob;
+    }
+
+    public int getPrologTime() {
+        return prologTime;
+    }
+
+    public int getEpilogTIme() {
+        return epilogTIme;
+    }
+
+    public boolean isActivationState() {
+        return activationState;
+    }
+
+    public void setNetOCStateLevel(int netOCStateLevel) {
+        if (this.interacitveJob && !this.activationState) {
+            netOCStateLevel = NOTACTIVATED;
+        }
+        this.netOCStateLevel = netOCStateLevel;
+    }
+
+    public void setActivationState(boolean activationState) {
+        this.activationState = activationState;
+    }
+
+    public int getInteractiveExecuteTime() {
+        return interactiveExecuteTime;
+    }
+
+    public ArrayList<Integer> getActivationTimes() {
+        return activationTimes;
+    }
+
+    public int getCurrentActivationIndex() {
+        return currentActivationIndex;
+    }
+
+    public double getCurrentAccumulatedComputeQuantityForLatestActivation() {
+        return currentAccumulatedComputeQuantityForLatestActivation;
+    }
+
+    public void setCurrentAccumulatedComputeQuantityForLatestActivation(double currentAccumulatedComputeQuantityForLatestActivation) {
+        this.currentAccumulatedComputeQuantityForLatestActivation = currentAccumulatedComputeQuantityForLatestActivation;
     }
     
-    
+    public int getCurrentRequiredActivationTime() {
+        return getActivationTimes().get(getCurrentActivationIndex());
+    }
+
+    public void setCurrentActivationIndex(int currentActivationIndex) {
+        this.currentActivationIndex = currentActivationIndex;
+    }
+
+    public ArrayList<Integer> getIdleTimes() {
+        return idleTimes;
+    }
+
+    public int getSumIdleTime() {
+        return sumIdleTime;
+    }
+
+    public int getCurrentDeactiveTime() {
+        return currentDeactiveTime;
+    }
+
+    public void setCurrentDeactiveTime(int currentDeactiveTime) {
+        this.currentDeactiveTime = currentDeactiveTime;
+    }
+
+    public double getOsubOverheadRatio() {
+        return osubOverheadRatio;
+    }
+
+    public void setOsubOverheadRatio(double osubOverheadRatio) {
+        this.osubOverheadRatio = osubOverheadRatio;
+    }
+
+    public int getNextActivationTime() {
+        return nextActivationTime;
+    }
+
+    public void setNextActivationTime(int nextActivationTime) {
+        this.nextActivationTime = nextActivationTime;
+    }
 }

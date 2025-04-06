@@ -73,11 +73,16 @@ class FCFS extends Scheduler {
                 job.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
-                result.add(new Event(EventType.END, trueEndTime, job));
-                job.setEndEventOccuranceTimeNow(trueEndTime);
+
+                boolean interactiveJob = job.isInteracitveJob();
+                if (!interactiveJob) {
+                    result.add(new Event(EventType.END, trueEndTime, job));
+                    job.setEndEventOccuranceTimeNow(trueEndTime);
+                }
                 temporallyScheduledJobList.add(job);
             } else break;
         }
+        temporallyScheduledJobList.clear();
         return result;
     }
 
@@ -126,6 +131,7 @@ class FCFS extends Scheduler {
                     node.setFreeCores(freeCores);
                     
                     freeMemory = min(freeMemory, node.getFreeMemory());
+                    node.setFreeMemory(freeMemory);
 
                     boolean addFlag = false;
                     addFlag = (freeCores >= requiredCoresPerNode);                    

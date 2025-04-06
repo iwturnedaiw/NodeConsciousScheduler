@@ -16,6 +16,7 @@ import static nodeconsciousscheduler.Constants.UNUSED;
 public class CoreInfo implements Cloneable, Comparable<CoreInfo> {
     private int coreId;
     private ArrayList<Integer> jobList;
+    private double priority;
 
     CoreInfo() {
         this.coreId = UNUSED;
@@ -52,10 +53,23 @@ public class CoreInfo implements Cloneable, Comparable<CoreInfo> {
         if (this.jobList.size() < o.jobList.size()) {
             return -1;
         }
+
+        if (this.priority > o.priority) {
+            return 1;
+        }
+        if (this.priority < o.priority) {
+            return -1;
+        }
+        
         if (this.coreId > o.coreId) {
             return 1;            
         }
-        return -1;        
+         
+        if (this.coreId < o.coreId) {
+            return -1;            
+        }
+        
+        return 0;        
     }
     
 
@@ -74,8 +88,12 @@ public class CoreInfo implements Cloneable, Comparable<CoreInfo> {
     public void setJobList(ArrayList<Integer> jobList) {
         this.jobList = jobList;
     }
-    
-    
-    
-    
+
+    public double getPriority() {
+        return priority;
+    }
+
+    public void setPriority(double priority) {
+        this.priority = priority;
+    }
 }

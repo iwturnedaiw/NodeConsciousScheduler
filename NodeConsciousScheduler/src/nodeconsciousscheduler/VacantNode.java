@@ -15,6 +15,7 @@ class VacantNode implements Comparable<VacantNode>{
     private int freeCores;
     private int OCStateLevel;
     private long freeMemory;
+    private double priority; // This is only used when SCHEDULE_USING_AFFINITY is true.
     
     VacantNode() {
         this.nodeNo = -1;
@@ -44,6 +45,25 @@ class VacantNode implements Comparable<VacantNode>{
         if (this.freeCores > o.freeCores) {
             return -1;
         }
+        
+        if (NodeConsciousScheduler.sim.isCrammingMemoryScheduling()) {
+            if (this.freeMemory < o.freeMemory) {
+                return -1;
+            }
+            if (this.freeMemory > o.freeMemory) {
+                return 1;
+            }            
+        }
+        
+        if (NodeConsciousScheduler.sim.isUsingAffinityForSchedule()) {
+            if (this.priority < o.priority) {
+                return -1;
+            }
+            if (this.priority > o.priority) {
+                return 1;
+            }            
+        }
+        
         return 0;
     }
 
@@ -77,5 +97,13 @@ class VacantNode implements Comparable<VacantNode>{
 
     public void setFreeMemory(long freeMemory) {
         this.freeMemory = freeMemory;
+    }
+
+    public double getPriority() {
+        return priority;
+    }
+
+    public void setPriority(double priority) {
+        this.priority = priority;
     }
 }

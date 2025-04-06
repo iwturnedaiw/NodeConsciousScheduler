@@ -1,0 +1,2 @@
+tail -n 1 res_job_M* | sed  '/^$/d' | grep -v "^="; tail -n 1 res_rsc_M* | sed  '/^$/d' | grep -v "^=";tail -n 1 res_trsc_M* | sed  '/^$/d' | grep -v "^="; tail -n 1 wk_M* | awk '{print $7}' | sed '/^$/d'; cat mkres_M*
+#tail -n 1 res_job_R* | sed  '/^$/d' | grep -v "^="; tail -n 1 res_rsc_R* | sed  '/^$/d' | grep -v "^=";tail -n 1 res_trsc_R* | sed  '/^$/d' | grep -v "^="; tail -n 1 wk_R* | awk '{print $7}' | sed '/^$/d'; cat mkres_R*

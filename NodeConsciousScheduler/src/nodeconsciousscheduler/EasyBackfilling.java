@@ -11,12 +11,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.Set;
 import static nodeconsciousscheduler.Constants.CANNOT_START;
 import static nodeconsciousscheduler.Constants.TS_ENDTIME;
 import static nodeconsciousscheduler.Constants.UNSTARTED;
@@ -80,13 +82,20 @@ class EasyBackfilling extends Scheduler {
                 job.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + job.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, job));
-                result.add(new Event(EventType.END, trueEndTime, job));
-                job.setEndEventOccuranceTimeNow(trueEndTime);
+
+                boolean interactiveJob = job.isInteracitveJob();
+                if (!interactiveJob) {
+                    result.add(new Event(EventType.END, trueEndTime, job));
+                    job.setEndEventOccuranceTimeNow(trueEndTime);
+                }
                 temporallyScheduledJobList.add(job);
             } else break;
         }
         
-        if (waitingQueue.size() <= 1) return result;
+        if (waitingQueue.size() <= 1) {
+            temporallyScheduledJobList.clear();
+            return result;
+        }
         
         /* Backfilling */
 
@@ -132,9 +141,9 @@ class EasyBackfilling extends Scheduler {
         LinkedList<TimeSlice> tmpTimeSlices = cloneTimeSlices(timeSlices);
         ArrayList<NodeInfo> tmpAllNodesInfo = cloneAllNodesInfo(NodeConsciousScheduler.sim.getAllNodesInfo());
 
-        makeTimeslices(startTimeFirstJob, tmpTimeSlices);
+        makeTimeslices(startTimeFirstJob, tmpTimeSlices, true);
         int endTimeFirstJob = startTimeFirstJob + firstJob.getRequiredTime();
-        makeTimeslices(endTimeFirstJob, tmpTimeSlices);
+        makeTimeslices(endTimeFirstJob, tmpTimeSlices, true);
         assignFirstJobTemporally(tmpTimeSlices, tmpAllNodesInfo, startTimeFirstJob, firstJob, canExecuteTmpNodes);
         
         ArrayList<VacantNode> canExecuteNodesEasyBackfiling;
@@ -170,11 +179,11 @@ class EasyBackfilling extends Scheduler {
                 backfillJob.setStartTime(startTime);
 
                 makeTimeslices(startTime);
-                makeTimeslices(startTime, tmpTimeSlices);
+                makeTimeslices(startTime, tmpTimeSlices, true);
 
                 int expectedEndTime = startTime + backfillJob.getRequiredTime();
                 makeTimeslices(expectedEndTime);
-                makeTimeslices(expectedEndTime, tmpTimeSlices);
+                makeTimeslices(expectedEndTime, tmpTimeSlices, true);
                 backfillJob.setOccupiedTimeInTimeSlices(expectedEndTime);
 
                 /* 5. Modify the resource informaiton */        
@@ -185,12 +194,17 @@ class EasyBackfilling extends Scheduler {
                 backfillJob.setPreviousMeasuredTime(startTime);
                 int trueEndTime = startTime + backfillJob.getActualExecuteTime();
                 result.add(new Event(EventType.START, startTime, backfillJob));
-                result.add(new Event(EventType.END, trueEndTime, backfillJob));
-                backfillJob.setEndEventOccuranceTimeNow(trueEndTime);
+              
+                boolean interactiveJob = backfillJob.isInteracitveJob();
+                if (!interactiveJob) {
+                    result.add(new Event(EventType.END, trueEndTime, backfillJob));
+                    backfillJob.setEndEventOccuranceTimeNow(trueEndTime);
+                }
                 temporallyScheduledJobList.add(backfillJob);
             }
         }
-        
+
+        temporallyScheduledJobList.clear();
         return result;
     }
  
@@ -250,6 +264,7 @@ class EasyBackfilling extends Scheduler {
                     node.setFreeCores(freeCores);
                                     
                     freeMemory = min(freeMemory, node.getFreeMemory());
+                    node.setFreeMemory(freeMemory);
 
                     boolean addFlag = false;
                     addFlag = (freeCores >= requiredCoresPerNode);                    
@@ -405,8 +420,18 @@ class EasyBackfilling extends Scheduler {
             occupiedCores.add(eachCore);
         }
         assert occupiedCores.size() == numCore;
+
+        /* Set executing Jobs */
+        HashSet<Integer> copiedJobList = closeExecutingJobList(copiedNodeInfo.getExecutingJobIds());
+        copiedNodeInfo.setExecutingJobIds(copiedJobList);
         
         return copiedNodeInfo;
+    }
+
+    private HashSet<Integer> closeExecutingJobList(Set<Integer> executingJobIds) {
+        HashSet<Integer> clonedJobList = new HashSet<Integer>();
+        clonedJobList.addAll(executingJobIds);
+        return clonedJobList;
     }
 
 

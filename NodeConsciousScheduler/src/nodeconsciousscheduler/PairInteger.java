@@ -22,11 +22,13 @@ class PairIntegers {
     private ArrayList<Long> numCumulativeWaitingJobResources;
     private ArrayList<Long> numCumulativeStartedJobResources;
     private ArrayList<Long> numCumulativeFinishedJobResources;
+    private ArrayList<Long> numCumulativeArrivalJobResources;
     
     private ArrayList<Long> numCumulativeWaitingJobMemoryResources;
     private ArrayList<Long> numCumulativeStartedJobMemoryResources;
     private ArrayList<Long> numCumulativeFinishedJobMemoryResources;
-        
+    private ArrayList<Long> numCumulativeArrivalJobMemoryResources;
+    
     PairIntegers(){}
 
     public ArrayList<Integer> getNumWaitingJobs() {
@@ -125,6 +127,20 @@ class PairIntegers {
         this.numCumulativeFinishedJobMemoryResources = numCumulativeFinishedJobMemoryResources;
     }
     
-    
-    
+    public ArrayList<Long> getNumCumulativeArrivalJobResources() {
+        return numCumulativeArrivalJobResources;
+    }
+
+    public void setNumCumulativeArrivalJobResources(ArrayList<Long> numCumulativeArrivalJobResources) {
+        this.numCumulativeArrivalJobResources = numCumulativeArrivalJobResources;
+    }
+
+    public ArrayList<Long> getNumCumulativeArrivalJobMemoryResources() {
+        return numCumulativeArrivalJobMemoryResources;
+    }
+
+    public void setNumCumulativeArrivalJobMemoryResources(ArrayList<Long> numCumulativeArrivalJobMemoryResources) {
+        this.numCumulativeArrivalJobMemoryResources = numCumulativeArrivalJobMemoryResources;
+    }
+
 }
