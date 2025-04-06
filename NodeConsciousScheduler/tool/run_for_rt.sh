@@ -32,8 +32,7 @@ run() {
   sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
   sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
   sed s/memory/${memory}/g -i ./${DATADIR}/${tp}.swf.machines
-  java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 
-  wait
+  java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null
   RET=$?
   echo -ne "${tp}\t${algorithm}\tM=${m}\t${case}\t"
   if [ ${RET} -eq 0 ]; then
@@ -50,3 +49,5 @@ run() {
 
 
 run ${1} ${2} ${3} ${4} ${5} ${6} 2>&1 | tee -a ${LOG}
+RET=${PIPESTATUS[0]}
+exit $RET
