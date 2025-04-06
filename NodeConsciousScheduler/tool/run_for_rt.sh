@@ -8,10 +8,25 @@ DATADIR=./data-set
 TEMPLATE=template.machines
 export CLASSPATH=./build/classes
 
+TAB=$'\t'
+
+log_info() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] $*"
+}
+
+log_warn() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [WARN] $*"
+}
+
+log_error() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [ERROR] $*"
+}
+
+
 
 run() {
   if [ ${#} -lt 5 ] || [ ${#} -gt 6 ]; then
-    echo "Please specify the arguments"
+    log_error "Please specify the arguments"
     exit
   fi
 
@@ -32,14 +47,15 @@ run() {
   sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
   sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
   sed s/memory/${memory}/g -i ./${DATADIR}/${tp}.swf.machines
-  java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null
+  ERROR_MSG=$(java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} 2>&1 1>/dev/null)
   RET=$?
-  echo -ne "${tp}\t${algorithm}\tM=${m}\t${case}\t"
+  #echo -ne "${tp}\t${algorithm}\tM=${m}\t${case}\t"
   if [ ${RET} -eq 0 ]; then
-    echo "OK"
+    log_info "${tp}${TAB}${algorithm}${TAB}M=${m}${TAB}${case}${TAB}OK"
     return 0
   else
-    echo "NG"
+    log_info "${tp}${TAB}${algorithm}${TAB}M=${m}${TAB}${case}${TAB}NG"
+    log_error "${ERROR_MSG}"
     return 1
   fi
 }
