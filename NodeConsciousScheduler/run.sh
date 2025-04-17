@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ####################################################
+# 
 # run.sh is the run driver.
 # You set the folloing arguments:
 #  TP
@@ -8,34 +9,54 @@
 #  NODE
 #  CORE
 #  M
+#  [MEMORY]
 #
 # usage:
 #  $ pwd
 #   ${INSTALLED_DIR}/NodeConsciousScheduler
-#  $ bash run.sh ${TP} ${ALGORITHM} ${NODE} ${CORE} ${M}
+#  $ bash run.sh ${TP} ${ALGORITHM} ${NODE} ${CORE} ${M} [${MEMORY}]
 #  For example:
 #  $ bash run.sh gen01 FCFSOC 4 8 2
 #
 # return value:
 #  0 (normal termination)
 #  1 (otherwise)
+# 
 ####################################################
 
-LOG=./log/run_`date +%Y%m%d%H%M`.log
-CURRENT_DIR=`pwd`
 
 # path
 DATADIR=./data-set
 TEMPLATE=template.machines
 export CLASSPATH=./build/classes
 
+TAB=$'\t'
 
-run() {
+FNAME=$(basename $0)
+
+log_info() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') $FNAME [INFO] $*"
+}
+
+log_warn() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') $FNAME [WARN] $*"
+}
+
+log_error() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') $FNAME [ERROR] $*"
+}
+
+tp=""
+algorithm=""
+node=""
+core=""
+m=""
+memory=""
+
+args_check() {
   if [ ${#} -lt 5 ] || [ ${#} -gt 6 ]; then
-    echo "Please specify the arguments"
-    exit
+    return 1
   fi
-
 
   tp=${1}
   algorithm=${2}
@@ -47,27 +68,45 @@ run() {
     memory=104857600
   fi
 
+  return 0
+}
+
+
+run() {
+  local tp=${1}
+  local algorithm=${2}
+  local node=${3}
+  local core=${4}
+  local m=${5}
+  local memory=${6}
+
   case="n${node}c${core}"
  
-  #echo -e "\t\t\tn${node} c${core}"
   sed s/node/${node}/g ./${DATADIR}/${TEMPLATE} > ./${DATADIR}/${tp}.swf.machines
   sed s/core/${core}/g -i ./${DATADIR}/${tp}.swf.machines
   sed s/memory/${memory}/g -i ./${DATADIR}/${tp}.swf.machines
-  java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} > /dev/null 
-  wait
+  ERROR_MSG=$(java -ea nodeconsciousscheduler.NodeConsciousScheduler ${tp}.swf ${algorithm} ${m} 2>&1 1>/dev/null)
   RET=$?
-  echo -ne "${tp}\t${algorithm}\tM=${m}\t${case}\t"
   if [ ${RET} -eq 0 ]; then
-    echo "OK"
+    log_info "${tp}${TAB}${algorithm}${TAB}M=${m}${TAB}${case}${TAB}COMPLETED"
     return 0
   else
-    echo "NG"
+    log_info "${tp}${TAB}${algorithm}${TAB}M=${m}${TAB}${case}${TAB}NOT COMPLETED"
+    log_error "${ERROR_MSG}"
     return 1
   fi
 }
 
 
+LOG=./log/run_`date +%Y%m%d%H%M%S`.log
+args_check $@
+RET=$?
+if [ ${RET} -eq 1 ]; then
+  log_error "Please specify the correct arguments, current $# arguments: $@"
+  exit ${RET}
+fi
 
-
-
-run ${1} ${2} ${3} ${4} ${5} ${6} 2>&1 | tee -a ${LOG}
+LOG=./log/run_${tp}_${algorithm}_N${node}_C${core}_M${m}_MEM${memory}_`date +%Y%m%d%H%M%S`.log
+run ${tp} ${algorithm} ${node} ${core} ${m} ${memory} 2>&1 | tee -a ${LOG}
+RET=${PIPESTATUS[0]}
+exit $RET
