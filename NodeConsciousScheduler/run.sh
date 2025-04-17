@@ -53,7 +53,7 @@ core=""
 m=""
 memory=""
 
-args_check() {
+check_args() {
   if [ ${#} -lt 5 ] || [ ${#} -gt 6 ]; then
     return 1
   fi
@@ -71,6 +71,14 @@ args_check() {
   return 0
 }
 
+check_oc() {
+  local var=${algorithm##*OC}
+  local len=${#var}
+  if [ ${len} -eq 0 ]; then
+    return 1 
+  fi
+  return 0
+}
 
 run() {
   local tp=${1}
@@ -99,11 +107,20 @@ run() {
 
 
 LOG=./log/run_`date +%Y%m%d%H%M%S`.log
-args_check $@
+check_args $@
 RET=$?
 if [ ${RET} -eq 1 ]; then
-  log_error "Please specify the correct arguments, current $# arguments: $@"
+  log_error "Please specify the correct arguments, current $# arguments: $@" | tee -a ${LOG}
   exit ${RET}
+fi
+
+check_oc
+RET=$?
+if [ ${RET} -eq 0 -a ${m} -ne 1 ]; then
+  prev_m=${m}
+  m=1
+  LOG=./log/run_${tp}_${algorithm}_N${node}_C${core}_M${m}_MEM${memory}_`date +%Y%m%d%H%M%S`.log
+  log_warn "Current setting is OC, but m is specified ${prev_m}. m is changed m to 1" | tee -a ${LOG}
 fi
 
 LOG=./log/run_${tp}_${algorithm}_N${node}_C${core}_M${m}_MEM${memory}_`date +%Y%m%d%H%M%S`.log
