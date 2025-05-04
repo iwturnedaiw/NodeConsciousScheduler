@@ -9,6 +9,8 @@ package nodeconsciousscheduler;
 import static java.lang.Integer.min;
 import static java.lang.Math.ceil;
 import static java.lang.Math.max;
+import static java.lang.Math.max;
+import static java.lang.Math.max;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -328,6 +330,7 @@ public abstract class Scheduler {
             if (freeCoreInTimeSlice > freeCoreInNodeInfo) {
                 System.out.println("Differ freecore value at node " + i);                
                 System.out.println("Check wheter multiple END Event with the same event time exist.");
+
                 int endEventCnt = 0;
 /*
                 ArrayList<Job> completedJobList = NodeConsciousScheduler.sim.getCompletedJobList();
@@ -349,6 +352,7 @@ public abstract class Scheduler {
                     Job job = executingJobList.get(k);
                     
                     int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
+
                     int occupiedTimeInTimeSeries = job.getOccupiedTimeInTimeSlices();
                     boolean containsNodeId = false;
                     for (UsingNode un: job.getUsingNodesList()) {
@@ -383,6 +387,7 @@ public abstract class Scheduler {
                     for (int j = 0; j < usingNodes.size(); ++j) {
                         usingNodeIds.add(usingNodes.get(j).getNodeNum());
                     }
+
                     if (occupiedTimeInTimeSeries <= currentTime && usingNodeIds.contains(i)) {
                         int currentDetectiveTime = job.getCurrentDeactiveTime();
                         if (occupiedTimeInTimeSeries < endEventOccuranceTimeNow) {
@@ -443,6 +448,7 @@ public abstract class Scheduler {
         }
         for (Job job: modifiedJobInTimeSlices) {
             int endEventOccuranceTimeNow = job.getEndEventOccuranceTimeNow();
+
             int updateTimeSliceValue = endEventOccuranceTimeNow;
             boolean intJob = job.isInteracitveJob();
             boolean actState = job.isActivationState();
@@ -1065,6 +1071,7 @@ public abstract class Scheduler {
         System.out.println("");
     }
 
+
     static Job getJobByJobId(int coexistingJobId) {
 /*
         ArrayList<Job> executingJobList = NodeConsciousScheduler.sim.getExecutingJobList();
@@ -1143,6 +1150,7 @@ public abstract class Scheduler {
             return;
         }
         // TODO: should be double, but now int.        
+
         double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int realDeltaTime = currentTime - previousMeasuredTime;
         double jobAffinityRatio = victimJob.getJobAffinityRatio();
@@ -1250,6 +1258,7 @@ public abstract class Scheduler {
         int currentNetOCStateLevel = victimJob.getNetOCStateLevel(); // This value is after-updated.
         double currentAccumulatedComputeQuantity = victimJob.getCurrentAccumulatedComputeQuantity();
         int actualExecuteTime = victimJob.getActualExecuteTime();
+
         double restActualExecuteTime = (actualExecuteTime - currentAccumulatedComputeQuantity) * currentNetOCStateLevel;      
         restActualExecuteTime = max(restActualExecuteTime, 0);
         //double ratio = 1.0;
@@ -1267,7 +1276,7 @@ public abstract class Scheduler {
         return (int) ceil(trueEndTime);
     }
 
-    
+
     static int calculateNewActualEndTimeForActivation(int startTime, Job job) {
         boolean interactiveJob = job.isInteracitveJob();
         assert interactiveJob;
@@ -1331,6 +1340,7 @@ public abstract class Scheduler {
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
         coexistingJob.setOCStateLevel(OCStateLevel);
+
         int netOCStateLevel = calculateNewOCStateLevelForExecutingJob(coexistingJob, true);
         coexistingJob.setNetOCStateLevel(netOCStateLevel);
         double ratio = calculateMaxDegradationRatioForVictim(coexistingJob, coexistingJob.getCoexistingJobs());
@@ -1344,6 +1354,7 @@ public abstract class Scheduler {
 
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+
         if (!interactiveJob && currentTime != trueEndTime && currentTime != oldTrueEndTime && trueEndTime != oldTrueEndTime ){
             printThrownEvent(currentTime, trueEndTime, coexistingJob, EventType.END);
             result.add(new Event(EventType.END, trueEndTime, coexistingJob));
@@ -1366,6 +1377,7 @@ public abstract class Scheduler {
     /* Using only OCStateLevel, not considering netOCStateLevel */
     protected int calculateNewExpectedEndTime(int currentTime, Job victimJob) {
         int currentOCStateLevel = victimJob.getOCStateLevel(); // This value is after-updated.
+
         double currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = victimJob.getCurrentAccumulatedComputeQuantityOnlyConsiderMultiplicity();
         int requiredTime = victimJob.getRequiredTime();
         double restRequiredTime = (requiredTime - currentAccumulatedComputeQuantityOnlyConsiderMultiplicity) * currentOCStateLevel;
@@ -1581,6 +1593,7 @@ public abstract class Scheduler {
         /* debug */
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, victimJobId);
         int oldTrueEndTime = victimJob.getEndEventOccuranceTimeNow();
+
         victimJob.setOCStateLevel(OCStateLevel);
         victimJob.setNetOCStateLevel(netOCStateLevel);                        
 
@@ -2213,6 +2226,7 @@ public abstract class Scheduler {
         NodeConsciousScheduler.sim.outputResultForVis(migratingJob, currentTime);
     }
 
+
     protected double calculateMaxDegradationRatioForVictim(Job victimJob, Set<Integer> coexistingJobs) {    
         boolean considerJobMatching = NodeConsciousScheduler.sim.isConsiderJobMatching();
         if (!considerJobMatching) return 1.0;
@@ -2228,6 +2242,7 @@ public abstract class Scheduler {
         if (ratio == 0) ratio = 1.0;
         return ratio;
     }
+
 
     protected double calculateOsubOverheadRatioForVictim(Job victimJob) {    
         Constants.OsubOverheadModelType oomt = NodeConsciousScheduler.sim.getOsubOverheadModelType();
@@ -2255,6 +2270,7 @@ public abstract class Scheduler {
         assert coexistingStartTime <= currentTime;
 
         //  1-1. Measure the executing time at current time for each victim jobs.
+
         boolean interactiveJobs = coexistingJob.isInteracitveJob();
         if (interactiveJobs) {
             measureCurrentExecutingTimeForActivation(currentTime, coexistingJob, OCStateLevel);
@@ -2269,6 +2285,7 @@ public abstract class Scheduler {
         // debug
         printOCStateLevelTransition(currentOCStateLevel, OCStateLevel, coexistingJobId);
         int oldTrueEndTime = coexistingJob.getEndEventOccuranceTimeNow();
+
         Set<Integer> coexistingCoexistingJobs = coexistingJob.getCoexistingJobs();
         double ratio = coexistingJob.getJobAffinityRatio();
         if (endFlag) {
@@ -2291,6 +2308,7 @@ public abstract class Scheduler {
         //  1-3. Rethrow the END event set the time
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && trueEndTime < oldTrueEndTime) {
         //if (currentOCStateLevel != OCStateLevel && currentTime != trueEndTime && currentTime != oldTrueEndTime) {
+
         // TODO: treatment of int jobs
         boolean actStateFlag = coexistingJob.isActivationState();
         if (!interactiveJobs && (currentTime != trueEndTime && currentTime != oldTrueEndTime && trueEndTime != oldTrueEndTime)) {
@@ -2348,6 +2366,7 @@ public abstract class Scheduler {
             clonedObject.add(jobId);
         }
         return clonedObject;
+
     } 
     protected void calculatePriorityForNodes(ArrayList<VacantNode> canExecuteNodes, Job job) {
         assert NodeConsciousScheduler.sim.isUsingAffinityForSchedule();

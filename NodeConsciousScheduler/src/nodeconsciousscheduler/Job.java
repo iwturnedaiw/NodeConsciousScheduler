@@ -110,6 +110,7 @@ public class Job implements Comparable<Job> {
         this.startTime = -1;
         this.finishedTime = NOT_FINISHED;
         this.waitTime = -1;
+
         this.currentAccumulatedComputeQuantity = 0.0;
         this.currentAccumulatedComputeQuantityOnlyConsiderMultiplicity = 0.0;
         this.accumulatedCpuTime = 0.0;

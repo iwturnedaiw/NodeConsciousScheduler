@@ -9,6 +9,7 @@ package nodeconsciousscheduler;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
 import nodeconsciousscheduler.Constants.ScheduleConsiderJobType;
 import nodeconsciousscheduler.Constants.OsubOverheadModelType;
 
@@ -21,6 +22,7 @@ class SimulatorConfiguration {
     private boolean outputMinuteTimeseries;
     private boolean outputUtilizationRatio;
     private boolean scheduleUsingMemory;
+
     private boolean crammingMemoryScheduling;
     private boolean considerJobMatching;
     Map<JobMatching, Double> jobMatchingTable = new HashMap<>();

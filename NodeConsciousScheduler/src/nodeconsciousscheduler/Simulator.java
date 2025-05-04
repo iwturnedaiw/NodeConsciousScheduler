@@ -141,7 +141,6 @@ public class Simulator {
     private ScheduleConsiderJobType scheduleConsiderJobType;
     private OsubOverheadModelType osubOverheadModelType;
     private double osubOverheadConst;
-
     
     Simulator(ArrayList<Job> jobList, ArrayList<NodeInfo> allNodesInfo, ScheduleAlgorithm scheAlgo, SimulatorConfiguration simConf) {
         this.jobList = jobList;
